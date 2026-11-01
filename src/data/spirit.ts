@@ -1,0 +1,77 @@
+// Pháp quyết (bí thuật tiện ích, học xong là có) và Chân linh (linh thú đồng hành).
+import type { El } from './core';
+import { gradeLabel } from './items';
+
+// ---------- Pháp quyết ----------
+export interface PhapQuyet {
+  id: string;
+  n: string;
+  tier: number;
+  pq: number;
+  d: string;
+  icon: 'scroll' | 'boots' | 'eye' | 'mountain' | 'person' | 'shield';
+  cult?: number; // % tu luyện
+  herb?: number; // hái thêm dược
+  speed?: number; // % tốc độ đi đường
+  flee?: number; // cộng tỉ lệ thoát thân
+  hide?: number; // né yêu thú / phục kích
+  atk?: number; // % công
+  def?: number; // % thủ
+  heal?: number; // % hồi phục thương thế
+  luck?: number; // khí vận
+}
+export const PHAPQUYET: Record<string, PhapQuyet> = {
+  tulinhquyet: { id: 'tulinhquyet', n: 'Tụ Linh Quyết', tier: 1, pq: 1, icon: 'scroll', cult: 8, d: 'Tu luyện +8%.' },
+  thiennhan: { id: 'thiennhan', n: 'Thiên Nhãn Thuật', tier: 1, pq: 2, icon: 'eye', herb: 1, d: 'Nhìn thấu linh khí cỏ cây, hái dược được thêm một cây.' },
+  liemtuc: { id: 'liemtuc', n: 'Liễm Tức Quyết', tier: 1, pq: 1, icon: 'scroll', hide: 0.3, flee: 0.1, d: 'Thu liễm khí tức: yêu thú khó phát hiện, thoát thân dễ hơn 10%.' },
+  hoinguyenquyet: { id: 'hoinguyenquyet', n: 'Hồi Nguyên Quyết', tier: 1, pq: 0, icon: 'scroll', heal: 40, d: 'Vết thương mau lành hơn 40%.' },
+  ngukiemquyet: { id: 'ngukiemquyet', n: 'Ngự Kiếm Quyết', tier: 2, pq: 1, icon: 'scroll', speed: 35, d: 'Ngự kiếm phi hành, đi đường nhanh hơn 35%.' },
+  thodon: { id: 'thodon', n: 'Thổ Độn Thuật', tier: 2, pq: 2, icon: 'mountain', flee: 0.25, d: 'Độn thổ thoát khỏi trận đấu: thoát thân +25%.' },
+  tambao: { id: 'tambao', n: 'Tầm Bảo Thuật', tier: 2, pq: 1, icon: 'eye', luck: 2, d: 'Cảm ứng bảo khí, khí vận +2.' },
+  kimcang: { id: 'kimcang', n: 'Kim Cang Bất Hoại Thân', tier: 3, pq: 1, icon: 'shield', def: 15, d: 'Luyện thân như kim cang, thủ +15%.' },
+  tuphongbo: { id: 'tuphongbo', n: 'Truy Phong Bộ', tier: 3, pq: 2, icon: 'boots', speed: 25, flee: 0.1, d: 'Thân pháp như gió: đi đường +25%, thoát thân +10%.' },
+  phapthien: { id: 'phapthien', n: 'Pháp Thiên Tượng Địa', tier: 4, pq: 2, icon: 'person', atk: 20, d: 'Hóa thân cự nhân, công +20%.' },
+  thienlythuc: { id: 'thienlythuc', n: 'Súc Địa Thành Thốn', tier: 5, pq: 2, icon: 'boots', speed: 80, d: 'Thu ngàn dặm vào một bước: đi đường +80%.' },
+  vanphaptu: { id: 'vanphaptu', n: 'Vạn Pháp Quy Tông Quyết', tier: 6, pq: 3, icon: 'scroll', cult: 15, atk: 10, def: 10, d: 'Tu luyện +15%, công và thủ +10%.' },
+};
+export const pqGrade = (x: PhapQuyet) => gradeLabel(x.tier, x.pq);
+export const pqPrice = (x: PhapQuyet) => Math.round(55 * Math.pow(4.2, x.tier - 1) * (1 + x.pq * 0.3));
+
+// ---------- Chân linh ----------
+export interface ChanLinh {
+  id: string;
+  n: string;
+  el: El;
+  ic: string; // tên biểu tượng trong ui/glyph.ts // chữ trên biểu tượng
+  minR: number; // cảnh giới tối thiểu để gặp
+  reg?: string[];
+  d: string;
+  atk?: number; // % công
+  def?: number;
+  hp?: number;
+  cult?: number;
+  luck?: number;
+  flee?: number;
+}
+export const CHANLINH: Record<string, ChanLinh> = {
+  hoaly: { id: 'hoaly', n: 'Hỏa Ly', el: 'hoa', ic: 'cat', minR: 1, d: 'Mèo rừng lông đỏ, đuôi cháy như ngọn đuốc. Tham ăn, nhưng trung thành.', atk: 8, luck: 1 },
+  thanhxa: { id: 'thanhxa', n: 'Thanh Linh Xà', el: 'moc', ic: 'snake', minR: 1, reg: ['namman', 'vanmong', 'vanyeu'], d: 'Rắn xanh biết đánh hơi linh thảo.', hp: 10, cult: 3 },
+  ngantho: { id: 'ngantho', n: 'Ngân Nguyệt Thố', el: 'quang', ic: 'rabbit', minR: 1, d: 'Thỏ trắng dưới trăng, gặp nguy chạy nhanh hơn chủ.', flee: 0.15, luck: 2 },
+  tuyetlang: { id: 'tuyetlang', n: 'Tuyết Lang', el: 'bang', ic: 'wolf', minR: 2, reg: ['bacminh', 'cucbac', 'bachai'], d: 'Sói tuyết lạnh lùng, cắn một miếng đông cứng xương.', atk: 12, def: 5 },
+  kimdieu: { id: 'kimdieu', n: 'Kim Sí Điêu', el: 'kim', ic: 'eagle', minR: 2, d: 'Đại bàng cánh vàng, có thể chở chủ bay qua núi.', atk: 10, flee: 0.1 },
+  huyenquy: { id: 'huyenquy', n: 'Huyền Quy', el: 'thuy', ic: 'turtle', minR: 3, reg: ['donghai', 'namhai', 'vanmong', 'tayhai'], d: 'Rùa đen sống ngàn năm, mai cứng hơn pháp bảo.', def: 20, hp: 15 },
+  loiung: { id: 'loiung', n: 'Lôi Ưng', el: 'loi', ic: 'hawk', minR: 3, d: 'Chim ưng mang sét, lao xuống như một tia chớp.', atk: 18 },
+  phonglinhhoa: { id: 'phonglinhhoa', n: 'Phong Linh Hồ', el: 'phong', ic: 'fox', minR: 3, d: 'Hồ ly ba đuôi tinh ranh, giỏi mê hoặc kẻ địch.', atk: 8, flee: 0.15, luck: 2 },
+  hacky: { id: 'hacky', n: 'Hắc Kỳ Lân', el: 'am', ic: 'qilin', minR: 5, d: 'Kỳ lân đen của bóng tối, uy áp làm yêu thú quỳ rạp.', atk: 22, def: 12, hp: 15 },
+  chuoc: { id: 'chuoc', n: 'Chu Tước Ấu Điểu', el: 'hoa', ic: 'phoenix', minR: 6, d: 'Chim lửa con mang huyết mạch thần thú. Lửa của nó không bao giờ tắt.', atk: 30, cult: 6, luck: 3 },
+};
+export const clEffect = (c: ChanLinh) => {
+  const p: string[] = [];
+  if (c.atk) p.push(`công +${c.atk}%`);
+  if (c.def) p.push(`thủ +${c.def}%`);
+  if (c.hp) p.push(`huyết +${c.hp}%`);
+  if (c.cult) p.push(`tu luyện +${c.cult}%`);
+  if (c.luck) p.push(`khí vận +${c.luck}`);
+  if (c.flee) p.push(`thoát thân +${Math.round(c.flee * 100)}%`);
+  return p.join(', ') + ', cùng chiến đấu';
+};
