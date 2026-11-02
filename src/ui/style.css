@@ -96,7 +96,7 @@ b { font-weight: 600; }
 
 /* ---------- Modal sự kiện ---------- */
 #veil { position: fixed; inset: 0; background: rgba(42, 36, 31, 0.28); z-index: 20; }
-#modal { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(620px, 94vw); max-height: 88vh; overflow: auto; z-index: 21; background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; box-shadow: inset 0 0 0 5px var(--sheet), inset 0 0 0 6px rgba(155, 42, 31, 0.2), 0 20px 60px rgba(42, 36, 31, 0.35); padding: 22px 26px 18px; }
+#modal { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(620px, 94vw); max-height: 88vh; overflow-x: hidden; overflow-y: auto; z-index: 21; background: var(--sheet); border: 1px solid var(--line); border-radius: 4px; box-shadow: inset 0 0 0 5px var(--sheet), inset 0 0 0 6px rgba(155, 42, 31, 0.2), 0 20px 60px rgba(42, 36, 31, 0.35); padding: 22px 26px 18px; }
 /* viền son bên trong: dùng inset box-shadow (đứng yên theo khung khi cuộn); ::before absolute sẽ cuộn theo nội dung và đứt giữa chừng */
 #modal.wide { width: min(900px, 96vw); }
 #modal h2 { margin: 0 0 4px; font-size: 21px; display: flex; align-items: center; gap: 10px; }
@@ -228,8 +228,8 @@ input[type='text'], select { font-family: inherit; font-size: 15px; padding: 6px
 .pl-flag { width: 36px; height: 44px; color: #fff; display: grid; place-items: center; font-family: var(--fh); font-size: 18px; clip-path: polygon(0 0, 100% 0, 100% 80%, 50% 100%, 0 80%); box-shadow: 0 2px 4px rgba(0,0,0,.25); }
 .pl-desc { font-style: italic; color: #4a4038; margin: 6px 0 10px; }
 .pl-danger { margin: 0 0 10px; }
-.pl-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.pl-card { position: relative; text-align: left; padding: 10px 30px 10px 12px; min-height: 62px; border: 1px solid var(--line); border-left: 3px solid #b9a983; background: linear-gradient(180deg, #fbf6ea, #f3ead5); border-radius: 2px; cursor: pointer; font-family: inherit; }
+.pl-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pl-card { position: relative; min-width: 0; text-align: left; padding: 10px 30px 10px 12px; min-height: 62px; border: 1px solid var(--line); border-left: 3px solid #b9a983; background: linear-gradient(180deg, #fbf6ea, #f3ead5); border-radius: 2px; cursor: pointer; font-family: inherit; }
 .pl-card:hover:not(:disabled) { border-color: var(--ink); background: #fff; }
 .pl-card b { display: block; font-weight: 600; }
 .pl-card small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.4; margin-top: 2px; }
@@ -240,7 +240,7 @@ input[type='text'], select { font-family: inherit; font-size: 15px; padding: 6px
 .act-here { display: flex; align-items: center; gap: 10px; padding-left: 4px; }
 .act-here span { color: var(--muted); }
 .act-here b { color: var(--ink); }
-@media (max-width: 720px) { .pl-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 720px) { .pl-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
 
 .rank-ladder { display: flex; flex-direction: column; gap: 2px; margin: 4px 0 10px; }
 .rank-row { display: grid; grid-template-columns: 22px 170px 1fr; gap: 8px; align-items: center; padding: 3px 6px; border-radius: 3px; font-size: 13.5px; }
@@ -259,14 +259,14 @@ input[type='text'], select { font-family: inherit; font-size: 15px; padding: 6px
 .pl-card.has-ic { display: flex; gap: 10px; align-items: flex-start; }
 .pl-card .pl-ic { flex: none; margin-top: 2px; }
 .pl-card .pl-ic svg { display: block; filter: drop-shadow(0 1px 1.5px rgba(42, 36, 31, 0.3)); }
-.pl-card .pl-txt { display: block; min-width: 0; }
+.pl-card .pl-txt { display: block; min-width: 0; overflow-wrap: break-word; }
 .pl-card .pl-why { color: var(--seal); }
 .pl-card .pl-note { color: var(--jade); font-style: italic; }
 .pl-card:disabled .pl-ic { filter: grayscale(0.6); opacity: 0.6; }
 .pl-intro { line-height: 1.75; margin: 4px 0 12px; }
 
 /* Tàng Kinh Các: tab + nhóm cảnh giới */
-.lib-tabs { display: flex; gap: 6px; margin: 0 0 10px; border-bottom: 1px solid var(--line); }
+.lib-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; border-bottom: 1px solid var(--line); }
 .lib-tabs button { border: 1px solid var(--line); border-bottom: none; background: var(--paper2); padding: 7px 18px; border-radius: 4px 4px 0 0; cursor: pointer; font-family: inherit; font-size: 15px; color: var(--muted); }
 .lib-tabs button.on { background: var(--sheet); color: var(--seal); font-weight: 700; position: relative; top: 1px; }
 .lib-tabs small { color: var(--muted); font-weight: 400; }
@@ -625,7 +625,8 @@ html { -webkit-text-size-adjust: 100%; }
   .win, .win.wide { position: fixed; top: max(8px, env(safe-area-inset-top)) !important; bottom: calc(72px + env(safe-area-inset-bottom)); left: 8px !important; width: calc(100vw - 16px) !important; max-height: none; }
   .win-h { flex: none; min-height: 44px; }
   .win-b { min-height: 0; overscroll-behavior: contain; }
-  #modal { top: max(8px, env(safe-area-inset-top)); left: 8px; transform: none; width: calc(100vw - 16px); max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 16px; overscroll-behavior: contain; font-size: 14px; }
+  #modal, #modal.wide, #modal:has(.pick-grid) { top: max(8px, env(safe-area-inset-top)); left: 8px; transform: none; width: calc(100vw - 16px); max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 16px; overscroll-behavior: contain; font-size: 14px; }
+  .lib-tabs button { padding: 6px 10px; font-size: 13.5px; }
   #modal h2 { font-size: 19px; line-height: 1.4; }
   #modal .story { font-size: 14px; line-height: 1.7; }
   #modal .btn { min-height: 44px; }

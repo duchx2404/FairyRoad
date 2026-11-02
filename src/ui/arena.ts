@@ -56,11 +56,11 @@ const BEAST_RE = /Thú|Yêu|Lang|Hổ|Giao|Long|Xà|Ưng|Hồ|Điêu|Quy|Lân|T�
 /** Địch là thú (yêu thú, thú vương…) hay người. */
 export const isBeast = (kind: string | undefined, name: string) => kind === 'beast' || (kind === 'boss' && BEAST_RE.test(name));
 /** Khoá sprite địch theo loại. */
-export function foeSpriteKey(kind: string | undefined, el: string | null | undefined, name: string): string {
+export function foeSpriteKey(kind: string | undefined, el: string | null | undefined, name: string, g?: 'm' | 'f'): string {
   if (isBeast(kind, name)) return `sp_foe_beast_${el || 'tho'}`;
   if (kind === 'demon') return 'sp_foe_demon';
   if (kind === 'mortal') return 'sp_foe_mortal';
-  return /nữ|cô|nàng|Thánh nữ|muội|tỷ/i.test(name) ? 'sp_foe_cultivator_f' : 'sp_foe_cultivator';
+  return g === 'f' || /nữ|cô|nàng|Thánh nữ|muội|tỷ/i.test(name) ? 'sp_foe_cultivator_f' : 'sp_foe_cultivator';
 }
 
 /** Một ô trong đội hình: ảnh sprite, có phải thú, có cần lật ngang (thú đồng hành dùng ảnh địch nên phải lật). */
@@ -78,7 +78,8 @@ export function slotPos(i: number): { x: number; bottom: number; depth: number }
 }
 /** Hệ dùng để chọn tạo hình đồng hành (âm/dương quy về ám/quang). */
 const allyEl = (el: string | null | undefined) => (el === 'yin' ? 'am' : el === 'yang' ? 'quang' : el || 'none');
-const ALLY_SPRITES_FACING_LEFT = new Set(['sp_ally_f_moc', 'sp_ally_f_thuy', 'sp_ally_f_kim', 'sp_ally_f_loi']);
+const ALLY_SPRITES_FACING_LEFT = new Set(['sp_ally_f_moc', 'sp_ally_f_thuy', 'sp_ally_f_kim', 'sp_ally_f_loi', 'sp_ally_m_tho']);
+const FOE_SPRITES_FACING_RIGHT = new Set(['sp_foe_cultivator_f']);
 /** Sprite đồng hành (người): chuẩn hóa hướng nhìn về phía đối thủ ở bên phải.
     Không bao giờ mượn tạo hình khác giới: thiếu ảnh thì trả null để vẽ ô ghost. */
 export function allySprite(f: Fighter): { k: string; mirror: boolean } | null {
@@ -89,7 +90,7 @@ export function allySprite(f: Fighter): { k: string; mirror: boolean } | null {
     if (hasPhoto(k)) return { k, mirror: ALLY_SPRITES_FACING_LEFT.has(k) };
   }
   const k = g === 'f' ? 'sp_foe_cultivator_f' : 'sp_foe_cultivator';
-  return hasPhoto(k) ? { k, mirror: true } : null;
+  return hasPhoto(k) ? { k, mirror: !FOE_SPRITES_FACING_RIGHT.has(k) } : null;
 }
 /** Sprite cho một chiến binh trong trận. */
 export function fighterSlot(f: Fighter, side: 'me' | 'foe'): Slot | null {
@@ -98,7 +99,7 @@ export function fighterSlot(f: Fighter, side: 'me' | 'foe'): Slot | null {
   if (f.player) k = `sp_pc_${s.g}_${weaponKind()}`;
   else if (side === 'me' && !beast) { const a = allySprite(f); if (!a) return null; k = a.k; mirror = a.mirror; }
   else if (side === 'me') { k = `sp_foe_beast_${f.el || 'tho'}`; mirror = true; }
-  else k = foeSpriteKey(f.kind, f.el, f.name);
+  else { k = foeSpriteKey(f.kind, f.el, f.name, f.g); mirror = FOE_SPRITES_FACING_RIGHT.has(k); }
   if (!hasPhoto(k)) { if (f.player && hasPhoto(`sp_pc_${s.g}_quyen`)) k = `sp_pc_${s.g}_quyen`; else return null; }
   return { src: `items/${k}.webp`, beast, mirror, name: f.name };
 }

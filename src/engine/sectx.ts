@@ -1,11 +1,12 @@
 import { worldDefinitions } from '../data/local-items';
 // Chức năng mở rộng của đệ tử tông môn: Nhiệm Vụ Đường, Bái sư, Tỉ thí, Đại bỉ, Bế quan linh mạch.
 import { REALMS, EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, type El } from '../data/core';
-import { SKILLS, TAMPHAP, HERBS, MATS, WEAPON_N, type Weapon } from '../data/items';
+import { SKILLS, TAMPHAP, HERBS, MATS, TECHS, WEAPON_N, type Weapon } from '../data/items';
 import { effRi, thapHidden, tamList, addItem } from './char';
 import { learnSkill } from './api';
 import { CRAFT_N, craftTitle, gainXp, xpNeed, type CraftK } from './craft';
-import { SECTS, SECT_TIER_INFO, RK, rankLabel, isLaoTo, daoTitle, TITLE_RE } from '../data/world';
+import { SECTS, SECT_TIER_INFO, SECT_TOP, RK, rankLabel, headTitle, isLaoTo, daoTitle, TITLE_RE } from '../data/world';
+import { nameKey, uniquePersonalName } from '../core/names';
 import { s } from './state';
 import { cultRate, M } from './char';
 import { passTime, mkNpc, addNpc, mark, master, addProg, cultivateTurn, relChange, TRAITS, missionProg } from './core';
@@ -128,8 +129,10 @@ export function craftJobScene(j: SectJob): Scene {
 // ---------- Bái sư ----------
 // Nội môn trưởng lão: ba phong luyện (đan/khí/phù), Chấp pháp, Truyền công, các phong vũ khí, các phong theo hệ.
 // Ngoại môn trưởng lão: quản đệ tử ngoại môn, tạp dịch và sản nghiệp thế tục của tông.
-export type Role = 'dan' | 'khi' | 'phu' | 'chap' | 'truyen' | 'vk' | 'the' | 'he' | 'ngoai' | 'tap' | 'tuc' | 'duoc' | 'khoang';
+export type Role = 'chu' | 'thaithuong' | 'dan' | 'khi' | 'phu' | 'chap' | 'truyen' | 'vk' | 'the' | 'he' | 'ngoai' | 'tap' | 'tuc' | 'duoc' | 'khoang';
 export const ROLE_GIFT: Record<Role, string> = {
+  chu: 'Chưởng giáo chân truyền (truyền trấn phái công pháp, ngộ tính +1, danh vọng)',
+  thaithuong: 'Thái thượng điểm hóa (ngộ tính +1, căn cốt +1, truyền tuyệt học)',
   dan: 'Dạy luyện đan (+1 bậc tay nghề)', khi: 'Dạy luyện khí (+1 bậc tay nghề)', phu: 'Dạy chế phù (+1 bậc tay nghề)',
   chap: 'Rèn tâm tính (tâm cảnh +1, danh vọng)', truyen: 'Truyền một bộ tâm kinh, ngộ tính +1',
   vk: 'Truyền một môn sát chiêu', the: 'Rèn thân thể (căn cốt +1)', he: 'Truyền một môn thuật pháp cùng hệ',
@@ -139,7 +142,7 @@ export const ROLE_GIFT: Record<Role, string> = {
 export interface Elder {
   key: string; name: string; g: 'm' | 'f'; r: number; st: number; el: El; role: Role;
   seat: string; // "Kiếm Phong phong chủ", "Chấp pháp trưởng lão"...
-  w?: Weapon; inner: boolean; trait: string; minRank: number; maxRank: number; age: number; d: string;
+  w?: Weapon; inner: boolean; top?: boolean; title?: string; trait: string; minRank: number; maxRank: number; age: number; d: string;
 }
 const WEAPONS: [string, Role, string, Weapon][] = [
   ['Kiếm Phong', 'vk', 'kiếm', 'kiem'], ['Đao Phong', 'vk', 'đao', 'dao'], ['Thương Phong', 'vk', 'thương', 'thuong'], ['Quyền Phong', 'the', 'quyền cước luyện thể', 'quyen'],
@@ -153,6 +156,156 @@ const OUTER: [string, Role, string][] = [
   ['Quản sự khoáng mạch', 'khoang', 'Coi phu mỏ và linh khoáng của tông.'],
   ['Quản sự phường thị', 'tuc', 'Thu thuế phường thị dưới núi, xử việc tán tu gây rối.'],
 ];
+export type SchoolKey = 'jie' | 'chan' | 'laozi' | 'buddhist';
+export function schoolKeyOfSect(sectName: string): SchoolKey | null {
+  if (sectName.startsWith('Tiệt Giáo')) return 'jie';
+  if (sectName.startsWith('Xiển Giáo')) return 'chan';
+  if (sectName.startsWith('Đạo Giáo')) return 'laozi';
+  if (sectName.startsWith('Tây Phương Giáo') || sectName.startsWith('Phật Giáo')) return 'buddhist';
+  return null;
+}
+export const SCHOOL_HEAD_TITLE: Record<SchoolKey, string> = {
+  jie: 'Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo',
+  chan: 'Ngọc Thanh Nguyên Thủy Thiên Tôn – Giáo chủ Xiển Giáo',
+  laozi: 'Thái Thanh Đạo Đức Thiên Tôn (còn gọi là Thái Thượng Lão Quân) – Giáo chủ Đạo Giáo',
+  buddhist: 'Tiếp Dẫn Đạo Nhân (A Di Đà Phật) – Đại giáo chủ Tây Phương Giáo',
+};
+
+interface LegacySeat {
+  canonName: string;
+  sur: string;
+  title: string;
+  seat: string;
+  g: 'm' | 'f';
+  el: El;
+  role: Role;
+  inner: boolean;
+  top?: boolean;
+  w?: Weapon;
+  legacyRole?: string;
+  d: string;
+}
+
+const LEGACY_SCHOOL_ROSTER: Record<SchoolKey, LegacySeat[]> = {
+  jie: [
+    { canonName: 'Thông Thiên', sur: 'Thông', title: 'Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo', seat: 'Giáo chủ Tiệt Giáo', g: 'm', el: 'loi', role: 'chu', inner: true, top: true, legacyRole: 'jie:Giáo chủ Tiệt Giáo', d: 'Chưởng quản Bích Du Cung, chấp chưởng Tru Tiên Tứ Kiếm, chủ trương hữu giáo vô loại — vạn tiên lai triều.' },
+    { canonName: 'Đa Bảo', sur: 'Đa', title: 'Đa Bảo Đạo Nhân', seat: 'Thái thượng đại trưởng lão', g: 'm', el: 'tho', role: 'thaithuong', inner: true, top: true, d: 'Đại đệ tử đứng đầu môn hạ Tiệt Giáo, thay mặt Giáo chủ thống lĩnh vạn tiên Bích Du Cung.' },
+    { canonName: 'Kim Linh', sur: 'Kim', title: 'Kim Linh Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'kim', role: 'thaithuong', inner: true, top: true, d: 'Đứng đầu các nữ tiên Tiệt Giáo, đạo hạnh thâm hậu, tinh thông Vạn Tiên Trận và Long Hổ Ngọc Như Ý.' },
+    { canonName: 'Vô Đương', sur: 'Vô', title: 'Vô Đương Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'tho', role: 'thaithuong', inner: true, top: true, d: 'Một trong Tứ Đại Đệ Tử thân truyền của Tiệt Giáo, thấu hiểu thiên cơ, giữ trọn căn cơ truyền thừa.' },
+    { canonName: 'Quy Linh', sur: 'Quy', title: 'Quy Linh Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'thuy', role: 'thaithuong', inner: true, top: true, d: 'Một trong Tứ Đại Đệ Tử thân truyền của Tiệt Giáo, chân thân linh quy vạn cổ, hộ thể vô song.' },
+    { canonName: 'Vân Tiêu', sur: 'Vân', title: 'Vân Tiêu Tiên Tử', seat: 'Tam Tiên Đảo đại chủ · Truyền công trưởng lão', g: 'f', el: 'phong', role: 'truyen', inner: true, legacyRole: 'jie:Chủ trì Cửu Khúc Hoàng Hà Trận', d: 'Đại tỷ Tam Tiêu trên Tam Tiên Đảo, chấp chưởng Hỗn Nguyên Kim Đấu và Cửu Khúc Hoàng Hà Trận.' },
+    { canonName: 'Quỳnh Tiêu', sur: 'Quỳnh', title: 'Quỳnh Tiêu Tiên Tử', seat: 'Tam Tiên Đảo nhị chủ · Kiếm Phong phong chủ', g: 'f', el: 'thuy', role: 'vk', inner: true, w: 'kiem', d: 'Nhị tỷ Tam Tiêu trên Tam Tiên Đảo, nắm giữ Kim Giao Tiễn, kiếm khí sắc bén tuyệt luân.' },
+    { canonName: 'Bích Tiêu', sur: 'Bích', title: 'Bích Tiêu Tiên Tử', seat: 'Tam Tiên Đảo tam chủ · Phù Phong phong chủ', g: 'f', el: 'moc', role: 'phu', inner: true, d: 'Tam muội Tam Tiêu trên Tam Tiên Đảo, tính tình cương liệt, tinh thông trận đồ và phù lục sát phạt.' },
+    { canonName: 'Triệu Công Minh', sur: 'Triệu', title: 'Huyền Đàn Chân Quân', seat: 'La Phù Động chủ · Khí Phong phong chủ', g: 'm', el: 'kim', role: 'khi', inner: true, d: 'Huynh trưởng Tam Tiêu, cưỡi Hắc Hổ, chấp chưởng hai mươi tư hạt Định Hải Thần Châu và Kim Tiên.' },
+    { canonName: 'Văn Trọng', sur: 'Văn', title: 'Cửu Thiên Ứng Nguyên Lôi Thanh Phổ Hóa Thiên Tôn', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'loi', role: 'chap', inner: true, d: 'Đệ tử chân truyền Kim Linh Thánh Mẫu, trán mở thiên nhãn, tổng lĩnh lôi pháp và môn quy Tiệt Giáo.' },
+    { canonName: 'La Tuyên', sur: 'La', title: 'Diệm Trung Tiên', seat: 'Hỏa Long Đảo chủ · Đan Phong phong chủ', g: 'm', el: 'hoa', role: 'dan', inner: true, d: 'Luyện khí sĩ Hỏa Long Đảo, khống chế vạn hỏa luyện đan và thiêu đốt vạn dặm.' },
+    { canonName: 'Lữ Nhạc', sur: 'Lữ', title: 'Ôn Hoàng Hạo Thiên Đại Đế', seat: 'Cửu Long Đảo chủ · Độc Phong phong chủ', g: 'm', el: 'am', role: 'he', inner: true, d: 'Đạo nhân Cửu Long Đảo, tinh thông kỳ độc và dịch khí thần thông.' },
+    { canonName: 'Kim Quang', sur: 'Kim', title: 'Kim Quang Tiên', seat: 'Thể Phong phong chủ', g: 'm', el: 'quang', role: 'the', inner: true, w: 'quyen', d: 'Một trong Tùy Thị Thất Tiên của Tiệt Giáo, kim thân hộ thể cứng hơn vạn năm huyền thiết.' },
+    { canonName: 'Thạch Cơ', sur: 'Thạch', title: 'Thạch Cơ Nương Nương', seat: 'Bạch Cốt Động chủ · Quản sự ngoại môn', g: 'f', el: 'tho', role: 'ngoai', inner: false, d: 'Chủ nhân Khô Lâu Sơn Bạch Cốt Động, nắm giữ Bát Quái Vân Quang Khăn, cai quản đệ tử ngoại môn.' },
+    { canonName: 'Ô Vân', sur: 'Ô', title: 'Ô Vân Tiên', seat: 'Quản sự khoáng mạch', g: 'm', el: 'thuy', role: 'khoang', inner: false, d: 'Đứng đầu Tùy Thị Thất Tiên, nắm giữ Hỗn Nguyên Chùy, trông coi linh mạch và kho khoáng Tiệt Giáo.' },
+    { canonName: 'Cầu Thủ', sur: 'Cầu', title: 'Cầu Thủ Tiên', seat: 'Quản sự dược viên', g: 'm', el: 'moc', role: 'duoc', inner: false, d: 'Một trong Tùy Thị Thất Tiên, trấn giữ linh thảo viên và tử chi tiên thảo trên Kim Ngao Đảo.' },
+  ],
+  chan: [
+    { canonName: 'Nguyên Thủy', sur: 'Nguyên', title: 'Ngọc Thanh Nguyên Thủy Thiên Tôn – Giáo chủ Xiển Giáo', seat: 'Giáo chủ Xiển Giáo', g: 'm', el: 'quang', role: 'chu', inner: true, top: true, legacyRole: 'chan:Giáo chủ Xiển Giáo', d: 'Chưởng quản Ngọc Hư Cung trên đỉnh Côn Lôn, chấp chưởng Bàn Cổ Phiên, thuận thiên ứng mệnh.' },
+    { canonName: 'Nhiên Đăng', sur: 'Nhiên', title: 'Nhiên Đăng Đạo Nhân', seat: 'Phó giáo chủ · Thái thượng đại trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Chủ nhân Linh Thứu Sơn Nguyên Giác Động, phó giáo chủ Xiển Giáo, đạo hạnh uyên thâm.' },
+    { canonName: 'Nam Cực', sur: 'Nam', title: 'Nam Cực Tiên Ông (Nam Cực Trường Sinh Đại Đế)', seat: 'Thái thượng trưởng lão', g: 'm', el: 'moc', role: 'thaithuong', inner: true, top: true, d: 'Đại đệ tử đứng đầu Ngọc Hư Cung, thay mặt Giáo chủ truyền pháp chỉ khắp Côn Lôn.' },
+    { canonName: 'Quảng Thành', sur: 'Quảng', title: 'Quảng Thành Tử', seat: 'Thủ tọa Thập Nhị Kim Tiên · Thái thượng trưởng lão', g: 'm', el: 'kim', role: 'thaithuong', inner: true, top: true, legacyRole: 'chan:Thủ đồ Xiển Giáo', d: 'Đứng đầu Thập Nhị Kim Tiên Xiển Giáo tại Cửu Tiên Sơn Đào Nguyên Động, chấp chưởng Phiên Thiên Ấn.' },
+    { canonName: 'Xích Tinh', sur: 'Xích', title: 'Xích Tinh Tử', seat: 'Thái Hoa Sơn chủ · Truyền công trưởng lão', g: 'm', el: 'hoa', role: 'truyen', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Thái Hoa Sơn Vân Tiêu Động, chấp chưởng Âm Dương Kính.' },
+    { canonName: 'Thái Ất', sur: 'Thái', title: 'Thái Ất Chân Nhân', seat: 'Càn Nguyên Sơn chủ · Khí Phong phong chủ', g: 'm', el: 'hoa', role: 'khi', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Càn Nguyên Sơn Kim Quang Động, tinh thông luyện bảo và Cửu Long Thần Hỏa Tráo.' },
+    { canonName: 'Ngọc Đỉnh', sur: 'Ngọc', title: 'Ngọc Đỉnh Chân Nhân', seat: 'Ngọc Tuyền Sơn chủ · Kiếm Phong phong chủ', g: 'm', el: 'kim', role: 'vk', inner: true, w: 'kiem', d: 'Một trong Thập Nhị Kim Tiên tại Ngọc Tuyền Sơn Kim Hà Động, chấp chưởng Trảm Tiên Kiếm và Bát Cửu Huyền Công.' },
+    { canonName: 'Văn Thù', sur: 'Văn', title: 'Văn Thù Quảng Pháp Thiên Tôn', seat: 'Ngũ Long Sơn chủ · Chấp pháp trưởng lão', g: 'm', el: 'quang', role: 'chap', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Ngũ Long Sơn Vân Tiêu Động, chấp chưởng Độn Long Thung giữ môn quy.' },
+    { canonName: 'Phổ Hiền', sur: 'Phổ', title: 'Phổ Hiền Chân Nhân', seat: 'Cửu Cung Sơn chủ · Phù Phong phong chủ', g: 'm', el: 'tho', role: 'phu', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Cửu Cung Sơn Bạch Hạc Động, tinh thông Ngô Câu Song Kiếm và phù ấn.' },
+    { canonName: 'Từ Hàng', sur: 'Từ', title: 'Từ Hàng Đạo Nhân', seat: 'Phổ Đà Sơn chủ · Đan Phong phong chủ', g: 'f', el: 'thuy', role: 'dan', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Phổ Đà Sơn Lạc Già Động, giữ Thanh Tịnh Lưu Ly Bình cứu độ chúng sinh.' },
+    { canonName: 'Dương Tiễn', sur: 'Dương', title: 'Nhị Lang Hiển Thánh Chân Quân', seat: 'Tam Tiêm Lưỡng Nhận · Chiến Đường đường chủ', g: 'm', el: 'loi', role: 'the', inner: true, w: 'kich', d: 'Hộ pháp đệ nhất thế hệ ba của Xiển Giáo, tu thành Bát Cửu Huyền Công và Thiên Nhãn bất bại.' },
+    { canonName: 'Na Tra', sur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seat: 'Thương Phong phong chủ', g: 'm', el: 'hoa', role: 'vk', inner: true, w: 'thuong', d: 'Linh Châu Tử chuyển thế, liên hoa hóa thân, tay cầm Hỏa Tiêm Thương và Càn Khôn Quyển.' },
+    { canonName: 'Khương Tử Nha', sur: 'Khương', title: 'Phi Hùng Đạo Nhân – Chấp chưởng Phong Thần', seat: 'Chấp chưởng Phong Thần · Quản sự ngoại môn', g: 'm', el: 'tho', role: 'ngoai', inner: false, legacyRole: 'chan:Chấp chưởng Phong Thần', d: 'Chấp chưởng Đả Thần Tiên và Phong Thần Bảng, khảo hạch khí vận và công đức môn nhân.' },
+    { canonName: 'Vân Trung', sur: 'Vân', title: 'Vân Trung Tử', seat: 'Chung Nam Sơn chủ · Quản sự khoáng mạch', g: 'm', el: 'phong', role: 'khoang', inner: false, d: 'Phúc đức chân tiên tại Chung Nam Sơn Ngọc Trụ Động, tinh thông luyện bảo và tầm khoáng.' },
+    { canonName: 'Cụ Lưu', sur: 'Cụ', title: 'Cụ Lưu Tôn', seat: 'Giáp Long Sơn chủ · Quản sự dược viên', g: 'm', el: 'tho', role: 'duoc', inner: false, d: 'Một trong Thập Nhị Kim Tiên tại Giáp Long Sơn Phi Vân Động, nắm giữ Khổn Tiên Thừng và địa hành thuật.' },
+  ],
+  laozi: [
+    { canonName: 'Lão Tử', sur: 'Lý', title: 'Thái Thanh Đạo Đức Thiên Tôn (còn gọi là Thái Thượng Lão Quân) – Giáo chủ Đạo Giáo', seat: 'Giáo chủ Đạo Giáo', g: 'm', el: 'tho', role: 'chu', inner: true, top: true, legacyRole: 'laozi:Giáo chủ Đạo Giáo', d: 'Đứng đầu Tam Thanh tại Huyền Đô Bát Cảnh Cung, chấp chưởng Thái Cực Đồ và Thiên Địa Huyền Hoàng Linh Lung Tháp, vô vi nhi trị.' },
+    { canonName: 'Huyền Đô', sur: 'Huyền', title: 'Huyền Đô Đại Pháp Sư', seat: 'Thái thượng đại trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Đệ tử đích truyền duy nhất của Thái Thượng Lão Quân tại Bát Cảnh Cung, chưởng quản Bát Quái Lô và Thái Thanh đạo thống.' },
+    { canonName: 'Độ Ách', sur: 'Độ', title: 'Độ Ách Chân Nhân', seat: 'Thái thượng trưởng lão', g: 'm', el: 'phong', role: 'thaithuong', inner: true, top: true, d: 'Bậc tiên nhân đắc đạo ở Cửu Đỉnh Thiết Xoa Sơn Bát Bảo Vân Quang Động, nắm giữ Định Phong Châu.' },
+    { canonName: 'Doãn Hỷ', sur: 'Doãn', title: 'Văn Thủy Chân Nhân', seat: 'Truyền công trưởng lão', g: 'm', el: 'quang', role: 'truyen', inner: true, d: 'Người đón khí tím ở Hàm Cốc Quan, được truyền Đạo Đức Kinh năm ngàn chữ, giữ tàng kinh Bát Cảnh Cung.' },
+    { canonName: 'Trang Chu', sur: 'Trang', title: 'Nam Hoa Chân Nhân', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'phong', role: 'chap', inner: true, d: 'Mộng hóa hồ điệp, tiêu dao tự tại, lấy thiên đạo tự nhiên làm môn quy.' },
+    { canonName: 'Liệt Ngự Khấu', sur: 'Liệt', title: 'Xung Hư Chân Nhân', seat: 'Phù Phong phong chủ', g: 'm', el: 'phong', role: 'phu', inner: true, d: 'Ngự phong nhi hành, câu thông thiên địa huyền phù.' },
+    { canonName: 'Kim Giác', sur: 'Kim', title: 'Kim Giác Đạo Nhân', seat: 'Đan Phong phong chủ', g: 'm', el: 'hoa', role: 'dan', inner: true, d: 'Chưởng quản lò Bát Quái luyện Cửu Chuyển Kim Đan, nắm giữ Tử Kim Hồng Hồ Lô.' },
+    { canonName: 'Ngân Giác', sur: 'Ngân', title: 'Ngân Giác Đạo Nhân', seat: 'Khí Phong phong chủ', g: 'm', el: 'kim', role: 'khi', inner: true, d: 'Chưởng quản Lục Đinh Thần Hỏa rèn pháp bảo Bát Cảnh Cung, giữ Thất Tinh Kiếm và Ba Tiêu Phiến.' },
+    { canonName: 'Thanh Ngưu', sur: 'Ngưu', title: 'Độc Giác Huyền Tiên', seat: 'Thể Phong phong chủ', g: 'm', el: 'tho', role: 'the', inner: true, w: 'quyen', d: 'Hộ đạo linh thú của Bát Cảnh Cung, nhục thân bất hoại, nắm giữ Kim Cang Trác khắc chế vạn bảo.' },
+    { canonName: 'Văn Tử', sur: 'Văn', title: 'Thông Huyền Chân Nhân', seat: 'Kiếm Phong phong chủ', g: 'm', el: 'thuy', role: 'vk', inner: true, w: 'kiem', d: 'Tu Thái Thanh kiếm ý lấy nhu thắng cương, kiếm xuất như nước chảy mây trôi.' },
+    { canonName: 'Huyền Minh', sur: 'Huyền', title: 'Thái Thanh Tiên Đồng', seat: 'Quản sự ngoại môn', g: 'm', el: 'moc', role: 'ngoai', inner: false, d: 'Thị giả lâu năm trước cửa Bát Cảnh Cung, coi sóc danh sách và khảo hạch đệ tử nhập môn.' },
+    { canonName: 'Thái Hòa', sur: 'Thái', title: 'Thái Hòa Tiên Tử', seat: 'Quản sự dược viên', g: 'f', el: 'moc', role: 'duoc', inner: false, d: 'Trông coi vườn tiên thảo phục vụ luyện chế Cửu Chuyển Kim Đan.' },
+    { canonName: 'Cương Sơn', sur: 'Cương', title: 'Bát Cảnh Lực Sĩ', seat: 'Quản sự khoáng mạch', g: 'm', el: 'kim', role: 'khoang', inner: false, d: 'Khai thác thần thiết và linh thạch dâng vào lò Bát Quái.' },
+  ],
+  buddhist: [
+    { canonName: 'Tiếp Dẫn', sur: 'Tiếp', title: 'Tiếp Dẫn Đạo Nhân (A Di Đà Phật) – Đại giáo chủ Tây Phương Giáo', seat: 'Đại giáo chủ Tây Phương Giáo', g: 'm', el: 'quang', role: 'chu', inner: true, top: true, legacyRole: 'buddhist:Đại giáo chủ Tây Phương', d: 'Cùng Chuẩn Đề lập nên Tây Phương Giáo, ngự trên Thập Nhị Phẩm Công Đức Kim Liên, tiếp dẫn vạn linh về Cực Lạc.' },
+    { canonName: 'Chuẩn Đề', sur: 'Chuẩn', title: 'Chuẩn Đề Đạo Nhân (Thất Câu Đê Phật Mẫu) – Nhị giáo chủ Tây Phương Giáo', seat: 'Nhị giáo chủ · Thái thượng đại trưởng lão', g: 'm', el: 'moc', role: 'thaithuong', inner: true, top: true, legacyRole: 'buddhist:Nhị giáo chủ Tây Phương', d: 'Cùng Tiếp Dẫn sáng lập Tây Phương Giáo, chấp chưởng Thất Bảo Diệu Thụ và Pháp Thân mười tám tay.' },
+    { canonName: 'Như Lai', sur: 'Thích', title: 'Đa Bảo Như Lai (Thích Ca Mâu Ni Phật)', seat: 'Thái thượng trưởng lão', g: 'm', el: 'quang', role: 'thaithuong', inner: true, top: true, d: 'Chí tôn Đại Lôi Âm Tự trên đỉnh Linh Sơn, chưởng Trung Ương Bà Sa Thế Giới, bàn tay hóa Ngũ Hành Sơn.' },
+    { canonName: 'Nhiên Đăng', sur: 'Nhiên', title: 'Nhiên Đăng Thượng Cổ Phật', seat: 'Thái thượng trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Quá khứ Phật của Tây Phương Linh Sơn, giữ hai mươi tư hạt Định Hải Thần Châu hóa thành Nhị Thập Tứ Chư Thiên.' },
+    { canonName: 'A Dật Đa', sur: 'Di', title: 'Đông Lai Phật Tổ Di Lặc Tôn Phật', seat: 'Truyền công trưởng lão', g: 'm', el: 'tho', role: 'truyen', inner: true, d: 'Vị lai Phật của Tây Phương Giáo, nắm giữ Nhân Chủng Đại và Kim Nhiêu, truyền thụ đại thừa tâm kinh.' },
+    { canonName: 'Dược Sư', sur: 'Dược', title: 'Dược Sư Lưu Ly Quang Vương Phật', seat: 'Tịnh Lưu Ly chủ · Đan Phong phong chủ', g: 'm', el: 'moc', role: 'dan', inner: true, d: 'Giáo chủ thế giới Tịnh Lưu Ly, tinh thông y đạo và luyện chế Phật môn linh đan cứu thế.' },
+    { canonName: 'Kim Kiều Giác', sur: 'Kim', title: 'Đại Nguyện Địa Tạng Vương Bồ Tát', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'am', role: 'chap', inner: true, d: 'Phát đại nguyện "Địa ngục chưa trống, thề không thành Phật", có Đế Thính phân biệt thật giả, giữ giới luật Tây Phương.' },
+    { canonName: 'Diệu Thiện', sur: 'Diệu', title: 'Đại Bi Quan Thế Âm Bồ Tát', seat: 'Phù Phong phong chủ', g: 'f', el: 'thuy', role: 'phu', inner: true, d: 'Tầm thanh cứu khổ, giữ Tịnh Bình Dương Liễu và Lục Tự Đại Minh Chân Ngôn phù ấn.' },
+    { canonName: 'Mạn Thù', sur: 'Mạn', title: 'Đại Trí Văn Thù Sư Lợi Bồ Tát', seat: 'Kiếm Phong phong chủ', g: 'm', el: 'kim', role: 'vk', inner: true, w: 'kiem', d: 'Trí tuệ đệ nhất Phật môn, tay cầm Tuệ Kiếm chém đứt vô minh phiền não.' },
+    { canonName: 'Tam Mạn Đa', sur: 'Tam', title: 'Đại Hạnh Phổ Hiền Bồ Tát', seat: 'Khí Phong phong chủ', g: 'm', el: 'loi', role: 'khi', inner: true, d: 'Hạnh nguyện đệ nhất, cưỡi Bạch Tượng sáu ngà, luyện chế pháp khí hộ đạo.' },
+    { canonName: 'Đắc Đại Thế', sur: 'Đắc', title: 'Đại Thế Chí Bồ Tát', seat: 'Thể Phong phong chủ', g: 'm', el: 'quang', role: 'the', inner: true, w: 'chuong', d: 'Một trong Tây Phương Tam Thánh, bước chân rung chuyển đại thiên thế giới, kim thân lực lượng vô song.' },
+    { canonName: 'Ma Ha Ca Diếp', sur: 'Ca', title: 'Ma Ha Ca Diếp Tôn Giả', seat: 'Quản sự ngoại môn', g: 'm', el: 'tho', role: 'ngoai', inner: false, d: 'Đầu đà đệ nhất, niêm hoa vi tiếu, khảo hạch tâm tính đệ tử ngoại môn.' },
+    { canonName: 'A Nan Đà', sur: 'A', title: 'A Nan Đà Tôn Giả', seat: 'Quản sự dược viên', g: 'm', el: 'phong', role: 'duoc', inner: false, d: 'Đa văn đệ nhất, thuộc nằm lòng vạn quyển kinh thư và trăm ngàn loài linh dược Tây Phương.' },
+    { canonName: 'Di Lặc Nhĩ', sur: 'Di', title: 'Phục Hổ La Hán', seat: 'Quản sự khoáng mạch', g: 'm', el: 'kim', role: 'khoang', inner: false, d: 'Một trong Thập Bát La Hán, hàng phục mãnh hổ, trông coi khoáng mạch và bảo tháp dưới chân Linh Sơn.' },
+  ],
+};
+
+function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: number, rnd: () => number, rp: <T>(a: readonly T[]) => T, chu: number): Elder[] {
+  const w = s.world ?? 0;
+  const seats = LEGACY_SCHOOL_ROSTER[sk];
+  const usedNames = new Set<string>();
+  for (const item of seats) {
+    usedNames.add(nameKey(item.canonName));
+    usedNames.add(nameKey(`${item.sur} ${item.canonName}`));
+    usedNames.add(nameKey(item.title));
+  }
+  const people: { alive?: boolean; world?: number; legacyRole?: string; name?: string }[] = s.flags.tienco?.people ?? [];
+  return seats.map((item, i) => {
+    const r = w === 4
+      ? (item.role === 'chu' ? 8 : item.role === 'thaithuong' ? 7 : item.inner ? 6 : 5)
+      : clamp(item.role === 'chu' || item.role === 'thaithuong' ? chu : item.inner ? chu - 1 : chu - 2, 1, 8);
+    const st = item.role === 'chu' ? 3 : item.role === 'thaithuong' ? (w === 4 ? 3 : 2) : Math.floor(rnd() * 3) + 1;
+    let name: string;
+    if (w === 4) {
+      name = item.canonName;
+    } else {
+      const holder = item.legacyRole ? people.find((p) => p.alive && p.world === w && p.legacyRole === item.legacyRole) : undefined;
+      if (holder?.name && !usedNames.has(nameKey(holder.name))) {
+        name = holder.name;
+      } else {
+        name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`);
+      }
+      usedNames.add(nameKey(name));
+    }
+    const shortTitle = item.title.split(' – ')[0];
+    const d = w === 4 ? item.d : `Hậu nhân họ ${item.sur} kế thừa đạo hiệu ${shortTitle}. ${item.d}`;
+    return {
+      key: `${sct.id}:${era}:legacy:${i}`,
+      name,
+      title: item.title,
+      g: item.g,
+      r,
+      st,
+      el: item.el,
+      role: item.role,
+      seat: item.seat,
+      w: item.w,
+      inner: item.inner,
+      top: item.top,
+      trait: rp(TRAITS),
+      minRank: RK.TAP,
+      maxRank: RK.THAITHUONG,
+      age: Math.round(REALMS[r].life * (item.top ? 0.55 + rnd() * 0.3 : 0.3 + rnd() * 0.45)),
+      d,
+    };
+  });
+}
+
 /** Toàn bộ trưởng lão nhận đồ đệ của tông (đổi mỗi 30 năm). */
 export function elderRoster(): Elder[] {
   const sct = sc();
@@ -160,9 +313,11 @@ export function elderRoster(): Elder[] {
   const rnd = seeded(hashStr(`${sct.id}:elders:${era}`));
   const rp = <T,>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)];
   const chu = SECT_TIER_INFO[sct.tier].chu;
+  const sk = schoolKeyOfSect(sct.n);
+  if (sk) return legacySchoolRoster(sk, sct, era, rnd, rp, chu);
   const used = new Set<string>();
   const out: Elder[] = [];
-  const add = (inner: boolean, seat: string, role: Role, el: El, r: number, d: string, gFix?: 'm' | 'f', w?: Weapon) => {
+  const add = (inner: boolean, seat: string, role: Role, el: El, r: number, d: string, gFix?: 'm' | 'f', w?: Weapon, top?: boolean) => {
     r = clamp(r, 1, 8);
     const g: 'm' | 'f' = gFix ?? (sct.fem ? 'f' : rnd() < 0.5 ? 'm' : 'f');
     let name = '';
@@ -173,8 +328,8 @@ export function elderRoster(): Elder[] {
     }
     used.add(tok);
     out.push({
-      key: `${sct.id}:${era}:${out.length}`, name, g, r, w, st: Math.floor(rnd() * 4), el, role, seat, inner, trait: rp(TRAITS), d,
-      minRank: inner ? RK.NOI : RK.TAP, maxRank: inner ? RK.THAITHUONG : RK.NGOAI,
+      key: `${sct.id}:${era}:${out.length}`, name, g, r, w, st: top ? 3 : Math.floor(rnd() * 4), el, role, seat, inner, top, trait: rp(TRAITS), d,
+      minRank: top ? RK.TAP : inner ? RK.NOI : RK.TAP, maxRank: inner ? RK.THAITHUONG : RK.NGOAI,
       age: Math.round(REALMS[r].life * (0.3 + rnd() * 0.45)),
     });
     // danh xưng theo bậc thế lực (không tiêu thêm số ngẫu nhiên để giữ nguyên danh sách)
@@ -183,6 +338,11 @@ export function elderRoster(): Elder[] {
     else if (isLaoTo(r, e.st, sct.tier) && hashStr(e.key) % 2 === 0) e.name = `${tok} Lão Tổ`;
   };
   const lv = (pLow: number) => chu - 1 - (rnd() < pLow ? 1 : 0); // pLow = xác suất thấp hơn một bậc
+  // ----- chưởng giáo & thái thượng trưởng lão -----
+  const topRealm = Math.max(chu, SECT_TOP[sct.tier] - 1);
+  add(true, headTitle(sct), 'chu', rp(sct.el), chu, `Chưởng quản toàn tông ${sct.n}, nắm giữ trấn phái công pháp. Hiếm khi thu nhận đồ đệ, một khi nhận là lập làm chân truyền.`, undefined, undefined, true);
+  add(true, 'Thái thượng đại trưởng lão', 'thaithuong', rp(sct.el), topRealm, 'Bậc lão tổ bế quan ở hậu sơn, tu vi thâm sâu khó lường, chỉ khi tông môn có đại sự mới xuất quan.', undefined, undefined, true);
+  add(true, 'Thái thượng trưởng lão', 'thaithuong', rp(sct.el), topRealm, 'Bậc tiền bối thoái ẩn hậu sơn, một lòng tham ngộ đại đạo, cực kỳ kén chọn truyền nhân.', undefined, undefined, true);
   // ----- nội môn -----
   add(true, 'Chấp pháp trưởng lão', 'chap', rp(sct.el), chu - 1, 'Giữ môn quy, xử phạt đệ tử phạm lỗi. Nhận đồ đệ rất khắt khe.');
   add(true, 'Truyền công trưởng lão', 'truyen', rp(sct.el), chu - 1, 'Giảng đạo ở Truyền Công Điện, giữ chìa khóa Tàng Kinh Các.');
@@ -253,6 +413,23 @@ function roleGift(e: Elder): string {
     return ` Sư phụ truyền ${WEAPON_N[e.w!].toLowerCase()} pháp ${k.n}.` + learnSkill(k.id).replace(/^ Lĩnh ngộ [^.]*\./, '');
   };
   switch (e.role) {
+    case 'chu': {
+      s.stats.ngo++;
+      s.fame += 25 * tier;
+      const tid = sc().tech;
+      const hasTech = s.tech === tid || s.bag.some((b) => b.id === 'cp:' + tid);
+      if (!hasTech && TECHS[tid]) {
+        addItem('cp:' + tid);
+        return ` Chưởng giáo đích thân truyền thụ trấn phái tuyệt học 《${TECHS[tid].n}》, giảng giải đại đạo (ngộ tính +1, danh vọng đại tăng).`;
+      }
+      return ' Chưởng giáo đích thân khai đàn giảng đạo (ngộ tính +1, danh vọng đại tăng).' + skill(['atk', 'multi', 'dot', 'shield', 'heal'], false);
+    }
+    case 'thaithuong': {
+      s.stats.ngo++;
+      s.stats.can++;
+      s.fame += 15 * tier;
+      return ' Thái thượng trưởng lão lấy chân nguyên tẩy kinh phạt tủy cho ngươi (ngộ tính +1, căn cốt +1).' + skill(['atk', 'multi', 'dot', 'shield', 'heal'], false);
+    }
     case 'vk': return weaponSkill();
     case 'he': return skill(['atk', 'multi', 'dot', 'shield', 'heal'], true);
     case 'dan': case 'phu': case 'khi': {
@@ -322,14 +499,16 @@ export function baiSu(e: Elder): Scene {
     relChange(old, -40);
     extra = ` Tin truyền tới tai ${old.name}, người chỉ cười nhạt — từ nay tình thầy trò coi như đoạn.`;
   }
-  const m = addNpc(mkNpc({ name: e.name, g: e.g, r: e.r, st: e.st, sect: s.sect!.id, tag: 'master', rel: 50, el: e.el, age: e.age, how: `${e.seat} ${sc().n}, nhận ngươi làm đệ tử`, talent: 0.8 }));
+  const fullTitle = e.title ? (e.title.includes(e.seat) ? e.title : `${e.title} · ${e.seat}`) : e.seat;
+  const m = addNpc(mkNpc({ name: e.name, g: e.g, r: e.r, st: e.st, sect: s.sect!.id, tag: 'master', rel: 50, el: e.el, age: e.age, how: `${fullTitle} ${sc().n}, nhận ngươi làm đệ tử`, talent: e.top ? 1.2 : 0.8 }));
   m.trait = e.trait;
   s.flags.masterRole = e.role;
   s.flags.masterPick = m.id;
   if (e.w) s.flags.peakGift = e.key;
   delete refused()[e.key];
   mark(`Bái ${m.name} làm sư phụ`);
-  if (e.inner) { if (s.sect!.rank < RK.KYDANH) s.sect!.rank = Math.max(s.sect!.rank, RK.NOI); }
+  if (e.top) { if (s.sect!.rank < RK.THANTRUYEN) s.sect!.rank = RK.THANTRUYEN; }
+  else if (e.inner) { if (s.sect!.rank < RK.KYDANH) s.sect!.rank = Math.max(s.sect!.rank, RK.NOI); }
   else if (s.sect!.rank < RK.NGOAI) s.sect!.rank = RK.NGOAI;
   const bk = backer();
   if (bk) return { title: 'Bái sư', text: `${m.name} (${REALMS[m.r].n}, ${e.seat}) đỡ ngươi dậy trước khi ngươi kịp quỳ xong — ${bk}, ai dám không nể mặt. "Từ hôm nay, ngươi là đệ tử của ta." Ngươi vẫn dập đầu chín cái.` + roleGift(e) + extra };

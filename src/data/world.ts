@@ -350,7 +350,7 @@ export const RK = { TAP: 0, NGOAI: 1, NOI: 2, TL_NGOAI: 3, KYDANH: 4, THANTRUYEN
 /** Tên chức chủ theo tên tông: Thánh chủ, Cung chủ, Các chủ, Cốc chủ... */
 export function headTitle(sc: Sect): string {
   if (sc.tier === 4 && /Thánh Địa|Thánh Sơn|Thánh Đình/.test(sc.n)) return 'Thánh chủ';
-  const pairs: [RegExp, string][] = [[/Tiên Cung|Thần Cung|Cung$/, 'Cung chủ'], [/Các$/, 'Các chủ'], [/Cốc$/, 'Cốc chủ'], [/Môn$/, 'Môn chủ'], [/Điện$/, 'Điện chủ'], [/Tự$/, 'Phương trượng'], [/Trang$/, 'Trang chủ'], [/Quán$/, 'Quán chủ'], [/Phủ$/, 'Phủ chủ'], [/Sơn$/, 'Sơn chủ'], [/Đình$/, 'Đình chủ'], [/Trại$/, 'Trại chủ'], [/Giáo$/, 'Giáo chủ'], [/Phái$/, 'Chưởng môn']];
+  const pairs: [RegExp, string][] = [[/Giáo(\s|·|$)/, 'Giáo chủ'], [/Tiên Cung|Thần Cung|Cung$/, 'Cung chủ'], [/Các$/, 'Các chủ'], [/Cốc$/, 'Cốc chủ'], [/Môn$/, 'Môn chủ'], [/Điện$/, 'Điện chủ'], [/Tự$/, 'Phương trượng'], [/Trang$/, 'Trang chủ'], [/Quán$/, 'Quán chủ'], [/Phủ$/, 'Phủ chủ'], [/Sơn$/, 'Sơn chủ'], [/Đình$/, 'Đình chủ'], [/Trại$/, 'Trại chủ'], [/Phái$/, 'Chưởng môn']];
   for (const [re, n] of pairs) if (re.test(sc.n)) return n;
   return 'Tông chủ';
 }

@@ -26,9 +26,9 @@ import { PHAPQUYET, pqGrade } from '../data/spirit';
 import { itemArtSvg, gearArtSvg } from './art';
 import { skillIconSvg, techIconSvg, pillIconSvg, tamIconSvg, pqIconSvg, scrollIconSvg, gearIconSvg, matIconSvg } from './icons';
 import { CRAFT_N } from '../engine/craft';
-import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate } from '../engine/sectx';
+import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, schoolKeyOfSect, SCHOOL_HEAD_TITLE, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate } from '../engine/sectx';
 import { master } from '../engine/core';
-import { rankLabel } from '../data/world';
+import { rankLabel, headTitle } from '../data/world';
 import { auctionHeld, nextAuction, stock, buy, wareCat, SHOP_CATS } from '../engine/trade';
 import { gearLabel, SLOTS, WEAPON_N } from '../data/items';
 import { gearLine } from '../engine/items';
@@ -162,7 +162,10 @@ function placeHeader(l: Loc, title?: string) {
 
 function sectDesc(l: Loc) {
   const sc = SECTS[l.sect!];
-  return (sc.leader ? `Người đứng đầu giữ chức ${sc.leader}. ` : '') + (sc.tribe ? (sc.tribe === 'hai' ? 'Chỉ thu nhận hải tộc yêu thú hóa hình. ' : 'Chỉ thu nhận thủy tộc yêu thú hóa hình. ') : '') + `${SECT_TIER[sc.tier]} ${sc.evil ? 'ma đạo' : 'chính đạo'}, tu ${sc.el.map((e) => EL[e].n).join(' · ')}. Tông chủ là cao thủ ${REALMS[SECT_TIER_INFO[sc.tier].chu].n}. Truyền nghề ${CRAFT_LABEL[sc.craft]}, nhận đệ tử dưới ${SECT_TIER_INFO[sc.tier].maxAge} tuổi.`;
+  const sk = schoolKeyOfSect(sc.n);
+  const headTxt = sc.leader ? `Người đứng đầu giữ chức ${sc.leader}. ` : sk ? `Đạo hiệu đứng đầu là ${SCHOOL_HEAD_TITLE[sk]}. ` : '';
+  const chuR = (s.world ?? 0) === 4 && sk ? 8 : SECT_TIER_INFO[sc.tier].chu;
+  return headTxt + (sc.tribe ? (sc.tribe === 'hai' ? 'Chỉ thu nhận hải tộc yêu thú hóa hình. ' : 'Chỉ thu nhận thủy tộc yêu thú hóa hình. ') : '') + `${SECT_TIER[sc.tier]} ${sc.evil ? 'ma đạo' : 'chính đạo'}, tu ${sc.el.map((e) => EL[e].n).join(' · ')}. ${headTitle(sc)} là cao thủ ${REALMS[chuR].n}. Truyền nghề ${CRAFT_LABEL[sc.craft]}, nhận đệ tử dưới ${SECT_TIER_INFO[sc.tier].maxAge} tuổi.`;
 }
 
 // ---------- Bảng nơi đang đứng ----------
@@ -354,15 +357,17 @@ function masterHall() {
     const why = baiBlock(e);
     const mine = isMyMaster(e);
     return {
-      t: `${e.name}${mine ? ' · sư phụ của ngươi' : ''}`,
+      t: `${e.name}${e.title && e.title !== e.name ? ' · ' + e.title : ''}${mine ? ' · sư phụ của ngươi' : ''}`,
       sub: `${e.seat} · ${REALMS[e.r].n} · ${EL[e.el].n} hệ · ${e.g === 'm' ? 'nam' : 'nữ'}, ${e.age} tuổi · ${e.trait}. ${e.d}`,
       note: `${e.w ? `Truyền ${WEAPON_N[e.w].toLowerCase()} pháp chân truyền${e.role === 'the' ? ', căn cốt +1' : ''}` : ROLE_GIFT[e.role]}${mine || why ? '' : backer() ? ' · chắc chắn nhận (nể mặt gia thế)' : ` · cơ hội ${Math.round(baiChance(e) * 100)}%`}`,
       hl: mine, dis: !!why, why: why || undefined, edge: EL[e.el].c,
       fn: after(() => run(() => baiSu(e))),
     };
   };
-  const inner = ros.filter((e) => e.inner).map(card);
-  const outer = ros.filter((e) => !e.inner).map(card);
+  const leaders = ros.filter((e) => e.top).map(card);
+  const inner = ros.filter((e) => e.inner && !e.top).map(card);
+  const outer = ros.filter((e) => !e.inner && !e.top).map(card);
+
   const top: Card[] = [];
   const asg = assignedMaster();
   if (m && !ros.some(isMyMaster)) top.push({ t: `${m.name} · sư phụ của ngươi${asg ? ' (tông phân công)' : ''}`, sub: `${REALMS[m.r].n} · ${EL[m.el].n} hệ · ${m.trait}`, hl: true, dis: true, fn: () => {} });
@@ -371,13 +376,14 @@ function masterHall() {
     ? `${asg.name} chỉ là sư phụ do tông môn phân công khi ngươi nhập môn. Ngươi có thể xin thôi, hoặc bái thẳng một vị khác — không bị phạt, sư phụ cũ cũng không để bụng.`
     : m
     ? `Ngươi đã là đệ tử của ${m.name}. Đổi thầy thì cơ hội thấp hơn, và sư phụ cũ sẽ để bụng.`
-    : 'Trưởng lão nội môn chỉ nhận đệ tử nội môn trở lên; trưởng lão ngoại môn quản ngoại môn, tạp dịch và sản nghiệp thế tục. Linh căn hợp hệ, ngộ tính, mị lực, thân phận cao thì dễ được nhận. Bị từ chối thì một năm sau mới cầu lại được.';
+    : `Ngươi có thể cầu bái ${headTitle(sct)}, Thái thượng trưởng lão hoặc các vị trưởng lão trong môn. Linh căn hợp hệ, ngộ tính, mị lực, thân phận cao thì dễ được nhận.${schoolKeyOfSect(sct.n) && (s.world ?? 0) < 4 ? ' Tại hạ giới, các đạo hiệu và chức vụ truyền thuyết do hậu nhân cùng họ của chư vị đại năng Hồng Hoang kế thừa.' : ''} Bị từ chối thì một năm sau mới cầu lại được.`;
   const bk = backer();
   const body: HTMLElement[] = [h('p', { class: 'pl-desc' }, intro + (bk ? ` Có điều ${bk} — vị trưởng lão nào cũng phải nể mặt, ngươi chọn ai người đó nhận.` : ''))];
   if (top.length) body.push(grid(top));
-  body.push(h('h4', { class: 'cx-h' }, `Trưởng lão nội môn (${inner.length})`), grid(inner, top.length));
-  body.push(h('h4', { class: 'cx-h' }, `Trưởng lão ngoại môn (${outer.length})`), grid(outer, top.length + inner.length));
-  body.push(grid([{ t: 'Trở lại', fn: () => openPlace() }], top.length + inner.length + outer.length));
+  if (leaders.length) body.push(h('h4', { class: 'cx-h' }, `${headTitle(sct)} & Thái thượng trưởng lão (${leaders.length})`), grid(leaders, top.length));
+  body.push(h('h4', { class: 'cx-h' }, `Trưởng lão nội môn (${inner.length})`), grid(inner, top.length + leaders.length));
+  body.push(h('h4', { class: 'cx-h' }, `Trưởng lão ngoại môn (${outer.length})`), grid(outer, top.length + leaders.length + inner.length));
+  body.push(grid([{ t: 'Trở lại', fn: () => openPlace() }], top.length + leaders.length + inner.length + outer.length));
   openModal('Bái sư', body, { wide: true, noClose: true, xBtn: true, sub: sct.n });
   refresh();
 }
@@ -424,7 +430,7 @@ export function openLibrary(kind: 'book' | 'vault', tab = 0) {
     if (k === 'cp') {
       const tc = TECHS[key];
       t = `${isExclusiveTech(key) ? 'Công pháp trấn tông' : 'Công pháp'}: ${tc.n}`;
-      sub += ` · ${tc.el.length ? tc.el.map((e) => EL[e].n).join('·') + ' hệ' : 'vô thuộc tính'} · ${techGrade(tc)} · ${techEffect(tc)}`;
+      sub += ` · ${tc.el.length ? tc.el.map((e) => EL[e].n).join(' · ') + ' hệ' : 'vô thuộc tính'} · ${techGrade(tc)} · ${techEffect(tc)}`;
       icon = itemArtSvg('cp:' + key, 34)!;
       edge = TIER_C[tc.tier];
       if (s.tech === key) note = 'đang tu';

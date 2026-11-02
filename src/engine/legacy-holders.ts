@@ -2,7 +2,17 @@ import { s } from './state';
 import type { TcPerson } from './tienco';
 import { LEGENDARY_TREASURES, treasureManifest } from '../data/treasure-grades';
 import { DECLINING_SCHOOLS, branchId, branchSchool, legacyRoleKey } from '../data/declining-schools';
-import { npcCap, REALMS, splitName } from '../data/core';
+import { npcCap, REALMS, splitName, MALE, FEM } from '../data/core';
+const LEGACY_ROLE_TITLE: Record<string, string> = {
+  'jie:Giáo chủ Tiệt Giáo': 'Thượng Thanh Thông Thiên Giáo Chủ (Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo',
+  'jie:Chủ trì Cửu Khúc Hoàng Hà Trận': 'Vân Tiêu Tiên Tử – Chủ trì Cửu Khúc Hoàng Hà Trận',
+  'chan:Giáo chủ Xiển Giáo': 'Ngọc Thanh Nguyên Thủy Thiên Tôn – Giáo chủ Xiển Giáo',
+  'chan:Thủ đồ Xiển Giáo': 'Quảng Thành Tử – Thủ đồ Xiển Giáo',
+  'chan:Chấp chưởng Phong Thần': 'Phi Hùng Đạo Nhân – Chấp chưởng Phong Thần',
+  'laozi:Giáo chủ Đạo Giáo': 'Thái Thanh Đạo Đức Thiên Tôn (Thái Thượng Lão Quân) – Giáo chủ Đạo Giáo',
+  'buddhist:Đại giáo chủ Tây Phương': 'Tiếp Dẫn Đạo Nhân (A Di Đà Phật) – Đại giáo chủ Tây Phương',
+  'buddhist:Nhị giáo chủ Tây Phương': 'Chuẩn Đề Đạo Nhân – Nhị giáo chủ Tây Phương',
+};
 import { hashStr, seeded } from '../core/util';
 
 /** One living office holder per role/world. Death or ascension transfers replicas, never duplicates originals. */
@@ -32,9 +42,10 @@ export function maintainLegacyHolders(people: TcPerson[]) {
         const r = Math.max(1, npcCap(w) - 5);
         const training = REALMS.slice(1, r).reduce((years, realm) => years + realm.turn * 12 / 1.9, 0);
         const age = Math.ceil(Math.max(20 + training, REALMS[r].life * (0.4 + rnd() * 0.2)));
-        holder = { id, name: `${surname} ${['Thanh Huyền', 'Minh Tâm', 'Ngọc Thanh', 'Tĩnh Vân', 'Huyền Chân'][Math.floor(rnd() * 5)]}`, g, world: w,
+        const pool = g === 'f' ? FEM : MALE;
+        holder = { id, name: `${surname} ${pool[Math.floor(rnd() * pool.length)]}`, g, world: w,
           born: s.year - age, soulBorn: s.year - age, r, st: 1, p: 0, talent: 1.9, el: 'tho', asc: 0, alive: true,
-          sect: DECLINING_SCHOOLS[t.school].name, from: `${t.role} · Chi phái suy tàn`, loc: branchId(w, t.school), legacyRole: key, legacyWorld: w, treasures: [] };
+          sect: DECLINING_SCHOOLS[t.school].name, from: `${LEGACY_ROLE_TITLE[key] || t.role} · Chi phái suy tàn`, loc: branchId(w, t.school), legacyRole: key, legacyWorld: w, treasures: [] };
         // Tiệt giáo accepts nonhuman successors as well as humans.
         if (t.school === 'jie' && rnd() < 0.5) { holder.beast = 'Lôi Giao'; holder.race = 'Yêu tộc'; holder.el = 'loi'; }
         people.push(holder);

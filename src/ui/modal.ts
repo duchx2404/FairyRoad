@@ -37,6 +37,7 @@ export function openModal(title: string, body: HTMLElement | HTMLElement[], opts
   veil.hidden = false;
   onCloseCb = opts.onClose || null;
   modal.scrollTop = 0;
+  modal.scrollLeft = 0;
 }
 
 /** Cảnh bắt buộc chen trước kết quả hành động (vd. định đoạt hôn ước năm mười sáu tuổi); hud đăng ký. */

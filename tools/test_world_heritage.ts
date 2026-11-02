@@ -17,6 +17,7 @@ const { addItem } = await import('../src/engine/char');
 const { talisRec } = await import('../src/engine/craft');
 const { stock, lots } = await import('../src/engine/trade');
 const { sectWares } = await import('../src/engine/sect');
+const { elderRoster, baiBlock } = await import('../src/engine/sectx');
 function check(x: unknown, message: string): asserts x { if (!x) throw new Error(message); }
 newLife({ name: 'Kiểm Chứng', g: 'm', origin: 'mucdong', fate: rollFate(false, 'm'), perks: [] });
 const state = ST.s;
@@ -41,6 +42,16 @@ for (let w = 0; w < 4; w++) {
     const members = people.filter(p => p.world === w && p.alive && p.sect === sc.n);
     check(members.length >= 1 && members.length <= 3, 'very few branch members');
     state.sect = { id: sc.id, rank: 6, contrib: 99999, joined: state.year, lastPay: state.year };
+    const roster = elderRoster();
+    check(roster.some(e => e.role === 'chu' && e.top && baiBlock(e) === null), `can bai su Giao chu in ${sc.n} (world ${w})`);
+    check(roster.some(e => e.role === 'thaithuong' && e.top && baiBlock(e) === null), `can bai su Thai thuong truong lao in ${sc.n} (world ${w})`);
+    if (school === 'jie') {
+      check(roster.some(e => e.title?.includes('Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo') && e.name.startsWith('Thông ') && e.name !== 'Thông Thiên'), 'Tiet Giao head has title and descendant name in lower world');
+      check(roster.some(e => e.title === 'Đa Bảo Đạo Nhân' && e.name.startsWith('Đa ') && e.name !== 'Đa Bảo'), 'Da Bao Dao Nhan title and descendant name in lower world');
+      check(roster.some(e => e.title === 'Vân Tiêu Tiên Tử' && e.name.startsWith('Vân ') && e.name !== 'Vân Tiêu'), 'Van Tieu Tien Tu title and descendant name in lower world');
+      check(roster.some(e => e.title === 'Quỳnh Tiêu Tiên Tử' && e.name.startsWith('Quỳnh ') && e.name !== 'Quỳnh Tiêu'), 'Quynh Tieu Tien Tu title and descendant name in lower world');
+      check(roster.some(e => e.title === 'Bích Tiêu Tiên Tử' && e.name.startsWith('Bích ') && e.name !== 'Bích Tiêu'), 'Bich Tieu Tien Tu title and descendant name in lower world');
+    }
     for (const ware of sectWares()) {
       if (ware.gear) check(ware.gear.g <= 4, 'branch gear cap');
       if (ware.id.startsWith('cp:')) check(TECHS[ware.id.slice(3)].tier <= 4, 'branch book cap');
@@ -77,6 +88,14 @@ for (const t of LEGENDARY_TREASURES) {
   const owners = tcPeople().filter(p => p.world === 4 && p.alive && p.treasures?.includes(t.id));
   check(owners.length === 1 && owners[0].name === t.owner, 'canonical owner of original');
 }
+state.world = WORLD.lv = 4; applyWorld(4);
+for (const [sectName, canonHead] of [['Tiệt Giáo · Bích Du Cung', 'Thông Thiên'], ['Xiển Giáo · Ngọc Hư Cung', 'Nguyên Thủy'], ['Đạo Giáo · Bát Cảnh Cung', 'Lão Tử'], ['Tây Phương Giáo', 'Tiếp Dẫn']] as const) {
+  const sc4 = Object.values(SECTS).find(x => x.n === sectName)!;
+  state.sect = { id: sc4.id, rank: 1, contrib: 0, joined: state.year, lastPay: state.year };
+  const ros4 = elderRoster();
+  check(ros4[0]?.role === 'chu' && ros4[0]?.name === canonHead && baiBlock(ros4[0]) === null, `Hong Hoang ${sectName} uses canonical name ${canonHead} and allows baiSu`);
+}
+state.world = WORLD.lv = 0; applyWorld(0); state.sect = null;
 state.tech = 'cuuchuyen'; state.known = TECHS.cuuchuyen.skills.slice(); state.skills = state.known.slice(0, 4);
 state.bag = [{ id: 'p:daithua', n: 2, g: 1 }];
 state.recipes = ['daithua', 'nietbanphu'];
