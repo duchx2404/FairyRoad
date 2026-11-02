@@ -366,6 +366,9 @@ export const MATS: Record<string, Mat> = {
   yeubiphuchi: { id: 'yeubiphuchi', n: 'Yêu bì phù chỉ', tier: 2, d: 'Giấy phù thuộc từ da yêu thú theo cổ pháp Diệp thị. Chứa được cổ phù tới Tứ phẩm.' },
   linhmocphuchi: { id: 'linhmocphuchi', n: 'Linh mộc phù chỉ', tier: 4, d: 'Giấy phù bào mỏng từ lõi linh mộc ngàn năm. Chứa được cổ phù mọi phẩm.' },
   chusa: { id: 'chusa', n: 'Chu sa', tier: 1, d: 'Mực đỏ vẽ phù.' },
+  thityeu: { id: 'thityeu', n: 'Thịt yêu thú', tier: 1, d: 'Thịt yêu thú tươi chứa linh khí nồng đậm, bồi bổ khí huyết và dùng phối chế linh dược.' },
+  yeucot: { id: 'yeucot', n: 'Yêu thú cốt', tier: 2, d: 'Xương cốt yêu thú cứng cáp chứa yêu lực, vật liệu rèn pháp khí và hộ giáp.' },
+  yeunha: { id: 'yeunha', n: 'Yêu thú nanh vuốt', tier: 2, d: 'Răng nanh, móng vuốt hoặc sừng nhọn của yêu thú hung hãn, sắc bén cứng cáp.' },
 };
 
 // ---------- Phù lục ----------

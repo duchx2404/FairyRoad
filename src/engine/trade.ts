@@ -359,16 +359,21 @@ export function consignGear(uid: string): string {
 
 /** Danh mục cửa tiệm. */
 export const SHOP_CATS = ['Công pháp', 'Pháp khí', 'Đan dược', 'Phù lục', 'Vật liệu luyện đan', 'Vật liệu luyện khí', 'Vật liệu chế phù'] as const;
-const FORGE_MATS = new Set(['huyenthiet', 'tinhkim', 'hanngoc', 'thienthach', 'longlan', 'linhmoc', 'hukhongthach', 'yeudan', 'dayeu', 'longthu']);
+const TALIS_MATS = new Set(['phuchi', 'chusa', 'yeubiphuchi', 'linhmocphuchi']);
+const FORGE_MATS = new Set(['huyenthiet', 'tinhkim', 'hanngoc', 'thienthach', 'longlan', 'linhmoc', 'hukhongthach', 'dayeu', 'longthu', 'yeucot', 'yeunha', 'hondonthach', 'hondonkim', 'hondonngoc', 'hondonhoa']);
 export function wareCat(w: Ware): number {
   const [k, key] = w.id.split(':');
-  if (w.id === 'gear' || w.id === 'x:tuitruvat') return 1;
+  if (w.id === 'gear' || w.id === 'x:tuitruvat' || w.id.startsWith('x:trung_')) return 1;
   if (k === 'cp' || k === 'sk' || k === 'tp' || k === 'fq') return 0;
   if (k === 'p') return 2;
   if (k === 't') return 3;
   if (k === 'h') return 4;
   if (k === 'recipe') return PILLS[key] ? 4 : 6;
   if (k === 'craft') return key === 'alch' ? 4 : key === 'forge' ? 5 : 6;
-  if (k === 'm') return key === 'phuchi' || key === 'chusa' ? 6 : FORGE_MATS.has(key) ? 5 : 4;
+  if (k === 'm') {
+    if (TALIS_MATS.has(key) || key.includes('phuchi')) return 6;
+    if (FORGE_MATS.has(key) || key.startsWith('hondon')) return 5;
+    return 4;
+  }
   return 1;
 }

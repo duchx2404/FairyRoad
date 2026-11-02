@@ -4,7 +4,7 @@ import { localItemId, limitGear } from '../data/local-items';
 import { branchSchool } from '../data/declining-schools';
 import { worldArtCap } from '../data/treasure-grades';
 import { kmSyncSkills } from './kinhmach';
-import { PHAPQUYET } from '../data/spirit';
+import { PHAPQUYET, CHANLINH } from '../data/spirit';
 // Tông môn: khảo hạch, gia nhập, thăng cấp, rời tông, nhiệm vụ, đổi cống hiến.
 import { RMAX, REALMS, EL } from '../data/core';
 import { SECTS, SECT_RANKS, SECT_TIER, SECT_TIER_INFO, RK, rankLabel, promoReq, headTitle } from '../data/world';
@@ -159,8 +159,9 @@ export function sectWares(): SectWare[] {
   for (const x of worldDefinitions('fq')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
   
   // Đan dược: Bảo khố bày đủ các cấp đan dược (đột phá, hỗ trợ, tu luyện, thọ nguyên...)
+  const artCap = Math.min(6, worldArtCap());
   for (const p of worldDefinitions('p')) {
-    if (p.tier <= Math.min(6, sc.tier + 2)) {
+    if (p.tier <= artCap) {
       out.push({ id: 'p:' + p.id, n: p.n, cost: Math.round(8 * Math.pow(3, p.tier - 1) * (p.k === 'break' ? 4 : p.k === 'root' ? 6 : 1)), minRank: p.k === 'break' ? RK.NOI : RK.NGOAI });
     }
   }
@@ -169,7 +170,7 @@ export function sectWares(): SectWare[] {
   const rnd = seeded(hashStr(`vault:${sc.id}:${Math.floor(s.year)}:${s.id}`));
   const sold = ((s.flags.vaultSold ||= {}) as Record<string, number>);
   const yk = `${sc.id}:${Math.floor(s.year)}`;
-  const giaiCap = Math.min(6, sc.tier + 1);
+  const giaiCap = Math.min(6, Math.max(sc.tier + 1, artCap));
 
   // Pháp khí bày đủ 8 ô trang bị
   for (let sIdx = 0; sIdx < 8; sIdx++) {
@@ -186,12 +187,82 @@ export function sectWares(): SectWare[] {
   }
 
   // Phù lục: đầy đủ các loại phù
-  for (const tl of worldDefinitions('t')) if (!tl.co && tl.tier <= giaiCap) out.push({ id: 't:' + tl.id, n: tl.n, cost: Math.round(6 * Math.pow(3.2, tl.tier - 1)), minRank: tl.tier >= 3 ? RK.NOI : RK.NGOAI, g: sc.craft === 'talis' ? 2 : 1 });
+  for (const tl of worldDefinitions('t')) {
+    if (!tl.co && tl.tier <= artCap) {
+      out.push({ id: 't:' + tl.id, n: tl.n, cost: Math.round(6 * Math.pow(3.2, tl.tier - 1)), minRank: tl.tier >= 3 ? RK.NOI : RK.NGOAI, g: sc.craft === 'talis' ? 2 : 1 });
+    }
+  }
 
-  // Linh thảo luyện đan & Nguyên liệu luyện khí, luyện phù: đầy đủ mọi loại
-  const herbCap = Math.min(6, sc.tier + 2);
-  for (const hb of Object.values(HERBS)) if (hb.tier <= herbCap) out.push({ id: 'h:' + hb.id, n: hb.n, cost: Math.round(3 * Math.pow(3, hb.tier - 1)), minRank: hb.tier >= 4 ? RK.NOI : RK.NGOAI });
-  for (const m of Object.values(MATS)) if (m.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'm:' + m.id, n: m.n, cost: Math.round(4 * Math.pow(3, m.tier - 1)), minRank: m.tier >= 4 ? RK.NOI : RK.NGOAI });
+  // Linh thảo luyện đan & Nguyên liệu luyện khí, luyện phù: đầy đủ mọi thứ như thành lớn
+  for (const hb of Object.values(HERBS)) {
+    if (hb.tier <= artCap) {
+      out.push({ id: 'h:' + hb.id, n: hb.n, cost: Math.round(3 * Math.pow(3, hb.tier - 1)), minRank: hb.tier >= 4 ? RK.NOI : RK.NGOAI });
+    }
+  }
+  for (const m of Object.values(MATS)) {
+    if (m.tier <= artCap) {
+      out.push({ id: 'm:' + m.id, n: m.n, cost: Math.round(4 * Math.pow(3, m.tier - 1)), minRank: m.tier >= 4 ? RK.NOI : RK.NGOAI });
+    }
+  }
+
+  // Thỉnh thoảng làm mới ra vật phẩm cao cấp vốn bán ở đấu giá hội lớn:
+  // Nguyên liệu quý hiếm, pháp bảo cực phẩm tinh luyện, linh thú ấu niên phong ấn
+  const auctionRareMats = ['m:hukhongthach', 'm:longlan', 'm:thienthach', 'm:cotuhuyet', 'm:tinhthannhuy', 'm:vannienthanhmoc', 'h:hongmongqua', 'h:cuuchuyenhoa', 'h:kimodienqua', 'h:hoalongqua'];
+  const rareBeasts = ['chuoc', 'hacky', 'loiung', 'kimdieu', 'phonglinhhoa', 'huyenquy'];
+
+  // 1-2 nguyên liệu quý hiếm của Đấu giá hội lớn
+  for (let i = 0; i < 2; i++) {
+    const matKey = auctionRareMats[Math.floor(rnd() * auctionRareMats.length)];
+    const isH = matKey.startsWith('h:');
+    const mk = matKey.slice(2);
+    const itemDef = isH ? HERBS[mk] : MATS[mk];
+    if (itemDef) {
+      out.push({
+        id: matKey,
+        n: `[Trân phẩm Đấu Giá] ${itemDef.n}`,
+        cost: Math.round(itemPrice(matKey) * 1.5),
+        minRank: RK.NOI,
+        source: 'Đấu giá hội',
+      } as any);
+    }
+  }
+
+  // 1 pháp bảo cực phẩm đã tôi luyện (tinh luyện) cao cấp
+  const rareGearKey = `vault_rare_gear_${yk}`;
+  if (!sold[rareGearKey]) {
+    const saved = Math.random;
+    Math.random = rnd;
+    const rLv = clamp(Math.min(RMAX(), effRi() + 1), 1, RMAX());
+    const rG = clamp(Math.round(3 + rnd() * 3), 3, 6);
+    const rareGear = mkGear(rLv, rG, Math.floor(rnd() * 8));
+    rareGear.refined = true;
+    rareGear.n = `${rareGear.n} (Trân phẩm Đấu Giá)`;
+    rareGear.uid = rareGearKey;
+    Math.random = saved;
+    out.push({
+      id: 'gear',
+      n: rareGear.n,
+      cost: Math.round(gearPrice(rareGear) / 5),
+      minRank: RK.THANTRUYEN,
+      gear: rareGear,
+      source: 'Đấu giá hội',
+    } as any);
+  }
+
+  // Linh thú ấu niên thượng phẩm phong ấn trong bảo khố (cho phép đệ tử đổi nuôi hoặc cưỡi)
+  const beastKey = rareBeasts[Math.floor(rnd() * rareBeasts.length)];
+  const beastDef = CHANLINH[beastKey];
+  const beastLotKey = `vault_beast_${yk}`;
+  if (beastDef && !sold[beastLotKey]) {
+    out.push({
+      id: 'x:trung_' + beastKey,
+      n: `[Linh thú ấu niên] ${beastDef.n} (Phong ấn bảo khố)`,
+      cost: Math.round((650 + beastDef.mount * 350) / 2),
+      minRank: RK.NOI,
+      source: 'Đấu giá hội',
+      uid: beastLotKey,
+    } as any);
+  }
 
   // Chiến lợi phẩm thu được từ các lần tông môn chiến chiến thắng
   const sp = (s.flags.sectWarSpoils ||= { wins: 0, books: [], gears: [], mats: [] }) as SectWarSpoils;

@@ -10,9 +10,9 @@ import { skSrcMul } from './char';
 import { kmSkMul } from './kinhmach';
 import { RMAX, npcCap, LAST_WORLD, EL, REALMS, STAGES, elMult, type El } from '../data/core';
 import { BEASTS, LOCS, beastRoot } from '../data/world';
-import { SKILLS, TALIS, PILLS, TECHS, GRADE_MULT, type Skill } from '../data/items';
+import { SKILLS, TALIS, PILLS, TECHS, GRADE_MULT, MATS, mkGear, type Skill } from '../data/items';
 import { s, codexAdd } from './state';
-import { atkOf, defOf, maxHp, has, stat, npcPow, count, removeItem, addItem, root, pqSum, clSum, myLinh, age, maxLife, effRi, stageName } from './char';
+import { atkOf, defOf, maxHp, has, stat, npcPow, count, removeItem, addItem, addGear, itemName, root, pqSum, clSum, myLinh, age, maxLife, effRi, stageName } from './char';
 import { CHANLINH } from '../data/spirit';
 import { activeNpcs, compMul, kitSum, kitSkills } from './party';
 import { findNpc } from './core';
@@ -79,6 +79,8 @@ export interface FightResult {
   foe: Fighter;
   hpLeft: number;
   loot: string[];
+  lootMoney?: number;
+  lootDesc?: string;
   /** Đồng hành tử trận / trọng thương. */
   lost?: string[];
   injured?: string[];
@@ -675,13 +677,125 @@ export class Battle {
     s.hurt = clamp(Math.round((1 - Math.max(0, p.hp) / p.maxHp) * 100), 0, 100);
     if (fled && this.over === 'lose') s.hurt = 95;
     const loot: string[] = [];
+    let lootMoney = 0;
+    let lootDesc = '';
     if (win) {
       s.wins++;
       s.kills++;
       this.log.push(`${f.name} bại trận.`);
-      if (this.spec && !this.opts.noLoot && this.spec.mat) {
-        if (addItem('m:' + this.spec.mat, 1)) loot.push(this.spec.mat);
-        if (this.spec.mat !== 'yeudan' && f.r >= 1 && this.ch(0.35) && addItem('m:yeudan', 1)) loot.push('yeudan');
+      if (!this.opts.noLoot) {
+        const lootParts: string[] = [];
+        const addLootItem = (id: string, qty = 1, g?: number) => {
+          const added = addItem(id, qty, g);
+          if (added > 0) {
+            loot.push(id.replace(/^[a-z]+:/, ''));
+            lootParts.push(`${added > 1 ? `${added}x ` : ''}${itemName(id, g)}`);
+          }
+        };
+
+        const isBeast = f.kind === 'beast' || this.spec?.kind === 'beast';
+        if (isBeast) {
+          // 1. Thịt yêu thú (luôn có)
+          const meatQty = clamp(Math.round(1 + (f.r || 0) * 0.5 + this.rng() * 1.5), 1, 4);
+          addLootItem('m:thityeu', meatQty);
+
+          // 2. Yêu đan: yêu thú có tu vi (r >= 1) rơi yêu đan, cảnh giới càng cao tỷ lệ càng lớn
+          const coreChance = f.r === 0 ? 0.25 : f.r === 1 ? 0.7 : 0.95;
+          if (this.ch(coreChance)) {
+            addLootItem('m:yeudan', 1);
+          }
+
+          // 3. Tùy chủng loại và đặc điểm yêu thú
+          const nLower = f.name.toLowerCase();
+          // Lông thú (các loài có lông, cầm thú, điêu, hồ, sói...)
+          if (/lang|hồ|cáo|điêu|hùng|gấu|chuột|thử|thỏ|tho|điểu|cầm|hạc|ưng|phụng|tước|kê|sư/.test(nLower)) {
+            addLootItem('m:longthu', Math.max(1, Math.round(1 + this.rng() * 2)));
+          }
+          // Da thú (các loài có da giáp, bò, heo, trâu, rắn, mãng, báo, cọp, voi...)
+          if (/lang|trư|heo|mãng|xà|rắn|hùng|tê|ngưu|trâu|bò|sư|hổ|cọp|báo|tượng|dực|quái/.test(nLower)) {
+            addLootItem('m:dayeu', Math.max(1, Math.round(1 + this.rng() * 2)));
+          }
+          // Nanh vuốt / sừng nhọn
+          if (/hổ|báo|lang|sư|hùng|tê|ngưu|điêu|ưng|kê|nanh|giác|vuốt|trảo/.test(nLower) || this.ch(0.5)) {
+            addLootItem('m:yeunha', 1);
+          }
+          // Cốt yêu thú
+          if (f.r >= 2 || this.ch(0.6)) {
+            addLootItem('m:yeucot', 1);
+          }
+          // Độc nang (loài rắn độc, bọ cạp, rết, nhện, sâu bọ, độc trùng...)
+          if (/độc|doc|xà|mãng|ngô công|hạt|chu|nhện|trùng|cóc|thi quỷ/.test(nLower)) {
+            addLootItem('m:docnang', 1);
+          }
+          // Vảy giao long / lân giáp (giao long, long, lân, mãng xà, rùa...)
+          if (/giao|long|lân|mãng|hải|ngư|quy|rùa|kỳ lân/.test(nLower)) {
+            addLootItem('m:longlan', 1);
+          }
+          // Huyết mạch tinh hoa / Tổ thú tinh huyết đối với dị thú thượng cổ
+          if (f.r >= 4 && (/thánh thú|dị thú|tổ thú|thần thú|vương|thượng cổ|bạch trạch|phệ hồn|kỳ lân/.test(nLower) || this.ch(0.2))) {
+            addLootItem(f.r >= 6 ? 'm:cotuhuyet' : 'm:tuduehuyet', 1);
+          }
+          // Vật liệu chỉ định riêng của loài
+          if (this.spec?.mat && !loot.includes(this.spec.mat)) {
+            addLootItem('m:' + this.spec.mat, 1);
+          }
+
+          lootDesc = `Thu hoạch từ xác ${f.name}: ${lootParts.join(', ')}`;
+          this.log.push(lootDesc);
+          addLog(lootDesc, 'good');
+        } else {
+          // Tu sĩ / Kẻ địch dạng người / Ma tu / Boss
+          // 1. Linh thạch trong Trữ Vật Giới Chỉ
+          const baseMoneyByR = [20, 60, 250, 1200, 5000, 20000, 80000, 300000, 1000000];
+          const bm = baseMoneyByR[Math.min(baseMoneyByR.length - 1, f.r || 0)];
+          lootMoney = Math.max(10, Math.round(bm * (0.8 + this.rng() * 0.6) * (f.kind === 'boss' ? 2 : 1)));
+          s.money += lootMoney;
+
+          // 2. Đan dược trong túi trữ vật của đối phương
+          const poolPills = worldDefinitions('p').filter((p) => p.tier <= Math.min(6, (f.r || 1) + 1));
+          if (poolPills.length && this.ch(0.85)) {
+            const p = poolPills[Math.floor(this.rng() * poolPills.length)];
+            addLootItem('p:' + p.id, 1, 1);
+          }
+
+          // 3. Phù lục trong túi trữ vật
+          const poolTalis = worldDefinitions('t').filter((t) => !t.co && t.tier <= Math.min(6, (f.r || 1) + 1));
+          if (poolTalis.length && this.ch(0.75)) {
+            const t = poolTalis[Math.floor(this.rng() * poolTalis.length)];
+            addLootItem('t:' + t.id, 1 + (this.ch(0.4) ? 1 : 0), 1);
+          }
+
+          // 4. Linh thảo hoặc khoáng thạch mang theo
+          if (this.ch(0.7)) {
+            const poolMats = Object.values(MATS).filter((m) => m.tier <= Math.min(6, (f.r || 1) + 1) && m.id !== 'phuchi' && m.id !== 'chusa');
+            if (poolMats.length) {
+              const m = poolMats[Math.floor(this.rng() * poolMats.length)];
+              addLootItem('m:' + m.id, 1 + (this.ch(0.3) ? 1 : 0));
+            }
+          }
+
+          // 5. Trang bị / Pháp bảo rơi ra
+          if (this.ch(f.kind === 'boss' ? 0.9 : 0.35)) {
+            const g = clamp(Math.round(1 + this.rng() * Math.min(5, f.r + 1)), 1, 6);
+            const gr = mkGear(Math.min(RMAX(), f.r), g);
+            if (addGear(gr)) {
+              lootParts.push(`pháp bảo ${gr.n}`);
+            }
+          }
+
+          // 6. Tàn bản công pháp / bí kíp kỹ pháp (khi tu vi cao hoặc boss)
+          if ((f.r >= 3 || f.kind === 'boss') && this.ch(0.25)) {
+            const poolSks = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.min(6, Math.ceil(((f.r || 1) + 1) / 2)) && !s.known.includes(k.id));
+            if (poolSks.length) {
+              const sk = poolSks[Math.floor(this.rng() * poolSks.length)];
+              addLootItem('sk:' + sk.id, 1);
+            }
+          }
+
+          lootDesc = `Tịch thu Trữ Vật Giới Chỉ của ${f.name}: được ${lootMoney} linh thạch${lootParts.length ? `, ` + lootParts.join(', ') : ''}`;
+          this.log.push(lootDesc);
+          addLog(lootDesc, 'good');
+        }
       }
     } else if (!fled && !died) this.log.push(`${p.name} bại trận.`);
     if (died) addLog(`Tử trận dưới tay ${f.name}.`, 'bad');
@@ -697,7 +811,7 @@ export class Battle {
       else if (al.fled) { injured.push(n.name); n.injuredUntil = s.year + 1; addLog(`${n.name} trọng thương, cần một năm dưỡng thương.`); }
     }
     if (!died && age() >= maxLife()) killPlayer('Thiêu đốt thọ nguyên đến cạn kiệt, vũ hóa giữa trận');
-    const res: FightResult = { win, fled, died, rounds: this.round, log: this.log, foe: f, hpLeft: Math.max(0, p.hp) / p.maxHp, loot, lost, injured };
+    const res: FightResult = { win, fled, died, rounds: this.round, log: this.log, foe: f, hpLeft: Math.max(0, p.hp) / p.maxHp, loot, lootMoney, lootDesc, lost, injured };
     fightLogs.push(res);
     return res;
   }
@@ -731,7 +845,10 @@ export function fight(spec: FoeSpec | Fighter, opts: FightOpts = {}): FightResul
 export function fightSummary(r: FightResult) {
   const tail = `${r.lost?.length ? ` Tử trận: ${r.lost.join(', ')}.` : ''}${r.injured?.length ? ` Trọng thương: ${r.injured.join(', ')}.` : ''}`;
   if (r.died) return `Ngươi gục xuống trước ${r.foe.name}.`;
-  if (r.win) return `Ngươi đánh bại ${r.foe.name} sau ${r.rounds} hiệp, còn ${Math.round(r.hpLeft * 100)}% khí huyết.${tail}`;
+  if (r.win) {
+    const spoils = r.lootDesc ? `\n${r.lootDesc}.` : '';
+    return `Ngươi đánh bại ${r.foe.name} sau ${r.rounds} hiệp, còn ${Math.round(r.hpLeft * 100)}% khí huyết.${tail}${spoils}`;
+  }
   if (r.fled) return `Ngươi thoát khỏi ${r.foe.name}, còn ${Math.round(r.hpLeft * 100)}% khí huyết.${tail}`;
   return `Ngươi thua ${r.foe.name}, may mà giữ được mạng.${tail}`;
 }

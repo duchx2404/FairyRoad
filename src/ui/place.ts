@@ -478,7 +478,20 @@ export function openLibrary(kind: 'book' | 'vault', tab = 0) {
     }
   } else {
     const wares = kind === 'book' ? sectWares().filter((w) => w.id.startsWith(PFX[tab])) : allW.filter((w) => vcat(w) === tab);
-    const giaiOf = (id: string, gr?: { g: number }) => { if (gr) return Math.max(1, gr.g); const [k, key] = id.split(':'); if (k === 'h') return Math.max(1, HERBS[key].tier - 1); if (k === 'm') return Math.max(1, Math.min(6, MATS[key].tier - 1)); if (k === 't') return TALIS[key].tier; return k === 'cp' ? TECHS[key].tier : k === 'sk' ? SKILLS[key].tier : k === 'tp' ? TAMPHAP[key].tier : k === 'fq' ? PHAPQUYET[key].tier : PILLS[key].tier <= 1 ? 1 : Math.min(6, PILLS[key].tier - 1); };
+    const giaiOf = (id: string, gr?: { g: number }) => {
+      if (gr) return Math.max(1, gr.g);
+      const [k, key] = id.split(':');
+      if (k === 'h') return Math.max(1, (HERBS[key]?.tier ?? 2) - 1);
+      if (k === 'm') return Math.max(1, Math.min(6, (MATS[key]?.tier ?? 2) - 1));
+      if (k === 't') return TALIS[key]?.tier ?? 1;
+      if (k === 'cp') return TECHS[key]?.tier ?? 1;
+      if (k === 'sk') return SKILLS[key]?.tier ?? 1;
+      if (k === 'tp') return TAMPHAP[key]?.tier ?? 1;
+      if (k === 'fq') return PHAPQUYET[key]?.tier ?? 1;
+      if (k === 'p') return PILLS[key]?.tier ? (PILLS[key].tier <= 1 ? 1 : Math.min(6, PILLS[key].tier - 1)) : 1;
+      if (k === 'x') return 3;
+      return 1;
+    };
     // xếp: trấn tông trước, rồi theo giai, theo giá
     const ord = (id: string) => (id.startsWith('cp:') && isExclusiveTech(id.slice(3)) ? 0 : 1);
     wares.sort((a, b) => giaiOf(a.id, a.gear) - giaiOf(b.id, b.gear) || ord(a.id) - ord(b.id) || a.cost - b.cost);
@@ -549,6 +562,7 @@ export function openLibrary(kind: 'book' | 'vault', tab = 0) {
             if (!addGear({ ...w.gear, uid: Math.random().toString(36).slice(2, 10), refined: true })) return toastMsg('Túi đầy.');
             markVaultSold(w.gear.uid);
           } else if (!addItem(w.id, 1, k === 'p' ? 1 : k === 't' ? w.g ?? 1 : undefined)) return toastMsg('Túi đầy.');
+          if ((w as any).uid) markVaultSold((w as any).uid);
           s.sect!.contrib -= w.cost;
           toastMsg(`Đổi được ${w.gear ? w.gear.n : itemName(w.id, w.g)}.`);
           refresh();
