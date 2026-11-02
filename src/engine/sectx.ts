@@ -174,9 +174,11 @@ export const SCHOOL_HEAD_TITLE: Record<SchoolKey, string> = {
   buddhist: 'Tiếp Dẫn Đạo Nhân (A Di Đà Phật) – Đại giáo chủ Tây Phương Giáo',
 };
 
+export const NOBLE_SURS = ['Diệp', 'Sở', 'Tiêu', 'Lâm', 'Tần', 'Triệu', 'Vũ', 'Thẩm', 'Cố', 'Bạch', 'Hàn', 'Lục', 'Tô', 'Phương', 'Khương', 'Lý', 'Vương', 'Trần'] as const;
+
 interface LegacySeat {
   canonName: string;
-  sur: string;
+  realSur?: string;
   title: string;
   seat: string;
   g: 'm' | 'f';
@@ -191,70 +193,70 @@ interface LegacySeat {
 
 const LEGACY_SCHOOL_ROSTER: Record<SchoolKey, LegacySeat[]> = {
   jie: [
-    { canonName: 'Thông Thiên', sur: 'Thông', title: 'Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo', seat: 'Giáo chủ Tiệt Giáo', g: 'm', el: 'loi', role: 'chu', inner: true, top: true, legacyRole: 'jie:Giáo chủ Tiệt Giáo', d: 'Chưởng quản Bích Du Cung, chấp chưởng Tru Tiên Tứ Kiếm, chủ trương hữu giáo vô loại — vạn tiên lai triều.' },
-    { canonName: 'Đa Bảo', sur: 'Đa', title: 'Đa Bảo Đạo Nhân', seat: 'Thái thượng đại trưởng lão', g: 'm', el: 'tho', role: 'thaithuong', inner: true, top: true, d: 'Đại đệ tử đứng đầu môn hạ Tiệt Giáo, thay mặt Giáo chủ thống lĩnh vạn tiên Bích Du Cung.' },
-    { canonName: 'Kim Linh', sur: 'Kim', title: 'Kim Linh Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'kim', role: 'thaithuong', inner: true, top: true, d: 'Đứng đầu các nữ tiên Tiệt Giáo, đạo hạnh thâm hậu, tinh thông Vạn Tiên Trận và Long Hổ Ngọc Như Ý.' },
-    { canonName: 'Vô Đương', sur: 'Vô', title: 'Vô Đương Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'tho', role: 'thaithuong', inner: true, top: true, d: 'Một trong Tứ Đại Đệ Tử thân truyền của Tiệt Giáo, thấu hiểu thiên cơ, giữ trọn căn cơ truyền thừa.' },
-    { canonName: 'Quy Linh', sur: 'Quy', title: 'Quy Linh Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'thuy', role: 'thaithuong', inner: true, top: true, d: 'Một trong Tứ Đại Đệ Tử thân truyền của Tiệt Giáo, chân thân linh quy vạn cổ, hộ thể vô song.' },
-    { canonName: 'Vân Tiêu', sur: 'Vân', title: 'Vân Tiêu Tiên Tử', seat: 'Tam Tiên Đảo đại chủ · Truyền công trưởng lão', g: 'f', el: 'phong', role: 'truyen', inner: true, legacyRole: 'jie:Chủ trì Cửu Khúc Hoàng Hà Trận', d: 'Đại tỷ Tam Tiêu trên Tam Tiên Đảo, chấp chưởng Hỗn Nguyên Kim Đấu và Cửu Khúc Hoàng Hà Trận.' },
-    { canonName: 'Quỳnh Tiêu', sur: 'Quỳnh', title: 'Quỳnh Tiêu Tiên Tử', seat: 'Tam Tiên Đảo nhị chủ · Kiếm Phong phong chủ', g: 'f', el: 'thuy', role: 'vk', inner: true, w: 'kiem', d: 'Nhị tỷ Tam Tiêu trên Tam Tiên Đảo, nắm giữ Kim Giao Tiễn, kiếm khí sắc bén tuyệt luân.' },
-    { canonName: 'Bích Tiêu', sur: 'Bích', title: 'Bích Tiêu Tiên Tử', seat: 'Tam Tiên Đảo tam chủ · Phù Phong phong chủ', g: 'f', el: 'moc', role: 'phu', inner: true, d: 'Tam muội Tam Tiêu trên Tam Tiên Đảo, tính tình cương liệt, tinh thông trận đồ và phù lục sát phạt.' },
-    { canonName: 'Triệu Công Minh', sur: 'Triệu', title: 'Huyền Đàn Chân Quân', seat: 'La Phù Động chủ · Khí Phong phong chủ', g: 'm', el: 'kim', role: 'khi', inner: true, d: 'Huynh trưởng Tam Tiêu, cưỡi Hắc Hổ, chấp chưởng hai mươi tư hạt Định Hải Thần Châu và Kim Tiên.' },
-    { canonName: 'Văn Trọng', sur: 'Văn', title: 'Cửu Thiên Ứng Nguyên Lôi Thanh Phổ Hóa Thiên Tôn', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'loi', role: 'chap', inner: true, d: 'Đệ tử chân truyền Kim Linh Thánh Mẫu, trán mở thiên nhãn, tổng lĩnh lôi pháp và môn quy Tiệt Giáo.' },
-    { canonName: 'La Tuyên', sur: 'La', title: 'Diệm Trung Tiên', seat: 'Hỏa Long Đảo chủ · Đan Phong phong chủ', g: 'm', el: 'hoa', role: 'dan', inner: true, d: 'Luyện khí sĩ Hỏa Long Đảo, khống chế vạn hỏa luyện đan và thiêu đốt vạn dặm.' },
-    { canonName: 'Lữ Nhạc', sur: 'Lữ', title: 'Ôn Hoàng Hạo Thiên Đại Đế', seat: 'Cửu Long Đảo chủ · Độc Phong phong chủ', g: 'm', el: 'am', role: 'he', inner: true, d: 'Đạo nhân Cửu Long Đảo, tinh thông kỳ độc và dịch khí thần thông.' },
-    { canonName: 'Kim Quang', sur: 'Kim', title: 'Kim Quang Tiên', seat: 'Thể Phong phong chủ', g: 'm', el: 'quang', role: 'the', inner: true, w: 'quyen', d: 'Một trong Tùy Thị Thất Tiên của Tiệt Giáo, kim thân hộ thể cứng hơn vạn năm huyền thiết.' },
-    { canonName: 'Thạch Cơ', sur: 'Thạch', title: 'Thạch Cơ Nương Nương', seat: 'Bạch Cốt Động chủ · Quản sự ngoại môn', g: 'f', el: 'tho', role: 'ngoai', inner: false, d: 'Chủ nhân Khô Lâu Sơn Bạch Cốt Động, nắm giữ Bát Quái Vân Quang Khăn, cai quản đệ tử ngoại môn.' },
-    { canonName: 'Ô Vân', sur: 'Ô', title: 'Ô Vân Tiên', seat: 'Quản sự khoáng mạch', g: 'm', el: 'thuy', role: 'khoang', inner: false, d: 'Đứng đầu Tùy Thị Thất Tiên, nắm giữ Hỗn Nguyên Chùy, trông coi linh mạch và kho khoáng Tiệt Giáo.' },
-    { canonName: 'Cầu Thủ', sur: 'Cầu', title: 'Cầu Thủ Tiên', seat: 'Quản sự dược viên', g: 'm', el: 'moc', role: 'duoc', inner: false, d: 'Một trong Tùy Thị Thất Tiên, trấn giữ linh thảo viên và tử chi tiên thảo trên Kim Ngao Đảo.' },
+    { canonName: 'Thông Thiên Giáo Chủ', title: 'Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo', seat: 'Giáo chủ Tiệt Giáo', g: 'm', el: 'loi', role: 'chu', inner: true, top: true, legacyRole: 'jie:Giáo chủ Tiệt Giáo', d: 'Chưởng quản Bích Du Cung, chấp chưởng Tru Tiên Tứ Kiếm, chủ trương hữu giáo vô loại — vạn tiên lai triều.' },
+    { canonName: 'Đa Bảo Đạo Nhân', title: 'Đa Bảo Đạo Nhân', seat: 'Thái thượng đại trưởng lão', g: 'm', el: 'tho', role: 'thaithuong', inner: true, top: true, d: 'Đại đệ tử đứng đầu môn hạ Tiệt Giáo, thay mặt Giáo chủ thống lĩnh vạn tiên Bích Du Cung.' },
+    { canonName: 'Kim Linh Thánh Mẫu', title: 'Kim Linh Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'kim', role: 'thaithuong', inner: true, top: true, d: 'Đứng đầu các nữ tiên Tiệt Giáo, đạo hạnh thâm hậu, tinh thông Vạn Tiên Trận và Long Hổ Ngọc Như Ý.' },
+    { canonName: 'Vô Đương Thánh Mẫu', title: 'Vô Đương Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'tho', role: 'thaithuong', inner: true, top: true, d: 'Một trong Tứ Đại Đệ Tử thân truyền của Tiệt Giáo, thấu hiểu thiên cơ, giữ trọn căn cơ truyền thừa.' },
+    { canonName: 'Quy Linh Thánh Mẫu', title: 'Quy Linh Thánh Mẫu', seat: 'Thái thượng trưởng lão', g: 'f', el: 'thuy', role: 'thaithuong', inner: true, top: true, d: 'Một trong Tứ Đại Đệ Tử thân truyền của Tiệt Giáo, chân thân linh quy vạn cổ, hộ thể vô song.' },
+    { canonName: 'Vân Tiêu Tiên Tử', title: 'Vân Tiêu Tiên Tử', seat: 'Tam Tiên Đảo đại chủ · Truyền công trưởng lão', g: 'f', el: 'phong', role: 'truyen', inner: true, legacyRole: 'jie:Chủ trì Cửu Khúc Hoàng Hà Trận', d: 'Đại tỷ Tam Tiêu trên Tam Tiên Đảo, chấp chưởng Hỗn Nguyên Kim Đấu và Cửu Khúc Hoàng Hà Trận.' },
+    { canonName: 'Quỳnh Tiêu Tiên Tử', title: 'Quỳnh Tiêu Tiên Tử', seat: 'Tam Tiên Đảo nhị chủ · Kiếm Phong phong chủ', g: 'f', el: 'thuy', role: 'vk', inner: true, w: 'kiem', d: 'Nhị tỷ Tam Tiêu trên Tam Tiên Đảo, nắm giữ Kim Giao Tiễn, kiếm khí sắc bén tuyệt luân.' },
+    { canonName: 'Bích Tiêu Tiên Tử', title: 'Bích Tiêu Tiên Tử', seat: 'Tam Tiên Đảo tam chủ · Phù Phong phong chủ', g: 'f', el: 'moc', role: 'phu', inner: true, d: 'Tam muội Tam Tiêu trên Tam Tiên Đảo, tính tình cương liệt, tinh thông trận đồ và phù lục sát phạt.' },
+    { canonName: 'Triệu Công Minh', realSur: 'Triệu', title: 'Huyền Đàn Chân Quân', seat: 'La Phù Động chủ · Khí Phong phong chủ', g: 'm', el: 'kim', role: 'khi', inner: true, d: 'Huynh trưởng Tam Tiêu, cưỡi Hắc Hổ, chấp chưởng hai mươi tư hạt Định Hải Thần Châu và Kim Tiên.' },
+    { canonName: 'Văn Trọng', realSur: 'Văn', title: 'Cửu Thiên Ứng Nguyên Lôi Thanh Phổ Hóa Thiên Tôn', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'loi', role: 'chap', inner: true, d: 'Đệ tử chân truyền Kim Linh Thánh Mẫu, trán mở thiên nhãn, tổng lĩnh lôi pháp và môn quy Tiệt Giáo.' },
+    { canonName: 'La Tuyên', realSur: 'La', title: 'Diệm Trung Tiên', seat: 'Hỏa Long Đảo chủ · Đan Phong phong chủ', g: 'm', el: 'hoa', role: 'dan', inner: true, d: 'Luyện khí sĩ Hỏa Long Đảo, khống chế vạn hỏa luyện đan và thiêu đốt vạn dặm.' },
+    { canonName: 'Lữ Nhạc', realSur: 'Lữ', title: 'Ôn Hoàng Hạo Thiên Đại Đế', seat: 'Cửu Long Đảo chủ · Độc Phong phong chủ', g: 'm', el: 'am', role: 'he', inner: true, d: 'Đạo nhân Cửu Long Đảo, tinh thông kỳ độc và dịch khí thần thông.' },
+    { canonName: 'Kim Quang Tiên', title: 'Kim Quang Tiên', seat: 'Thể Phong phong chủ', g: 'm', el: 'quang', role: 'the', inner: true, w: 'quyen', d: 'Một trong Tùy Thị Thất Tiên của Tiệt Giáo, kim thân hộ thể cứng hơn vạn năm huyền thiết.' },
+    { canonName: 'Thạch Cơ Nương Nương', title: 'Thạch Cơ Nương Nương', seat: 'Bạch Cốt Động chủ · Quản sự ngoại môn', g: 'f', el: 'tho', role: 'ngoai', inner: false, d: 'Chủ nhân Khô Lâu Sơn Bạch Cốt Động, nắm giữ Bát Quái Vân Quang Khăn, cai quản đệ tử ngoại môn.' },
+    { canonName: 'Ô Vân Tiên', title: 'Ô Vân Tiên', seat: 'Quản sự khoáng mạch', g: 'm', el: 'thuy', role: 'khoang', inner: false, d: 'Đứng đầu Tùy Thị Thất Tiên, nắm giữ Hỗn Nguyên Chùy, trông coi linh mạch và kho khoáng Tiệt Giáo.' },
+    { canonName: 'Cầu Thủ Tiên', title: 'Cầu Thủ Tiên', seat: 'Quản sự dược viên', g: 'm', el: 'moc', role: 'duoc', inner: false, d: 'Một trong Tùy Thị Thất Tiên, trấn giữ linh thảo viên và tử chi tiên thảo trên Kim Ngao Đảo.' },
   ],
   chan: [
-    { canonName: 'Nguyên Thủy', sur: 'Nguyên', title: 'Ngọc Thanh Nguyên Thủy Thiên Tôn – Giáo chủ Xiển Giáo', seat: 'Giáo chủ Xiển Giáo', g: 'm', el: 'quang', role: 'chu', inner: true, top: true, legacyRole: 'chan:Giáo chủ Xiển Giáo', d: 'Chưởng quản Ngọc Hư Cung trên đỉnh Côn Lôn, chấp chưởng Bàn Cổ Phiên, thuận thiên ứng mệnh.' },
-    { canonName: 'Nhiên Đăng', sur: 'Nhiên', title: 'Nhiên Đăng Đạo Nhân', seat: 'Phó giáo chủ · Thái thượng đại trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Chủ nhân Linh Thứu Sơn Nguyên Giác Động, phó giáo chủ Xiển Giáo, đạo hạnh uyên thâm.' },
-    { canonName: 'Nam Cực', sur: 'Nam', title: 'Nam Cực Tiên Ông (Nam Cực Trường Sinh Đại Đế)', seat: 'Thái thượng trưởng lão', g: 'm', el: 'moc', role: 'thaithuong', inner: true, top: true, d: 'Đại đệ tử đứng đầu Ngọc Hư Cung, thay mặt Giáo chủ truyền pháp chỉ khắp Côn Lôn.' },
-    { canonName: 'Quảng Thành', sur: 'Quảng', title: 'Quảng Thành Tử', seat: 'Thủ tọa Thập Nhị Kim Tiên · Thái thượng trưởng lão', g: 'm', el: 'kim', role: 'thaithuong', inner: true, top: true, legacyRole: 'chan:Thủ đồ Xiển Giáo', d: 'Đứng đầu Thập Nhị Kim Tiên Xiển Giáo tại Cửu Tiên Sơn Đào Nguyên Động, chấp chưởng Phiên Thiên Ấn.' },
-    { canonName: 'Xích Tinh', sur: 'Xích', title: 'Xích Tinh Tử', seat: 'Thái Hoa Sơn chủ · Truyền công trưởng lão', g: 'm', el: 'hoa', role: 'truyen', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Thái Hoa Sơn Vân Tiêu Động, chấp chưởng Âm Dương Kính.' },
-    { canonName: 'Thái Ất', sur: 'Thái', title: 'Thái Ất Chân Nhân', seat: 'Càn Nguyên Sơn chủ · Khí Phong phong chủ', g: 'm', el: 'hoa', role: 'khi', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Càn Nguyên Sơn Kim Quang Động, tinh thông luyện bảo và Cửu Long Thần Hỏa Tráo.' },
-    { canonName: 'Ngọc Đỉnh', sur: 'Ngọc', title: 'Ngọc Đỉnh Chân Nhân', seat: 'Ngọc Tuyền Sơn chủ · Kiếm Phong phong chủ', g: 'm', el: 'kim', role: 'vk', inner: true, w: 'kiem', d: 'Một trong Thập Nhị Kim Tiên tại Ngọc Tuyền Sơn Kim Hà Động, chấp chưởng Trảm Tiên Kiếm và Bát Cửu Huyền Công.' },
-    { canonName: 'Văn Thù', sur: 'Văn', title: 'Văn Thù Quảng Pháp Thiên Tôn', seat: 'Ngũ Long Sơn chủ · Chấp pháp trưởng lão', g: 'm', el: 'quang', role: 'chap', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Ngũ Long Sơn Vân Tiêu Động, chấp chưởng Độn Long Thung giữ môn quy.' },
-    { canonName: 'Phổ Hiền', sur: 'Phổ', title: 'Phổ Hiền Chân Nhân', seat: 'Cửu Cung Sơn chủ · Phù Phong phong chủ', g: 'm', el: 'tho', role: 'phu', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Cửu Cung Sơn Bạch Hạc Động, tinh thông Ngô Câu Song Kiếm và phù ấn.' },
-    { canonName: 'Từ Hàng', sur: 'Từ', title: 'Từ Hàng Đạo Nhân', seat: 'Phổ Đà Sơn chủ · Đan Phong phong chủ', g: 'f', el: 'thuy', role: 'dan', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Phổ Đà Sơn Lạc Già Động, giữ Thanh Tịnh Lưu Ly Bình cứu độ chúng sinh.' },
-    { canonName: 'Dương Tiễn', sur: 'Dương', title: 'Nhị Lang Hiển Thánh Chân Quân', seat: 'Tam Tiêm Lưỡng Nhận · Chiến Đường đường chủ', g: 'm', el: 'loi', role: 'the', inner: true, w: 'kich', d: 'Hộ pháp đệ nhất thế hệ ba của Xiển Giáo, tu thành Bát Cửu Huyền Công và Thiên Nhãn bất bại.' },
-    { canonName: 'Na Tra', sur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seat: 'Thương Phong phong chủ', g: 'm', el: 'hoa', role: 'vk', inner: true, w: 'thuong', d: 'Linh Châu Tử chuyển thế, liên hoa hóa thân, tay cầm Hỏa Tiêm Thương và Càn Khôn Quyển.' },
-    { canonName: 'Khương Tử Nha', sur: 'Khương', title: 'Phi Hùng Đạo Nhân – Chấp chưởng Phong Thần', seat: 'Chấp chưởng Phong Thần · Quản sự ngoại môn', g: 'm', el: 'tho', role: 'ngoai', inner: false, legacyRole: 'chan:Chấp chưởng Phong Thần', d: 'Chấp chưởng Đả Thần Tiên và Phong Thần Bảng, khảo hạch khí vận và công đức môn nhân.' },
-    { canonName: 'Vân Trung', sur: 'Vân', title: 'Vân Trung Tử', seat: 'Chung Nam Sơn chủ · Quản sự khoáng mạch', g: 'm', el: 'phong', role: 'khoang', inner: false, d: 'Phúc đức chân tiên tại Chung Nam Sơn Ngọc Trụ Động, tinh thông luyện bảo và tầm khoáng.' },
-    { canonName: 'Cụ Lưu', sur: 'Cụ', title: 'Cụ Lưu Tôn', seat: 'Giáp Long Sơn chủ · Quản sự dược viên', g: 'm', el: 'tho', role: 'duoc', inner: false, d: 'Một trong Thập Nhị Kim Tiên tại Giáp Long Sơn Phi Vân Động, nắm giữ Khổn Tiên Thừng và địa hành thuật.' },
+    { canonName: 'Nguyên Thủy Thiên Tôn', title: 'Ngọc Thanh Nguyên Thủy Thiên Tôn – Giáo chủ Xiển Giáo', seat: 'Giáo chủ Xiển Giáo', g: 'm', el: 'quang', role: 'chu', inner: true, top: true, legacyRole: 'chan:Giáo chủ Xiển Giáo', d: 'Chưởng quản Ngọc Hư Cung trên đỉnh Côn Lôn, chấp chưởng Bàn Cổ Phiên, thuận thiên ứng mệnh.' },
+    { canonName: 'Nhiên Đăng Đạo Nhân', title: 'Nhiên Đăng Đạo Nhân', seat: 'Phó giáo chủ · Thái thượng đại trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Chủ nhân Linh Thứu Sơn Nguyên Giác Động, phó giáo chủ Xiển Giáo, đạo hạnh uyên thâm.' },
+    { canonName: 'Nam Cực Tiên Ông', title: 'Nam Cực Tiên Ông (Nam Cực Trường Sinh Đại Đế)', seat: 'Thái thượng trưởng lão', g: 'm', el: 'moc', role: 'thaithuong', inner: true, top: true, d: 'Đại đệ tử đứng đầu Ngọc Hư Cung, thay mặt Giáo chủ truyền pháp chỉ khắp Côn Lôn.' },
+    { canonName: 'Quảng Thành Tử', title: 'Quảng Thành Tử', seat: 'Thủ tọa Thập Nhị Kim Tiên · Thái thượng trưởng lão', g: 'm', el: 'kim', role: 'thaithuong', inner: true, top: true, legacyRole: 'chan:Thủ đồ Xiển Giáo', d: 'Đứng đầu Thập Nhị Kim Tiên Xiển Giáo tại Cửu Tiên Sơn Đào Nguyên Động, chấp chưởng Phiên Thiên Ấn.' },
+    { canonName: 'Xích Tinh Tử', title: 'Xích Tinh Tử', seat: 'Thái Hoa Sơn chủ · Truyền công trưởng lão', g: 'm', el: 'hoa', role: 'truyen', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Thái Hoa Sơn Vân Tiêu Động, chấp chưởng Âm Dương Kính.' },
+    { canonName: 'Thái Ất Chân Nhân', title: 'Thái Ất Chân Nhân', seat: 'Càn Nguyên Sơn chủ · Khí Phong phong chủ', g: 'm', el: 'hoa', role: 'khi', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Càn Nguyên Sơn Kim Quang Động, tinh thông luyện bảo và Cửu Long Thần Hỏa Tráo.' },
+    { canonName: 'Ngọc Đỉnh Chân Nhân', title: 'Ngọc Đỉnh Chân Nhân', seat: 'Ngọc Tuyền Sơn chủ · Kiếm Phong phong chủ', g: 'm', el: 'kim', role: 'vk', inner: true, w: 'kiem', d: 'Một trong Thập Nhị Kim Tiên tại Ngọc Tuyền Sơn Kim Hà Động, chấp chưởng Trảm Tiên Kiếm và Bát Cửu Huyền Công.' },
+    { canonName: 'Văn Thù Quảng Pháp Thiên Tôn', title: 'Văn Thù Quảng Pháp Thiên Tôn', seat: 'Ngũ Long Sơn chủ · Chấp pháp trưởng lão', g: 'm', el: 'quang', role: 'chap', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Ngũ Long Sơn Vân Tiêu Động, chấp chưởng Độn Long Thung giữ môn quy.' },
+    { canonName: 'Phổ Hiền Chân Nhân', title: 'Phổ Hiền Chân Nhân', seat: 'Cửu Cung Sơn chủ · Phù Phong phong chủ', g: 'm', el: 'tho', role: 'phu', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Cửu Cung Sơn Bạch Hạc Động, tinh thông Ngô Câu Song Kiếm và phù ấn.' },
+    { canonName: 'Từ Hàng Đạo Nhân', title: 'Từ Hàng Đạo Nhân', seat: 'Phổ Đà Sơn chủ · Đan Phong phong chủ', g: 'f', el: 'thuy', role: 'dan', inner: true, d: 'Một trong Thập Nhị Kim Tiên tại Phổ Đà Sơn Lạc Già Động, giữ Thanh Tịnh Lưu Ly Bình cứu độ chúng sinh.' },
+    { canonName: 'Dương Tiễn', realSur: 'Dương', title: 'Nhị Lang Hiển Thánh Chân Quân', seat: 'Tam Tiêm Lưỡng Nhận · Chiến Đường đường chủ', g: 'm', el: 'loi', role: 'the', inner: true, w: 'kich', d: 'Hộ pháp đệ nhất thế hệ ba của Xiển Giáo, tu thành Bát Cửu Huyền Công và Thiên Nhãn bất bại.' },
+    { canonName: 'Lý Na Tra', realSur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seat: 'Thương Phong phong chủ', g: 'm', el: 'hoa', role: 'vk', inner: true, w: 'thuong', d: 'Linh Châu Tử chuyển thế, liên hoa hóa thân, tay cầm Hỏa Tiêm Thương và Càn Khôn Quyển.' },
+    { canonName: 'Khương Tử Nha', realSur: 'Khương', title: 'Phi Hùng Đạo Nhân – Chấp chưởng Phong Thần', seat: 'Chấp chưởng Phong Thần · Quản sự ngoại môn', g: 'm', el: 'tho', role: 'ngoai', inner: false, legacyRole: 'chan:Chấp chưởng Phong Thần', d: 'Chấp chưởng Đả Thần Tiên và Phong Thần Bảng, khảo hạch khí vận và công đức môn nhân.' },
+    { canonName: 'Vân Trung Tử', title: 'Vân Trung Tử', seat: 'Chung Nam Sơn chủ · Quản sự khoáng mạch', g: 'm', el: 'phong', role: 'khoang', inner: false, d: 'Phúc đức chân tiên tại Chung Nam Sơn Ngọc Trụ Động, tinh thông luyện bảo và tầm khoáng.' },
+    { canonName: 'Cụ Lưu Tôn', title: 'Cụ Lưu Tôn', seat: 'Giáp Long Sơn chủ · Quản sự dược viên', g: 'm', el: 'tho', role: 'duoc', inner: false, d: 'Một trong Thập Nhị Kim Tiên tại Giáp Long Sơn Phi Vân Động, nắm giữ Khổn Tiên Thừng và địa hành thuật.' },
   ],
   laozi: [
-    { canonName: 'Lão Tử', sur: 'Lý', title: 'Thái Thanh Đạo Đức Thiên Tôn (còn gọi là Thái Thượng Lão Quân) – Giáo chủ Đạo Giáo', seat: 'Giáo chủ Đạo Giáo', g: 'm', el: 'tho', role: 'chu', inner: true, top: true, legacyRole: 'laozi:Giáo chủ Đạo Giáo', d: 'Đứng đầu Tam Thanh tại Huyền Đô Bát Cảnh Cung, chấp chưởng Thái Cực Đồ và Thiên Địa Huyền Hoàng Linh Lung Tháp, vô vi nhi trị.' },
-    { canonName: 'Huyền Đô', sur: 'Huyền', title: 'Huyền Đô Đại Pháp Sư', seat: 'Thái thượng đại trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Đệ tử đích truyền duy nhất của Thái Thượng Lão Quân tại Bát Cảnh Cung, chưởng quản Bát Quái Lô và Thái Thanh đạo thống.' },
-    { canonName: 'Độ Ách', sur: 'Độ', title: 'Độ Ách Chân Nhân', seat: 'Thái thượng trưởng lão', g: 'm', el: 'phong', role: 'thaithuong', inner: true, top: true, d: 'Bậc tiên nhân đắc đạo ở Cửu Đỉnh Thiết Xoa Sơn Bát Bảo Vân Quang Động, nắm giữ Định Phong Châu.' },
-    { canonName: 'Doãn Hỷ', sur: 'Doãn', title: 'Văn Thủy Chân Nhân', seat: 'Truyền công trưởng lão', g: 'm', el: 'quang', role: 'truyen', inner: true, d: 'Người đón khí tím ở Hàm Cốc Quan, được truyền Đạo Đức Kinh năm ngàn chữ, giữ tàng kinh Bát Cảnh Cung.' },
-    { canonName: 'Trang Chu', sur: 'Trang', title: 'Nam Hoa Chân Nhân', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'phong', role: 'chap', inner: true, d: 'Mộng hóa hồ điệp, tiêu dao tự tại, lấy thiên đạo tự nhiên làm môn quy.' },
-    { canonName: 'Liệt Ngự Khấu', sur: 'Liệt', title: 'Xung Hư Chân Nhân', seat: 'Phù Phong phong chủ', g: 'm', el: 'phong', role: 'phu', inner: true, d: 'Ngự phong nhi hành, câu thông thiên địa huyền phù.' },
-    { canonName: 'Kim Giác', sur: 'Kim', title: 'Kim Giác Đạo Nhân', seat: 'Đan Phong phong chủ', g: 'm', el: 'hoa', role: 'dan', inner: true, d: 'Chưởng quản lò Bát Quái luyện Cửu Chuyển Kim Đan, nắm giữ Tử Kim Hồng Hồ Lô.' },
-    { canonName: 'Ngân Giác', sur: 'Ngân', title: 'Ngân Giác Đạo Nhân', seat: 'Khí Phong phong chủ', g: 'm', el: 'kim', role: 'khi', inner: true, d: 'Chưởng quản Lục Đinh Thần Hỏa rèn pháp bảo Bát Cảnh Cung, giữ Thất Tinh Kiếm và Ba Tiêu Phiến.' },
-    { canonName: 'Thanh Ngưu', sur: 'Ngưu', title: 'Độc Giác Huyền Tiên', seat: 'Thể Phong phong chủ', g: 'm', el: 'tho', role: 'the', inner: true, w: 'quyen', d: 'Hộ đạo linh thú của Bát Cảnh Cung, nhục thân bất hoại, nắm giữ Kim Cang Trác khắc chế vạn bảo.' },
-    { canonName: 'Văn Tử', sur: 'Văn', title: 'Thông Huyền Chân Nhân', seat: 'Kiếm Phong phong chủ', g: 'm', el: 'thuy', role: 'vk', inner: true, w: 'kiem', d: 'Tu Thái Thanh kiếm ý lấy nhu thắng cương, kiếm xuất như nước chảy mây trôi.' },
-    { canonName: 'Huyền Minh', sur: 'Huyền', title: 'Thái Thanh Tiên Đồng', seat: 'Quản sự ngoại môn', g: 'm', el: 'moc', role: 'ngoai', inner: false, d: 'Thị giả lâu năm trước cửa Bát Cảnh Cung, coi sóc danh sách và khảo hạch đệ tử nhập môn.' },
-    { canonName: 'Thái Hòa', sur: 'Thái', title: 'Thái Hòa Tiên Tử', seat: 'Quản sự dược viên', g: 'f', el: 'moc', role: 'duoc', inner: false, d: 'Trông coi vườn tiên thảo phục vụ luyện chế Cửu Chuyển Kim Đan.' },
-    { canonName: 'Cương Sơn', sur: 'Cương', title: 'Bát Cảnh Lực Sĩ', seat: 'Quản sự khoáng mạch', g: 'm', el: 'kim', role: 'khoang', inner: false, d: 'Khai thác thần thiết và linh thạch dâng vào lò Bát Quái.' },
+    { canonName: 'Lão Tử', realSur: 'Lý', title: 'Thái Thanh Đạo Đức Thiên Tôn (còn gọi là Thái Thượng Lão Quân) – Giáo chủ Đạo Giáo', seat: 'Giáo chủ Đạo Giáo', g: 'm', el: 'tho', role: 'chu', inner: true, top: true, legacyRole: 'laozi:Giáo chủ Đạo Giáo', d: 'Đứng đầu Tam Thanh tại Huyền Đô Bát Cảnh Cung, thế danh Lý Nhĩ (Lão Đam), chấp chưởng Thái Cực Đồ và Thiên Địa Huyền Hoàng Linh Lung Tháp, vô vi nhi trị.' },
+    { canonName: 'Huyền Đô Đại Pháp Sư', title: 'Huyền Đô Đại Pháp Sư', seat: 'Thái thượng đại trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Đệ tử đích truyền duy nhất của Thái Thượng Lão Quân tại Bát Cảnh Cung, chưởng quản Bát Quái Lô và Thái Thanh đạo thống.' },
+    { canonName: 'Độ Ách Chân Nhân', title: 'Độ Ách Chân Nhân', seat: 'Thái thượng trưởng lão', g: 'm', el: 'phong', role: 'thaithuong', inner: true, top: true, d: 'Bậc tiên nhân đắc đạo ở Cửu Đỉnh Thiết Xoa Sơn Bát Bảo Vân Quang Động, nắm giữ Định Phong Châu.' },
+    { canonName: 'Doãn Hỷ', realSur: 'Doãn', title: 'Văn Thủy Chân Nhân', seat: 'Truyền công trưởng lão', g: 'm', el: 'quang', role: 'truyen', inner: true, d: 'Người đón khí tím ở Hàm Cốc Quan, được truyền Đạo Đức Kinh năm ngàn chữ, giữ tàng kinh Bát Cảnh Cung.' },
+    { canonName: 'Trang Chu', realSur: 'Trang', title: 'Nam Hoa Chân Nhân', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'phong', role: 'chap', inner: true, d: 'Mộng hóa hồ điệp, tiêu dao tự tại, lấy thiên đạo tự nhiên làm môn quy.' },
+    { canonName: 'Liệt Ngự Khấu', realSur: 'Liệt', title: 'Xung Hư Chân Nhân', seat: 'Phù Phong phong chủ', g: 'm', el: 'phong', role: 'phu', inner: true, d: 'Ngự phong nhi hành, câu thông thiên địa huyền phù.' },
+    { canonName: 'Kim Giác Đạo Nhân', title: 'Kim Giác Đạo Nhân', seat: 'Đan Phong phong chủ', g: 'm', el: 'hoa', role: 'dan', inner: true, d: 'Chưởng quản lò Bát Quái luyện Cửu Chuyển Kim Đan, nắm giữ Tử Kim Hồng Hồ Lô.' },
+    { canonName: 'Ngân Giác Đạo Nhân', title: 'Ngân Giác Đạo Nhân', seat: 'Khí Phong phong chủ', g: 'm', el: 'kim', role: 'khi', inner: true, d: 'Chưởng quản Lục Đinh Thần Hỏa rèn pháp bảo Bát Cảnh Cung, giữ Thất Tinh Kiếm và Ba Tiêu Phiến.' },
+    { canonName: 'Độc Giác Huyền Tiên', title: 'Độc Giác Huyền Tiên', seat: 'Thể Phong phong chủ', g: 'm', el: 'tho', role: 'the', inner: true, w: 'quyen', d: 'Hộ đạo linh thú của Bát Cảnh Cung (Thanh Ngưu tinh), nhục thân bất hoại, nắm giữ Kim Cang Trác khắc chế vạn bảo.' },
+    { canonName: 'Văn Tử', realSur: 'Văn', title: 'Thông Huyền Chân Nhân', seat: 'Kiếm Phong phong chủ', g: 'm', el: 'thuy', role: 'vk', inner: true, w: 'kiem', d: 'Tu Thái Thanh kiếm ý lấy nhu thắng cương, kiếm xuất như nước chảy mây trôi.' },
+    { canonName: 'Thái Thanh Tiên Đồng', title: 'Thái Thanh Tiên Đồng', seat: 'Quản sự ngoại môn', g: 'm', el: 'moc', role: 'ngoai', inner: false, d: 'Thị giả lâu năm trước cửa Bát Cảnh Cung, coi sóc danh sách và khảo hạch đệ tử nhập môn.' },
+    { canonName: 'Thái Hòa Tiên Tử', title: 'Thái Hòa Tiên Tử', seat: 'Quản sự dược viên', g: 'f', el: 'moc', role: 'duoc', inner: false, d: 'Trông coi vườn tiên thảo phục vụ luyện chế Cửu Chuyển Kim Đan.' },
+    { canonName: 'Bát Cảnh Lực Sĩ', title: 'Bát Cảnh Lực Sĩ', seat: 'Quản sự khoáng mạch', g: 'm', el: 'kim', role: 'khoang', inner: false, d: 'Khai thác thần thiết và linh thạch dâng vào lò Bát Quái.' },
   ],
   buddhist: [
-    { canonName: 'Tiếp Dẫn', sur: 'Tiếp', title: 'Tiếp Dẫn Đạo Nhân (A Di Đà Phật) – Đại giáo chủ Tây Phương Giáo', seat: 'Đại giáo chủ Tây Phương Giáo', g: 'm', el: 'quang', role: 'chu', inner: true, top: true, legacyRole: 'buddhist:Đại giáo chủ Tây Phương', d: 'Cùng Chuẩn Đề lập nên Tây Phương Giáo, ngự trên Thập Nhị Phẩm Công Đức Kim Liên, tiếp dẫn vạn linh về Cực Lạc.' },
-    { canonName: 'Chuẩn Đề', sur: 'Chuẩn', title: 'Chuẩn Đề Đạo Nhân (Thất Câu Đê Phật Mẫu) – Nhị giáo chủ Tây Phương Giáo', seat: 'Nhị giáo chủ · Thái thượng đại trưởng lão', g: 'm', el: 'moc', role: 'thaithuong', inner: true, top: true, legacyRole: 'buddhist:Nhị giáo chủ Tây Phương', d: 'Cùng Tiếp Dẫn sáng lập Tây Phương Giáo, chấp chưởng Thất Bảo Diệu Thụ và Pháp Thân mười tám tay.' },
-    { canonName: 'Như Lai', sur: 'Thích', title: 'Đa Bảo Như Lai (Thích Ca Mâu Ni Phật)', seat: 'Thái thượng trưởng lão', g: 'm', el: 'quang', role: 'thaithuong', inner: true, top: true, d: 'Chí tôn Đại Lôi Âm Tự trên đỉnh Linh Sơn, chưởng Trung Ương Bà Sa Thế Giới, bàn tay hóa Ngũ Hành Sơn.' },
-    { canonName: 'Nhiên Đăng', sur: 'Nhiên', title: 'Nhiên Đăng Thượng Cổ Phật', seat: 'Thái thượng trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Quá khứ Phật của Tây Phương Linh Sơn, giữ hai mươi tư hạt Định Hải Thần Châu hóa thành Nhị Thập Tứ Chư Thiên.' },
-    { canonName: 'A Dật Đa', sur: 'Di', title: 'Đông Lai Phật Tổ Di Lặc Tôn Phật', seat: 'Truyền công trưởng lão', g: 'm', el: 'tho', role: 'truyen', inner: true, d: 'Vị lai Phật của Tây Phương Giáo, nắm giữ Nhân Chủng Đại và Kim Nhiêu, truyền thụ đại thừa tâm kinh.' },
-    { canonName: 'Dược Sư', sur: 'Dược', title: 'Dược Sư Lưu Ly Quang Vương Phật', seat: 'Tịnh Lưu Ly chủ · Đan Phong phong chủ', g: 'm', el: 'moc', role: 'dan', inner: true, d: 'Giáo chủ thế giới Tịnh Lưu Ly, tinh thông y đạo và luyện chế Phật môn linh đan cứu thế.' },
-    { canonName: 'Kim Kiều Giác', sur: 'Kim', title: 'Đại Nguyện Địa Tạng Vương Bồ Tát', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'am', role: 'chap', inner: true, d: 'Phát đại nguyện "Địa ngục chưa trống, thề không thành Phật", có Đế Thính phân biệt thật giả, giữ giới luật Tây Phương.' },
-    { canonName: 'Diệu Thiện', sur: 'Diệu', title: 'Đại Bi Quan Thế Âm Bồ Tát', seat: 'Phù Phong phong chủ', g: 'f', el: 'thuy', role: 'phu', inner: true, d: 'Tầm thanh cứu khổ, giữ Tịnh Bình Dương Liễu và Lục Tự Đại Minh Chân Ngôn phù ấn.' },
-    { canonName: 'Mạn Thù', sur: 'Mạn', title: 'Đại Trí Văn Thù Sư Lợi Bồ Tát', seat: 'Kiếm Phong phong chủ', g: 'm', el: 'kim', role: 'vk', inner: true, w: 'kiem', d: 'Trí tuệ đệ nhất Phật môn, tay cầm Tuệ Kiếm chém đứt vô minh phiền não.' },
-    { canonName: 'Tam Mạn Đa', sur: 'Tam', title: 'Đại Hạnh Phổ Hiền Bồ Tát', seat: 'Khí Phong phong chủ', g: 'm', el: 'loi', role: 'khi', inner: true, d: 'Hạnh nguyện đệ nhất, cưỡi Bạch Tượng sáu ngà, luyện chế pháp khí hộ đạo.' },
-    { canonName: 'Đắc Đại Thế', sur: 'Đắc', title: 'Đại Thế Chí Bồ Tát', seat: 'Thể Phong phong chủ', g: 'm', el: 'quang', role: 'the', inner: true, w: 'chuong', d: 'Một trong Tây Phương Tam Thánh, bước chân rung chuyển đại thiên thế giới, kim thân lực lượng vô song.' },
-    { canonName: 'Ma Ha Ca Diếp', sur: 'Ca', title: 'Ma Ha Ca Diếp Tôn Giả', seat: 'Quản sự ngoại môn', g: 'm', el: 'tho', role: 'ngoai', inner: false, d: 'Đầu đà đệ nhất, niêm hoa vi tiếu, khảo hạch tâm tính đệ tử ngoại môn.' },
-    { canonName: 'A Nan Đà', sur: 'A', title: 'A Nan Đà Tôn Giả', seat: 'Quản sự dược viên', g: 'm', el: 'phong', role: 'duoc', inner: false, d: 'Đa văn đệ nhất, thuộc nằm lòng vạn quyển kinh thư và trăm ngàn loài linh dược Tây Phương.' },
-    { canonName: 'Di Lặc Nhĩ', sur: 'Di', title: 'Phục Hổ La Hán', seat: 'Quản sự khoáng mạch', g: 'm', el: 'kim', role: 'khoang', inner: false, d: 'Một trong Thập Bát La Hán, hàng phục mãnh hổ, trông coi khoáng mạch và bảo tháp dưới chân Linh Sơn.' },
+    { canonName: 'Tiếp Dẫn Đạo Nhân', title: 'Tiếp Dẫn Đạo Nhân (A Di Đà Phật) – Đại giáo chủ Tây Phương Giáo', seat: 'Đại giáo chủ Tây Phương Giáo', g: 'm', el: 'quang', role: 'chu', inner: true, top: true, legacyRole: 'buddhist:Đại giáo chủ Tây Phương', d: 'Cùng Chuẩn Đề lập nên Tây Phương Giáo, ngự trên Thập Nhị Phẩm Công Đức Kim Liên, tiếp dẫn vạn linh về Cực Lạc.' },
+    { canonName: 'Chuẩn Đề Đạo Nhân', title: 'Chuẩn Đề Đạo Nhân (Thất Câu Đê Phật Mẫu) – Nhị giáo chủ Tây Phương Giáo', seat: 'Nhị giáo chủ · Thái thượng đại trưởng lão', g: 'm', el: 'moc', role: 'thaithuong', inner: true, top: true, legacyRole: 'buddhist:Nhị giáo chủ Tây Phương', d: 'Cùng Tiếp Dẫn sáng lập Tây Phương Giáo, chấp chưởng Thất Bảo Diệu Thụ và Pháp Thân mười tám tay.' },
+    { canonName: 'Thích Ca Mâu Ni Phật', realSur: 'Thích', title: 'Đa Bảo Như Lai (Thích Ca Mâu Ni Phật)', seat: 'Thái thượng trưởng lão', g: 'm', el: 'quang', role: 'thaithuong', inner: true, top: true, d: 'Chí tôn Đại Lôi Âm Tự trên đỉnh Linh Sơn, thế danh Tất Đạt Đa Cồ Đàm, chưởng Trung Ương Bà Sa Thế Giới, bàn tay hóa Ngũ Hành Sơn.' },
+    { canonName: 'Nhiên Đăng Thượng Cổ Phật', title: 'Nhiên Đăng Thượng Cổ Phật', seat: 'Thái thượng trưởng lão', g: 'm', el: 'hoa', role: 'thaithuong', inner: true, top: true, d: 'Quá khứ Phật của Tây Phương Linh Sơn, giữ hai mươi tư hạt Định Hải Thần Châu hóa thành Nhị Thập Tứ Chư Thiên.' },
+    { canonName: 'Di Lặc Tôn Phật', title: 'Đông Lai Phật Tổ Di Lặc Tôn Phật', seat: 'Truyền công trưởng lão', g: 'm', el: 'tho', role: 'truyen', inner: true, d: 'Vị lai Phật của Tây Phương Giáo (A Dật Đa), nắm giữ Nhân Chủng Đại và Kim Nhiêu, truyền thụ đại thừa tâm kinh.' },
+    { canonName: 'Dược Sư Lưu Ly Quang Vương Phật', title: 'Dược Sư Lưu Ly Quang Vương Phật', seat: 'Tịnh Lưu Ly chủ · Đan Phong phong chủ', g: 'm', el: 'moc', role: 'dan', inner: true, d: 'Giáo chủ thế giới Tịnh Lưu Ly, tinh thông y đạo và luyện chế Phật môn linh đan cứu thế.' },
+    { canonName: 'Địa Tạng Vương Bồ Tát', realSur: 'Kim', title: 'Đại Nguyện Địa Tạng Vương Bồ Tát', seat: 'Chấp pháp trưởng lão', g: 'm', el: 'am', role: 'chap', inner: true, d: 'Hóa thân hoàng tử Tân La Kim Kiều Giác, phát đại nguyện "Địa ngục chưa trống, thề không thành Phật", có Đế Thính phân biệt thật giả, giữ giới luật Tây Phương.' },
+    { canonName: 'Quan Thế Âm Bồ Tát', title: 'Đại Bi Quan Thế Âm Bồ Tát', seat: 'Phù Phong phong chủ', g: 'f', el: 'thuy', role: 'phu', inner: true, d: 'Tầm thanh cứu khổ, hóa thân Công chúa Diệu Thiện, giữ Tịnh Bình Dương Liễu và Lục Tự Đại Minh Chân Ngôn phù ấn.' },
+    { canonName: 'Văn Thù Sư Lợi Bồ Tát', title: 'Đại Trí Văn Thù Sư Lợi Bồ Tát', seat: 'Kiếm Phong phong chủ', g: 'm', el: 'kim', role: 'vk', inner: true, w: 'kiem', d: 'Trí tuệ đệ nhất Phật môn, tay cầm Tuệ Kiếm chém đứt vô minh phiền não.' },
+    { canonName: 'Phổ Hiền Bồ Tát', title: 'Đại Hạnh Phổ Hiền Bồ Tát', seat: 'Khí Phong phong chủ', g: 'm', el: 'loi', role: 'khi', inner: true, d: 'Hạnh nguyện đệ nhất, cưỡi Bạch Tượng sáu ngà, luyện chế pháp khí hộ đạo.' },
+    { canonName: 'Đại Thế Chí Bồ Tát', title: 'Đại Thế Chí Bồ Tát', seat: 'Thể Phong phong chủ', g: 'm', el: 'quang', role: 'the', inner: true, w: 'chuong', d: 'Một trong Tây Phương Tam Thánh, bước chân rung chuyển đại thiên thế giới, kim thân lực lượng vô song.' },
+    { canonName: 'Ma Ha Ca Diếp Tôn Giả', realSur: 'Ca', title: 'Ma Ha Ca Diếp Tôn Giả', seat: 'Quản sự ngoại môn', g: 'm', el: 'tho', role: 'ngoai', inner: false, d: 'Đầu đà đệ nhất, dòng dõi Ca Diếp, niêm hoa vi tiếu, khảo hạch tâm tính đệ tử ngoại môn.' },
+    { canonName: 'A Nan Đà Tôn Giả', realSur: 'Thích', title: 'A Nan Đà Tôn Giả', seat: 'Quản sự dược viên', g: 'm', el: 'phong', role: 'duoc', inner: false, d: 'Đa văn đệ nhất, hoàng thân dòng Thích Ca, thuộc nằm lòng vạn quyển kinh thư và trăm ngàn loài linh dược Tây Phương.' },
+    { canonName: 'Phục Hổ La Hán', title: 'Phục Hổ La Hán', seat: 'Quản sự khoáng mạch', g: 'm', el: 'kim', role: 'khoang', inner: false, d: 'Một trong Thập Bát La Hán, hàng phục mãnh hổ, trông coi khoáng mạch và bảo tháp dưới chân Linh Sơn.' },
   ],
 };
 
@@ -265,7 +267,7 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
   const usedGivens = new Set<string>();
   for (const item of seats) {
     usedNames.add(nameKey(item.canonName));
-    usedNames.add(nameKey(`${item.sur} ${item.canonName}`));
+    if (item.realSur) usedNames.add(nameKey(`${item.realSur} ${item.canonName}`));
     usedNames.add(nameKey(item.title));
     usedGivens.add(nameKey(splitName(item.canonName).given));
   }
@@ -286,6 +288,7 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
       : clamp(item.role === 'chu' || item.role === 'thaithuong' ? chu : item.inner ? chu - 1 : chu - 2, 1, 8);
     const st = item.role === 'chu' ? 3 : item.role === 'thaithuong' ? (w === 4 ? 3 : 2) : Math.floor(rnd() * 3) + 1;
     let name: string;
+    const sur = item.realSur || NOBLE_SURS[Math.abs(hashStr(`${s.id}:${sct.id}:${i}:${item.title}`)) % NOBLE_SURS.length];
     if (w === 4) {
       name = item.canonName;
     } else {
@@ -303,13 +306,20 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
       } else if (holder?.name) {
         name = holder.name;
       } else {
-        name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
+        name = uniquePersonalName(item.g, sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
       }
       usedNames.add(nameKey(name));
       usedGivens.add(nameKey(splitName(name).given));
     }
     const shortTitle = item.title.split(' – ')[0];
-    const d = w === 4 ? item.d : `Hậu nhân họ ${item.sur} kế thừa đạo hiệu ${shortTitle}. ${item.d}`;
+    let d: string;
+    if (w === 4) {
+      d = item.d;
+    } else if (item.realSur) {
+      d = `Hậu nhân họ ${item.realSur} kế thừa truyền thừa của ${item.canonName} (${shortTitle}). ${item.d}`;
+    } else {
+      d = `Y bát truyền nhân kế thừa đạo hiệu ${shortTitle}. ${item.d}`;
+    }
     return {
       key: `${sct.id}:${era}:legacy:${i}`,
       name,
@@ -335,7 +345,7 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
 
 interface LegacyDiscipleSeat {
   canonName: string;
-  sur: string;
+  realSur?: string;
   title: string;
   seatTitle: string;
   g: 'm' | 'f';
@@ -349,79 +359,79 @@ interface LegacyDiscipleSeat {
 const LEGACY_SCHOOL_DISCIPLES: Record<SchoolKey, LegacyDiscipleSeat[]> = {
   jie: [
     // Thân truyền (5)
-    { canonName: 'Hỏa Linh', sur: 'Hỏa', title: 'Hỏa Linh Đạo Nhân', seatTitle: 'Thủ tịch đại sư tỷ · Thân truyền Bích Du Cung', g: 'f', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đa Bảo Đạo Nhân, nắm giữ Kim Quang Lạc Mục Châu và huấn luyện ba ngàn Hỏa Long Binh lừng danh Phong Thần.' },
-    { canonName: 'Dư Nguyên', sur: 'Dư', title: 'Nhất Khí Tiên', seatTitle: 'Thân truyền Kiếm phong', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Luyện khí sĩ Bồng Lai Đảo, đệ tử Kim Linh Thánh Mẫu, mình đồng da sắt đao thương bất nhập, nắm giữ Hóa Huyết Thần Đao kỳ bảo.' },
-    { canonName: 'Hàm Chi', sur: 'Hàm', title: 'Hàm Chi Tiên Tử', seatTitle: 'Thân truyền Tam Tiên Đảo', g: 'f', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đắc đạo tiên cô nơi hải đảo Bích Du, bạn đồng tu của Tam Tiêu nương nương, nắm giữ Phong Húy Túi thổi ra hắc phong làm tan hồn phách.' },
-    { canonName: 'Thải Vân', sur: 'Thải', title: 'Thải Vân Tiên Tử', seatTitle: 'Thân truyền Trận viện', g: 'f', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Tiên tử đảo Kim Ngao trợ trận Cửu Khúc Hoàng Hà, chấp chưởng Lục Mục Châu bắn ra hào quang làm mù mắt địch nhân.' },
-    { canonName: 'Bạch Lễ', sur: 'Bạch', title: 'Liệt Diễm Thiên Quân', seatTitle: 'Thân truyền Đan phong', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Một trong Thập Thiên Quân Kim Ngao Đảo, chủ trì Liệt Diễm Trận gồm Tam Muội Chân Hỏa, Không Trung Hỏa và Thạch Trung Hỏa.' },
+    { canonName: 'Hỏa Linh Thánh Mẫu', title: 'Hỏa Linh Đạo Nhân', seatTitle: 'Thủ tịch đại sư tỷ · Thân truyền Bích Du Cung', g: 'f', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đa Bảo Đạo Nhân, nắm giữ Kim Quang Lạc Mục Châu và huấn luyện ba ngàn Hỏa Long Binh lừng danh Phong Thần.' },
+    { canonName: 'Dư Nguyên', realSur: 'Dư', title: 'Nhất Khí Tiên', seatTitle: 'Thân truyền Kiếm phong', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Luyện khí sĩ Bồng Lai Đảo, đệ tử Kim Linh Thánh Mẫu, mình đồng da sắt đao thương bất nhập, nắm giữ Hóa Huyết Thần Đao kỳ bảo.' },
+    { canonName: 'Hàm Chi Tiên Tử', title: 'Hàm Chi Tiên Tử', seatTitle: 'Thân truyền Tam Tiên Đảo', g: 'f', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đắc đạo tiên cô nơi hải đảo Bích Du, bạn đồng tu của Tam Tiêu nương nương, nắm giữ Phong Húy Túi thổi ra hắc phong làm tan hồn phách.' },
+    { canonName: 'Thải Vân Tiên Tử', title: 'Thải Vân Tiên Tử', seatTitle: 'Thân truyền Trận viện', g: 'f', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Tiên tử đảo Kim Ngao trợ trận Cửu Khúc Hoàng Hà, chấp chưởng Lục Mục Châu bắn ra hào quang làm mù mắt địch nhân.' },
+    { canonName: 'Bạch Lễ', realSur: 'Bạch', title: 'Liệt Diễm Thiên Quân', seatTitle: 'Thân truyền Đan phong', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Một trong Thập Thiên Quân Kim Ngao Đảo, chủ trì Liệt Diễm Trận gồm Tam Muội Chân Hỏa, Không Trung Hỏa và Thạch Trung Hỏa.' },
     // Nội môn (5)
-    { canonName: 'Ma Lễ Thanh', sur: 'Ma', title: 'Tăng Trưởng Thiên Vương', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'phong', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, chấp chưởng Thanh Vân Bảo Kiếm, vung kiếm sinh ra phong hỏa vạn dặm.' },
-    { canonName: 'Ma Lễ Hồng', sur: 'Ma', title: 'Quảng Mục Thiên Vương', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'am', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, chấp chưởng Hỗn Nguyên Tán che trời chuyển nhật nguyệt, giữ nghiêm môn quy Tiệt Giáo.' },
-    { canonName: 'Ma Lễ Hải', sur: 'Ma', title: 'Đa Văn Thiên Vương', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'thuy', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, gảy Bích Ngọc Tỳ Bà dẫn động huyền âm, am hiểu âm luật và điển tích Tiệt Giáo.' },
-    { canonName: 'Ma Lễ Thọ', sur: 'Ma', title: 'Trì Quốc Thiên Vương', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'loi', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, nuôi dưỡng Hoa Hồ Điêu dị thú hộ thể, thể phách dũng mãnh thiện chiến.' },
-    { canonName: 'Tần Hoàn', sur: 'Tần', title: 'Thiên Tuyệt Thiên Quân', seatTitle: 'Đệ tử nội môn · Lôi đường', g: 'm', el: 'loi', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đứng đầu Thập Thiên Quân Kim Ngao Đảo, chủ trì Thiên Tuyệt Trận, dẫn thiên lôi địa hỏa sát phạt.' },
+    { canonName: 'Ma Lễ Thanh', realSur: 'Ma', title: 'Tăng Trưởng Thiên Vương', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'phong', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, chấp chưởng Thanh Vân Bảo Kiếm, vung kiếm sinh ra phong hỏa vạn dặm.' },
+    { canonName: 'Ma Lễ Hồng', realSur: 'Ma', title: 'Quảng Mục Thiên Vương', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'am', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, chấp chưởng Hỗn Nguyên Tán che trời chuyển nhật nguyệt, giữ nghiêm môn quy Tiệt Giáo.' },
+    { canonName: 'Ma Lễ Hải', realSur: 'Ma', title: 'Đa Văn Thiên Vương', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'thuy', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, gảy Bích Ngọc Tỳ Bà dẫn động huyền âm, am hiểu âm luật và điển tích Tiệt Giáo.' },
+    { canonName: 'Ma Lễ Thọ', realSur: 'Ma', title: 'Trì Quốc Thiên Vương', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'loi', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, nuôi dưỡng Hoa Hồ Điêu dị thú hộ thể, thể phách dũng mãnh thiện chiến.' },
+    { canonName: 'Tần Hoàn', realSur: 'Tần', title: 'Thiên Tuyệt Thiên Quân', seatTitle: 'Đệ tử nội môn · Lôi đường', g: 'm', el: 'loi', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đứng đầu Thập Thiên Quân Kim Ngao Đảo, chủ trì Thiên Tuyệt Trận, dẫn thiên lôi địa hỏa sát phạt.' },
     // Ngoại môn (4)
-    { canonName: 'Dư Hóa', sur: 'Dư', title: 'Thất Thủ Tướng Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'kim', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Nhất Khí Tiên Dư Nguyên, cưỡi Hỏa Nhãn Kim Tinh Thú, tinh thông Lục Hồn Phiên tuần tra chân núi sơn môn.' },
-    { canonName: 'Hồ Lôi', sur: 'Hồ', title: 'Hồ Lôi Tiên Đồng', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Hỏa Linh Thánh Mẫu, tinh thông thuật thế thân cắt đầu lại mọc, coi quản khoáng mạch hậu sơn.' },
-    { canonName: 'Trần Cửu Công', sur: 'Trần', title: 'Chiêu Bảo Thiên Tôn', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử thân cận của Huyền Đàn Chân Quân Triệu Công Minh nơi La Phù Động, chăm nom vườn linh thảo dưới núi.' },
-    { canonName: 'Diêu Thiếu Tư', sur: 'Diêu', title: 'Nạp Trân Thiên Tôn', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Triệu Công Minh, mới gia nhập môn hạ Kim Ngao Đảo, cần cù thu nạp trân bảo cống hiến cho tông.' },
+    { canonName: 'Dư Hóa', realSur: 'Dư', title: 'Thất Thủ Tướng Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'kim', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Nhất Khí Tiên Dư Nguyên, cưỡi Hỏa Nhãn Kim Tinh Thú, tinh thông Lục Hồn Phiên tuần tra chân núi sơn môn.' },
+    { canonName: 'Hồ Lôi', realSur: 'Hồ', title: 'Hồ Lôi Tiên Đồng', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Hỏa Linh Thánh Mẫu, tinh thông thuật thế thân cắt đầu lại mọc, coi quản khoáng mạch hậu sơn.' },
+    { canonName: 'Trần Cửu Công', realSur: 'Trần', title: 'Chiêu Bảo Thiên Tôn', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử thân cận của Huyền Đàn Chân Quân Triệu Công Minh nơi La Phù Động, chăm nom vườn linh thảo dưới núi.' },
+    { canonName: 'Diêu Thiếu Tư', realSur: 'Diêu', title: 'Nạp Trân Thiên Tôn', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Triệu Công Minh, mới gia nhập môn hạ Kim Ngao Đảo, cần cù thu nạp trân bảo cống hiến cho tông.' },
   ],
   chan: [
     // Thân truyền (5)
-    { canonName: 'Dương Tiễn', sur: 'Dương', title: 'Hiển Thánh Chân Quân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Ngọc Tuyền Sơn', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Ngọc Đỉnh Chân Nhân, tu thành Bát Cửu Huyền Công, trán mở tam nhãn, dẫn Hao Thiên Khuyển vô địch thế hệ trẻ.' },
-    { canonName: 'Na Tra', sur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seatTitle: 'Thân truyền Càn Nguyên Sơn', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thái Ất Chân Nhân, hóa thân hoa sen thanh tịnh, chân đạp Phong Hỏa Luân, vung Hỏa Tiêm Thương uy chấn tứ hải.' },
-    { canonName: 'Hoàng Thiên Hóa', sur: 'Hoàng', title: 'Bính Linh Công', seatTitle: 'Thân truyền Tử Dương Động', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thanh Hư Đạo Đức Chân Quân, cưỡi Ngọc Kỳ Lân, nắm giữ Mạc Tà Kiếm và Toản Tâm Đinh sát khí ngút trời.' },
-    { canonName: 'Lôi Chấn Tử', sur: 'Cơ', title: 'Phong Lôi Thần Tướng', seatTitle: 'Thân truyền Chung Nam Sơn', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Vân Trung Tử, ăn tiên đào mọc cánh Phong Lôi, tay cầm Hoàng Kim Côn hộ vệ đạo thống Ngọc Hư.' },
-    { canonName: 'Vi Hộ', sur: 'Vi', title: 'Hàng Ma Chân Nhân', seatTitle: 'Thân truyền Kim Kê Sơn', g: 'm', el: 'tho', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đạo Hạnh Thiên Tôn, nắm giữ Hàng Ma Xử ngàn cân bất hoại, thể phách kim cang kiên cố.' },
+    { canonName: 'Dương Tiễn', realSur: 'Dương', title: 'Hiển Thánh Chân Quân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Ngọc Tuyền Sơn', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Ngọc Đỉnh Chân Nhân, tu thành Bát Cửu Huyền Công, trán mở tam nhãn, dẫn Hao Thiên Khuyển vô địch thế hệ trẻ.' },
+    { canonName: 'Lý Na Tra', realSur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seatTitle: 'Thân truyền Càn Nguyên Sơn', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thái Ất Chân Nhân, hóa thân hoa sen thanh tịnh, chân đạp Phong Hỏa Luân, vung Hỏa Tiêm Thương uy chấn tứ hải.' },
+    { canonName: 'Hoàng Thiên Hóa', realSur: 'Hoàng', title: 'Bính Linh Công', seatTitle: 'Thân truyền Tử Dương Động', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thanh Hư Đạo Đức Chân Quân, cưỡi Ngọc Kỳ Lân, nắm giữ Mạc Tà Kiếm và Toản Tâm Đinh sát khí ngút trời.' },
+    { canonName: 'Lôi Chấn Tử', realSur: 'Cơ', title: 'Phong Lôi Thần Tướng', seatTitle: 'Thân truyền Chung Nam Sơn', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Vân Trung Tử, ăn tiên đào mọc cánh Phong Lôi, tay cầm Hoàng Kim Côn hộ vệ đạo thống Ngọc Hư.' },
+    { canonName: 'Vi Hộ', realSur: 'Vi', title: 'Hàng Ma Chân Nhân', seatTitle: 'Thân truyền Kim Kê Sơn', g: 'm', el: 'tho', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đạo Hạnh Thiên Tôn, nắm giữ Hàng Ma Xử ngàn cân bất hoại, thể phách kim cang kiên cố.' },
     // Nội môn (5)
-    { canonName: 'Kim Tra', sur: 'Lý', title: 'Độn Long Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Văn Thù Quảng Pháp Thiên Tôn, nắm giữ Độn Long Thung chấp hành môn quy Côn Lôn.' },
-    { canonName: 'Mộc Tra', sur: 'Lý', title: 'Ngô Câu Kiếm Sĩ', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'moc', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Phổ Hiền Chân Nhân, tinh thông Ngô Câu Song Kiếm, ngày đêm tôi luyện kiếm ý.' },
-    { canonName: 'Ân Giao', sur: 'Ân', title: 'Phiên Thiên Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Quảng Thành Tử tại Cửu Tiên Sơn, mọc ba đầu sáu tay, thừa kế ấn pháp Phiên Thiên.' },
-    { canonName: 'Ân Hồng', sur: 'Ân', title: 'Âm Dương Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Xích Tinh Tử tại Thái Hoa Sơn, tinh thông Âm Dương Kính và điển tích Ngọc Hư.' },
-    { canonName: 'Bạch Hạc Đồng Tử', sur: 'Bạch', title: 'Bạch Hạc Tiên Đồng', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thị giả tọa tiền của Nguyên Thủy Thiên Tôn, thanh tao thoát tục, hỗ trợ chăm nom lò luyện đan Ngọc Hư.' },
+    { canonName: 'Kim Tra', realSur: 'Lý', title: 'Độn Long Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Văn Thù Quảng Pháp Thiên Tôn, nắm giữ Độn Long Thung chấp hành môn quy Côn Lôn.' },
+    { canonName: 'Mộc Tra', realSur: 'Lý', title: 'Ngô Câu Kiếm Sĩ', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'moc', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Phổ Hiền Chân Nhân, tinh thông Ngô Câu Song Kiếm, ngày đêm tôi luyện kiếm ý.' },
+    { canonName: 'Ân Giao', realSur: 'Ân', title: 'Phiên Thiên Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Quảng Thành Tử tại Cửu Tiên Sơn, mọc ba đầu sáu tay, thừa kế ấn pháp Phiên Thiên.' },
+    { canonName: 'Ân Hồng', realSur: 'Ân', title: 'Âm Dương Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Xích Tinh Tử tại Thái Hoa Sơn, tinh thông Âm Dương Kính và điển tích Ngọc Hư.' },
+    { canonName: 'Bạch Hạc Đồng Tử', title: 'Bạch Hạc Tiên Đồng', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thị giả tọa tiền của Nguyên Thủy Thiên Tôn, thanh tao thoát tục, hỗ trợ chăm nom lò luyện đan Ngọc Hư.' },
     // Ngoại môn (4)
-    { canonName: 'Thổ Hành Tôn', sur: 'Thổ', title: 'Địa Hành Chân Nhân', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Cụ Lưu Tôn tại Phi Vân Động, tinh thông Địa Hành Thuật ngày đi ngàn dặm dưới lòng đất, quản lý quặng mỏ Côn Lôn.' },
-    { canonName: 'Dương Nhậm', sur: 'Dương', title: 'Giáp Ất Chân Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Thanh Hư Đạo Đức Chân Quân, trong hốc mắt mọc tay, lòng bàn tay có mắt thần nhìn thấu hư không, canh gác chân núi Côn Lôn.' },
-    { canonName: 'Long Tu Hổ', sur: 'Long', title: 'Trấn Sơn Dị Thú', seatTitle: 'Đệ tử ngoại môn · Hộ sơn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Dị thú đầu rồng mình cọp, đệ tử của Khương Tử Nha, ném đá hóa thành lôi hỏa trấn giữ sơn môn.' },
-    { canonName: 'Vũ Cát', sur: 'Vũ', title: 'Vị Thủy Tiên Sinh', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử tiều phu bái Khương Tử Nha bên bờ sông Vị Thủy, chăm chỉ tưới tiêu dược điền Côn Lôn Sơn.' },
+    { canonName: 'Thổ Hành Tôn', title: 'Địa Hành Chân Nhân', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Cụ Lưu Tôn tại Phi Vân Động, tinh thông Địa Hành Thuật ngày đi ngàn dặm dưới lòng đất, quản lý quặng mỏ Côn Lôn.' },
+    { canonName: 'Dương Nhậm', realSur: 'Dương', title: 'Giáp Ất Chân Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Thanh Hư Đạo Đức Chân Quân, trong hốc mắt mọc tay, lòng bàn tay có mắt thần nhìn thấu hư không, canh gác chân núi Côn Lôn.' },
+    { canonName: 'Long Tu Hổ', title: 'Trấn Sơn Dị Thú', seatTitle: 'Đệ tử ngoại môn · Hộ sơn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Dị thú đầu rồng mình cọp, đệ tử của Khương Tử Nha, ném đá hóa thành lôi hỏa trấn giữ sơn môn.' },
+    { canonName: 'Vũ Cát', realSur: 'Vũ', title: 'Vị Thủy Tiên Sinh', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử tiều phu bái Khương Tử Nha bên bờ sông Vị Thủy, chăm chỉ tưới tiêu dược điền Côn Lôn Sơn.' },
   ],
   laozi: [
     // Thân truyền (5)
-    { canonName: 'Lữ Động Tân', sur: 'Lữ', title: 'Thuần Dương Chân Nhân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Bát Cảnh Cung', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử kiệt xuất nhất của phái Thái Thanh Đạo Giáo, kiếm pháp Thuần Dương siêu phàm nhập thánh, một bầu rượu một thanh kiếm tiêu dao tam giới.' },
-    { canonName: 'Hà Tiên Cô', sur: 'Hà', title: 'Thái Thanh Tiên Cô', seatTitle: 'Thân truyền Đan phong', g: 'f', el: 'thuy', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Nữ tiên duy nhất trong Bát Tiên Đạo gia, tay cầm hoa sen ngàn năm, hấp thu nhật nguyệt tinh hoa, tinh thông đan đạo dưỡng sinh trường thọ.' },
-    { canonName: 'Thiết Quải Lý', sur: 'Lý', title: 'Dược Vương Đạo Nhân', seatTitle: 'Thân truyền Dược viện', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Nguyên lão Bát Tiên, hồ lô chứa tiên đan cứu nhân độ thế, gậy sắt xua đuổi tà ma chốn hồng trần.' },
-    { canonName: 'Hán Chung Ly', sur: 'Chung', title: 'Chính Dương Chân Nhân', seatTitle: 'Thân truyền Khí phong', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Sư phụ của Lữ Động Tân, tay cầm Ba Tiêu Quạt vàng, phất quạt khởi khởi tam muội thần phong, tinh thông thuật luyện đan luyện khí Thái Thanh.' },
-    { canonName: 'Hàn Tương Tử', sur: 'Hàn', title: 'Thanh Âm Chân Nhân', seatTitle: 'Thân truyền Trận viện', g: 'm', el: 'moc', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Thổi ngọc tiêu làm muôn hoa đua nở, tiếng tiêu dẫn động linh khí đất trời hóa thành hộ sơn tiên trận thanh tĩnh.' },
+    { canonName: 'Lữ Động Tân', realSur: 'Lữ', title: 'Thuần Dương Chân Nhân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Bát Cảnh Cung', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử kiệt xuất nhất của phái Thái Thanh Đạo Giáo, kiếm pháp Thuần Dương siêu phàm nhập thánh, một bầu rượu một thanh kiếm tiêu dao tam giới.' },
+    { canonName: 'Hà Tiên Cô', realSur: 'Hà', title: 'Thái Thanh Tiên Cô', seatTitle: 'Thân truyền Đan phong', g: 'f', el: 'thuy', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Nữ tiên duy nhất trong Bát Tiên Đạo gia, tay cầm hoa sen ngàn năm, hấp thu nhật nguyệt tinh hoa, tinh thông đan đạo dưỡng sinh trường thọ.' },
+    { canonName: 'Thiết Quải Lý', realSur: 'Lý', title: 'Dược Vương Đạo Nhân', seatTitle: 'Thân truyền Dược viện', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Nguyên lão Bát Tiên, hồ lô chứa tiên đan cứu nhân độ thế, gậy sắt xua đuổi tà ma chốn hồng trần.' },
+    { canonName: 'Hán Chung Ly', realSur: 'Chung', title: 'Chính Dương Chân Nhân', seatTitle: 'Thân truyền Khí phong', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Sư phụ của Lữ Động Tân, tay cầm Ba Tiêu Quạt vàng, phất quạt khởi khởi tam muội thần phong, tinh thông thuật luyện đan luyện khí Thái Thanh.' },
+    { canonName: 'Hàn Tương Tử', realSur: 'Hàn', title: 'Thanh Âm Chân Nhân', seatTitle: 'Thân truyền Trận viện', g: 'm', el: 'moc', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Thổi ngọc tiêu làm muôn hoa đua nở, tiếng tiêu dẫn động linh khí đất trời hóa thành hộ sơn tiên trận thanh tĩnh.' },
     // Nội môn (5)
-    { canonName: 'Trương Quả Lão', sur: 'Trương', title: 'Thông Huyền Lão Nhân', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Cưỡi lừa ngược ngao du thiên hạ, tay cầm Ngư Cổ thần khí, thấu hiểu điển tích Đạo Đức Kinh.' },
-    { canonName: 'Lam Thái Hòa', sur: 'Lam', title: 'Thải Hoa Tiên Tử', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'moc', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Tay mang giỏ hoa chứa vạn thảo Bát Cảnh Cung, ca hát khúc tiên đạo, tâm tính vô ưu vô lự.' },
-    { canonName: 'Tào Quốc Cữu', sur: 'Tào', title: 'Thanh Tĩnh Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Nắm giữ Ngọc Bản trừ khử tà niệm, chấp pháp vô tư, dứt bỏ vinh hoa thế tục hướng đạo.' },
-    { canonName: 'Canh Tang Sở', sur: 'Canh', title: 'Động Linh Chân Nhân', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'phong', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử Lão Tử tại Úy Lỗi Sơn, lĩnh ngộ kiếm ý vô vi, lấy tĩnh chế động.' },
-    { canonName: 'Bạch Hạc Tiên Đồng', sur: 'Bạch', title: 'Thái Thanh Hạc Đồng', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Linh hạc trông coi lò Bát Quái Cung, thân pháp nhẹ tựa lông hồng, biến hóa khôn lường.' },
+    { canonName: 'Trương Quả Lão', realSur: 'Trương', title: 'Thông Huyền Lão Nhân', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Cưỡi lừa ngược ngao du thiên hạ, tay cầm Ngư Cổ thần khí, thấu hiểu điển tích Đạo Đức Kinh.' },
+    { canonName: 'Lam Thái Hòa', realSur: 'Lam', title: 'Thải Hoa Tiên Tử', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'moc', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Tay mang giỏ hoa chứa vạn thảo Bát Cảnh Cung, ca hát khúc tiên đạo, tâm tính vô ưu vô lự.' },
+    { canonName: 'Tào Quốc Cữu', realSur: 'Tào', title: 'Thanh Tĩnh Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Nắm giữ Ngọc Bản trừ khử tà niệm, chấp pháp vô tư, dứt bỏ vinh hoa thế tục hướng đạo.' },
+    { canonName: 'Canh Tang Sở', realSur: 'Canh', title: 'Động Linh Chân Nhân', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'phong', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử Lão Tử tại Úy Lỗi Sơn, lĩnh ngộ kiếm ý vô vi, lấy tĩnh chế động.' },
+    { canonName: 'Bạch Hạc Tiên Đồng', title: 'Thái Thanh Hạc Đồng', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Linh hạc trông coi lò Bát Quái Cung, thân pháp nhẹ tựa lông hồng, biến hóa khôn lường.' },
     // Ngoại môn (4)
-    { canonName: 'Thanh Đồng', sur: 'Thanh', title: 'Huyền Đô Đồng Tử', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đồng tử áo xanh đón gió trước cửa Huyền Đô Sơn, chào đón khách thập phương hướng đạo.' },
-    { canonName: 'Tử Hà', sur: 'Tử', title: 'Tử Hà Tiên Tử', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'f', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Tiên tử đón ráng chiều tử khí Hàm Cốc Quan, tưới tiêu dược điền Thái Thanh.' },
-    { canonName: 'Cương Lực Sĩ', sur: 'Cương', title: 'Hoàng Cân Lực Sĩ', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Lực sĩ hộ pháp Bát Cảnh Cung, sức mạnh dời non lấp biển, khai thác linh khoáng hậu sơn.' },
-    { canonName: 'Thanh Ngưu Đồng Tử', sur: 'Ngưu', title: 'Thị Ngưu Tiên Đồng', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Mới nhập môn chăm sóc tọa kỵ Thanh Ngưu của Thái Thượng Lão Quân, chất phác cần mẫn.' },
+    { canonName: 'Thanh Đồng', title: 'Huyền Đô Đồng Tử', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đồng tử áo xanh đón gió trước cửa Huyền Đô Sơn, chào đón khách thập phương hướng đạo.' },
+    { canonName: 'Tử Hà Tiên Tử', title: 'Tử Hà Tiên Tử', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'f', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Tiên tử đón ráng chiều tử khí Hàm Cốc Quan, tưới tiêu dược điền Thái Thanh.' },
+    { canonName: 'Hoàng Cân Lực Sĩ', title: 'Hoàng Cân Lực Sĩ', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Lực sĩ hộ pháp Bát Cảnh Cung, sức mạnh dời non lấp biển, khai thác linh khoáng hậu sơn.' },
+    { canonName: 'Thị Ngưu Tiên Đồng', title: 'Thị Ngưu Tiên Đồng', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Mới nhập môn chăm sóc tọa kỵ Thanh Ngưu của Thái Thượng Lão Quân, chất phác cần mẫn.' },
   ],
   buddhist: [
     // Thân truyền (5)
-    { canonName: 'Kim Thiền', sur: 'Kim', title: 'Kim Thiền Pháp Sư', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Linh Sơn', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền thứ hai của Đức Phật Như Lai trên đỉnh Linh Sơn, Phật pháp cao thâm, đạo tâm thuần khiết không vướng bụi trần.' },
-    { canonName: 'Mục Kiền Liên', sur: 'Mục', title: 'Đại Mục Kiền Liên Tôn Giả', seatTitle: 'Thân truyền Chấp pháp điện', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Thần thông đệ nhất trong mười đại đệ tử của Phật Đà, tay cầm tích trượng giáng phục tà ma khắp ba cõi.' },
-    { canonName: 'Xá Lợi Phất', sur: 'Xá', title: 'Trí Tuệ Tôn Giả', seatTitle: 'Thân truyền Tàng kinh viện', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Trí tuệ đệ nhất trong môn hạ Tây Phương, thông suốt mọi pháp tướng, khai mở tuệ nhãn cho chúng sinh.' },
-    { canonName: 'Tu Bồ Đề', sur: 'Tu', title: 'Giải Không Tôn Giả', seatTitle: 'Thân truyền Trận viện', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Giải không đệ nhất, ngộ triệt chân lý vạn pháp giai không, thi triển kim cương kết giới không gì phá nổi.' },
-    { canonName: 'Khổng Tuyên', sur: 'Khổng', title: 'Minh Vương Tôn Giả', seatTitle: 'Thân truyền Chiến đường', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Chân thân Khổng Tước đệ nhất thiên địa, tu luyện Ngũ Sắc Thần Quang không vật gì không quét, hộ đạo Phật môn.' },
+    { canonName: 'Kim Thiền Tử', title: 'Kim Thiền Pháp Sư', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Linh Sơn', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền thứ hai của Đức Phật Như Lai trên đỉnh Linh Sơn, Phật pháp cao thâm, đạo tâm thuần khiết không vướng bụi trần.' },
+    { canonName: 'Mục Kiền Liên', realSur: 'Mục', title: 'Đại Mục Kiền Liên Tôn Giả', seatTitle: 'Thân truyền Chấp pháp điện', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Thần thông đệ nhất trong mười đại đệ tử của Phật Đà, tay cầm tích trượng giáng phục tà ma khắp ba cõi.' },
+    { canonName: 'Xá Lợi Phất', realSur: 'Xá', title: 'Trí Tuệ Tôn Giả', seatTitle: 'Thân truyền Tàng kinh viện', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Trí tuệ đệ nhất trong môn hạ Tây Phương, thông suốt mọi pháp tướng, khai mở tuệ nhãn cho chúng sinh.' },
+    { canonName: 'Tu Bồ Đề', title: 'Giải Không Tôn Giả', seatTitle: 'Thân truyền Trận viện', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Giải không đệ nhất, ngộ triệt chân lý vạn pháp giai không, thi triển kim cương kết giới không gì phá nổi.' },
+    { canonName: 'Khổng Tuyên', realSur: 'Khổng', title: 'Minh Vương Tôn Giả', seatTitle: 'Thân truyền Chiến đường', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Chân thân Khổng Tước đệ nhất thiên địa, tu luyện Ngũ Sắc Thần Quang không vật gì không quét, hộ đạo Phật môn.' },
     // Nội môn (5)
-    { canonName: 'Phú Lâu Na', sur: 'Phú', title: 'Thuyết Pháp Tôn Giả', seatTitle: 'Đệ tử nội môn · Diễn võ đường', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thuyết pháp đệ nhất Phật môn, biện tài vô ngại, hàng phục tâm ma.' },
-    { canonName: 'Ca Chiên Diên', sur: 'Ca', title: 'Luận Nghị Tôn Giả', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Luận nghị đệ nhất, phân biệt chân ngụy, giữ gìn giới luật thanh tịnh.' },
-    { canonName: 'A Nậu Lâu Đà', sur: 'A', title: 'Thiên Nhãn Tôn Giả', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thiên nhãn đệ nhất, thấy rõ tam thiên đại thiên thế giới, thấu triệt nhân quả.' },
-    { canonName: 'Ưu Bà Ly', sur: 'Ưu', title: 'Trì Giới Tôn Giả', seatTitle: 'Đệ tử nội môn · Giới luật đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Trì giới nghiêm minh nhất môn hạ Linh Sơn, không phạm một tơ hào thanh quy.' },
-    { canonName: 'La Hầu La', sur: 'La', title: 'Mật Hạnh Tôn Giả', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'thuy', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Mật hạnh đệ nhất, âm thầm tu trì đan dược và công đức, nhu hòa nhẫn nhục.' },
+    { canonName: 'Phú Lâu Na', title: 'Thuyết Pháp Tôn Giả', seatTitle: 'Đệ tử nội môn · Diễn võ đường', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thuyết pháp đệ nhất Phật môn, biện tài vô ngại, hàng phục tâm ma.' },
+    { canonName: 'Ca Chiên Diên', realSur: 'Ca', title: 'Luận Nghị Tôn Giả', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Luận nghị đệ nhất, phân biệt chân ngụy, giữ gìn giới luật thanh tịnh.' },
+    { canonName: 'A Nậu Lâu Đà', realSur: 'Thích', title: 'Thiên Nhãn Tôn Giả', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thiên nhãn đệ nhất, hoàng thân dòng Thích Ca, thấy rõ tam thiên đại thiên thế giới, thấu triệt nhân quả.' },
+    { canonName: 'Ưu Bà Ly', title: 'Trì Giới Tôn Giả', seatTitle: 'Đệ tử nội môn · Giới luật đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Trì giới nghiêm minh nhất môn hạ Linh Sơn, không phạm một tơ hào thanh quy.' },
+    { canonName: 'La Hầu La', realSur: 'Thích', title: 'Mật Hạnh Tôn Giả', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'thuy', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Mật hạnh đệ nhất, vương tử dòng Thích Ca, âm thầm tu trì đan dược và công đức, nhu hòa nhẫn nhục.' },
     // Ngoại môn (4)
-    { canonName: 'Hàng Long', sur: 'Long', title: 'Hàng Long La Hán', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'loi', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đứng đầu Thập Bát La Hán, hàng phục ác long, trấn giữ sơn môn dưới chân Linh Sơn.' },
-    { canonName: 'Phục Hổ', sur: 'Hổ', title: 'Phục Hổ La Hán', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'kim', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Hàng phục mãnh hổ hung hãn, trông coi bảo kho và linh khoáng Tây Vực.' },
-    { canonName: 'Trường Mi', sur: 'A', title: 'Trường Mi La Hán', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Lông mày dài trắng rủ xuống đất, từ bi hái thuốc cứu độ dân gian dưới chân núi.' },
-    { canonName: 'Bạch Long', sur: 'Long', title: 'Bát Bộ Thiên Long', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Long tộc Tây Hải quy y cửa Phật, chăm nom hồ sen Bát Bảo Công Đức Thủy.' },
+    { canonName: 'Hàng Long La Hán', title: 'Hàng Long La Hán', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'loi', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đứng đầu Thập Bát La Hán, hàng phục ác long, trấn giữ sơn môn dưới chân Linh Sơn.' },
+    { canonName: 'Phục Hổ La Hán', title: 'Phục Hổ La Hán', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'kim', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Hàng phục mãnh hổ hung hãn, trông coi bảo kho và linh khoáng Tây Vực.' },
+    { canonName: 'Trường Mi La Hán', title: 'Trường Mi La Hán', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Lông mày dài trắng rủ xuống đất, từ bi hái thuốc cứu độ dân gian dưới chân núi.' },
+    { canonName: 'Bạch Long', realSur: 'Ngao', title: 'Bát Bộ Thiên Long', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Long tộc Tây Hải (họ Ngao) quy y cửa Phật, chăm nom hồ sen Bát Bảo Công Đức Thủy.' },
   ],
 };
 
@@ -442,15 +452,23 @@ function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: 
 
   return seats.map((item, i) => {
     let name: string;
+    const sur = item.realSur || NOBLE_SURS[Math.abs(hashStr(`${s.id}:${sct.id}:disc:${i}:${item.title}`)) % NOBLE_SURS.length];
     if (w === 4) {
       name = item.canonName;
     } else {
-      name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
+      name = uniquePersonalName(item.g, sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:disc:${i}:${item.title}`, usedGivens);
       usedNames.add(nameKey(name));
       usedGivens.add(nameKey(splitName(name).given));
     }
     const shortTitle = item.title.split(' – ')[0];
-    const d = w === 4 ? item.d : `Hậu nhân họ ${item.sur} kế thừa đạo hiệu ${shortTitle}. ${item.d}`;
+    let d: string;
+    if (w === 4) {
+      d = item.d;
+    } else if (item.realSur) {
+      d = `Hậu nhân họ ${item.realSur} kế thừa truyền thừa của ${item.canonName} (${shortTitle}). ${item.d}`;
+    } else {
+      d = `Y bát truyền nhân kế thừa truyền thừa ${item.canonName} (${shortTitle}). ${item.d}`;
+    }
 
     let r: number;
     let st: number;

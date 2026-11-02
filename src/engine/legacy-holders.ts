@@ -5,6 +5,12 @@ import { DECLINING_SCHOOLS, branchId, branchSchool, legacyRoleKey, isSameSect } 
 import { npcCap, REALMS, splitName } from '../data/core';
 import { nameKey, uniquePersonalName } from '../core/names';
 import { hashStr, seeded } from '../core/util';
+import { NOBLE_SURS } from './sectx';
+
+const LEGACY_OWNER_REAL_SUR: Record<string, string> = {
+  'Lão Tử': 'Lý',
+  'Khương Tử Nha': 'Khương',
+};
 
 const LEGACY_ROLE_TITLE: Record<string, string> = {
   'jie:Giáo chủ Tiệt Giáo': 'Thượng Thanh Thông Thiên Giáo Chủ (Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo',
@@ -20,6 +26,7 @@ const LEGACY_ROLE_TITLE: Record<string, string> = {
 /** One living office holder per role/world. Death or ascension transfers replicas, never duplicates originals. */
 export function maintainLegacyHolders(people: TcPerson[]) {
   const linked = new Map(s.npcs.map(n => [n.id, n]));
+  const BAD_SURS = ['Thông ', 'Nguyên ', 'Tiếp ', 'Chuẩn ', 'Nhiên ', 'Đa ', 'Vô ', 'Quy ', 'Cụ ', 'Ô ', 'Thạch ', 'Cầu '];
   for (const p of people) {
     p.treasures = [];
     if (p.legacyRole && (p.world !== p.legacyWorld || p.world >= 4 || !p.alive || (p.npc && linked.get(p.npc)?.alive === false))) delete p.legacyRole;
@@ -29,9 +36,23 @@ export function maintainLegacyHolders(people: TcPerson[]) {
       const n = p.npc ? linked.get(p.npc) : undefined;
       if (n) n.sect = null;
     }
+    if (p.legacyRole && p.world < 4 && p.name && BAD_SURS.some(b => p.name.startsWith(b))) {
+      const given = splitName(p.name).given;
+      const fixRnd = seeded(hashStr(s.id + p.id + ':sur_fix'));
+      const nobleSur = NOBLE_SURS[Math.floor(fixRnd() * NOBLE_SURS.length)];
+      p.name = `${nobleSur} ${given}`;
+    }
+  }
+  for (const n of s.npcs) {
+    if (n.alive && n.tag === 'master' && BAD_SURS.some(b => n.name.startsWith(b))) {
+      const given = splitName(n.name).given;
+      const fixRnd = seeded(hashStr(s.id + n.id + ':master_fix'));
+      const nobleSur = NOBLE_SURS[Math.floor(fixRnd() * NOBLE_SURS.length)];
+      n.name = `${nobleSur} ${given}`;
+    }
   }
   for (const t of LEGENDARY_TREASURES) {
-    const original = people.find(p => p.alive && p.world === 4 && p.chief && p.name === t.owner);
+    const original = people.find(p => p.alive && p.world === 4 && p.chief && (p.name === t.owner || (t.owner === 'Chuẩn Đề' && p.name.includes('Chuẩn Đề')) || (t.owner === 'Tiếp Dẫn' && p.name.includes('Tiếp Dẫn'))));
     if (original) (original.treasures ??= []).push(t.id);
     for (let w = 0; w < 4; w++) {
       const key = legacyRoleKey(t);
@@ -50,7 +71,7 @@ export function maintainLegacyHolders(people: TcPerson[]) {
       if (!holder) {
         const id = `legacy-holder:${w}:${key}:${people.length}`;
         const rnd = seeded(hashStr(s.id + id));
-        const surname = t.owner === 'Lão Tử' ? 'Lý' : splitName(t.owner).sur;
+        const surname = LEGACY_OWNER_REAL_SUR[t.owner] || NOBLE_SURS[Math.abs(hashStr(s.id + id + ':noble_sur')) % NOBLE_SURS.length];
         const g = t.owner === 'Vân Tiêu' ? 'f' : 'm';
         const r = Math.max(1, npcCap(w) - 5);
         const training = REALMS.slice(1, r).reduce((years, realm) => years + realm.turn * 12 / 1.9, 0);

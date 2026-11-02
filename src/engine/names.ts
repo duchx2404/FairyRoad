@@ -31,6 +31,10 @@ export function ensureWorldNames(people: TcPerson[] = s.flags.tienco?.people ?? 
     };
     const ordered = [...residents].sort((a, b) => score(b) - score(a));
     for (const { person: p, npc: n } of ordered) {
+      if (p?.fengshen && p.fsi !== undefined) {
+        used.add(nameKey(p.name));
+        continue;
+      }
       const record = (p && p.legacyRole) ? p : (n ?? p!);
       const key = nameKey(record.name);
       // A legendary figure also listed by an office is the same person, not a namesake.

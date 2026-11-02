@@ -699,7 +699,7 @@ function masterHall() {
     ? `${asg.name} chỉ là sư phụ do tông môn phân công khi ngươi nhập môn. Ngươi có thể xin thôi, hoặc bái thẳng một vị khác — không bị phạt, sư phụ cũ cũng không để bụng.`
     : m
     ? `Ngươi đã là đệ tử của ${m.name}. Đổi thầy thì cơ hội thấp hơn, và sư phụ cũ sẽ để bụng.`
-    : `Ngươi có thể cầu bái ${headTitle(sct)}, Thái thượng trưởng lão hoặc các vị trưởng lão trong môn. Linh căn hợp hệ, ngộ tính, mị lực, thân phận cao thì dễ được nhận.${schoolKeyOfSect(sct.n) && (s.world ?? 0) < 4 ? ' Tại hạ giới, các đạo hiệu và chức vụ truyền thuyết do hậu nhân cùng họ của chư vị đại năng Hồng Hoang kế thừa.' : ''} Bị từ chối thì một năm sau mới cầu lại được.`;
+    : `Ngươi có thể cầu bái ${headTitle(sct)}, Thái thượng trưởng lão hoặc các vị trưởng lão trong môn. Linh căn hợp hệ, ngộ tính, mị lực, thân phận cao thì dễ được nhận.${schoolKeyOfSect(sct.n) && (s.world ?? 0) < 4 ? ' Tại hạ giới, các đạo hiệu và chức vụ truyền thuyết do hậu nhân hoặc y bát truyền nhân của chư vị tiền bối Hồng Hoang kế thừa.' : ''} Bị từ chối thì một năm sau mới cầu lại được.`;
   const bk = backer();
   const body: HTMLElement[] = [h('p', { class: 'pl-desc' }, intro + (bk ? ` Có điều ${bk} — vị trưởng lão nào cũng phải nể mặt, ngươi chọn ai người đó nhận.` : ''))];
   if (top.length) body.push(grid(top));

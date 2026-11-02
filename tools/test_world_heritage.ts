@@ -46,11 +46,9 @@ for (let w = 0; w < 4; w++) {
     check(roster.some(e => e.role === 'chu' && e.top && baiBlock(e) === null), `can bai su Giao chu in ${sc.n} (world ${w})`);
     check(roster.some(e => e.role === 'thaithuong' && e.top && baiBlock(e) === null), `can bai su Thai thuong truong lao in ${sc.n} (world ${w})`);
     if (school === 'jie') {
-      check(roster.some(e => e.title?.includes('Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo') && e.name.startsWith('Thông ') && e.name !== 'Thông Thiên'), 'Tiet Giao head has title and descendant name in lower world');
-      check(roster.some(e => e.title === 'Đa Bảo Đạo Nhân' && e.name.startsWith('Đa ') && e.name !== 'Đa Bảo'), 'Da Bao Dao Nhan title and descendant name in lower world');
-      check(roster.some(e => e.title === 'Vân Tiêu Tiên Tử' && e.name.startsWith('Vân ') && e.name !== 'Vân Tiêu'), 'Van Tieu Tien Tu title and descendant name in lower world');
-      check(roster.some(e => e.title === 'Quỳnh Tiêu Tiên Tử' && e.name.startsWith('Quỳnh ') && e.name !== 'Quỳnh Tiêu'), 'Quynh Tieu Tien Tu title and descendant name in lower world');
-      check(roster.some(e => e.title === 'Bích Tiêu Tiên Tử' && e.name.startsWith('Bích ') && e.name !== 'Bích Tiêu'), 'Bich Tieu Tien Tu title and descendant name in lower world');
+      check(roster.some(e => e.title?.includes('Thượng Thanh Thông Thiên Giáo Chủ (còn gọi là Thượng Thanh Linh Bảo Thiên Tôn) – Giáo chủ Tiệt Giáo') && !e.name.startsWith('Thông ') && e.d.includes('Y bát truyền nhân')), 'Tiet Giao head has title and y bat successor in lower world');
+      check(roster.some(e => e.title === 'Đa Bảo Đạo Nhân' && !e.name.startsWith('Đa ') && e.d.includes('Y bát truyền nhân')), 'Da Bao Dao Nhan title and y bat successor in lower world');
+      check(roster.some(e => e.title === 'Huyền Đàn Chân Quân' && e.name.startsWith('Triệu ') && e.d.includes('Hậu nhân họ Triệu')), 'Trieu Cong Minh descendant name in lower world');
     }
     for (const ware of sectWares()) {
       if (ware.gear) check(ware.gear.g <= 4, 'branch gear cap');
@@ -89,7 +87,7 @@ for (const t of LEGENDARY_TREASURES) {
   check(owners.length === 1 && owners[0].name === t.owner, 'canonical owner of original');
 }
 state.world = WORLD.lv = 4; applyWorld(4);
-for (const [sectName, canonHead] of [['Tiệt Giáo · Bích Du Cung', 'Thông Thiên'], ['Xiển Giáo · Ngọc Hư Cung', 'Nguyên Thủy'], ['Đạo Giáo · Bát Cảnh Cung', 'Lão Tử'], ['Tây Phương Giáo', 'Tiếp Dẫn']] as const) {
+for (const [sectName, canonHead] of [['Tiệt Giáo · Bích Du Cung', 'Thông Thiên Giáo Chủ'], ['Xiển Giáo · Ngọc Hư Cung', 'Nguyên Thủy Thiên Tôn'], ['Đạo Giáo · Bát Cảnh Cung', 'Lão Tử'], ['Tây Phương Giáo', 'Tiếp Dẫn Đạo Nhân']] as const) {
   const sc4 = Object.values(SECTS).find(x => x.n === sectName)!;
   state.sect = { id: sc4.id, rank: 1, contrib: 0, joined: state.year, lastPay: state.year };
   const ros4 = elderRoster();

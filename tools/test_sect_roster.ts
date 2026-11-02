@@ -82,12 +82,13 @@ async function run() {
 
   const holder = s.flags.tienco!.people.find((p: any) => p.world === 0 && p.legacyRole === 'jie:Giáo chủ Tiệt Giáo');
   assert(!!holder, 'Legacy holder for jie:Giáo chủ Tiệt Giáo exists');
-  assert(holder!.name === 'Thông Thiếu Khanh', `Legacy holder synchronized to master name: ${holder!.name}`);
+  assert(!holder!.name.startsWith('Thông '), `Legacy holder has no fake surname Thông: ${holder!.name}`);
+  assert(holder!.name === masterNpc.name, `Legacy holder synchronized to master name: ${holder!.name}`);
   assert(holder!.npc === masterNpc.id, 'Legacy holder linked to master NPC id');
 
   const refreshedElders = elderRoster(mySect);
   const updatedLeader = refreshedElders.find((e) => e.top && e.role === 'chu');
-  assert(updatedLeader?.name === 'Thông Thiếu Khanh', `Giáo Chủ in elderRoster is Thông Thiếu Khanh: ${updatedLeader?.name}`);
+  assert(updatedLeader?.name === masterNpc.name, `Giáo Chủ in elderRoster matches master name: ${updatedLeader?.name}`);
 
   // Check no duplicate in geniuses or knownNpcs
   const people: any[] = s.flags.tienco?.people ?? [];
@@ -104,7 +105,7 @@ async function run() {
     return isDisciple || pAge <= maxGeniusAge;
   });
 
-  assert(!geniuses.some((g) => g.name === 'Thông Thiếu Khanh'), 'Master Thông Thiếu Khanh is NOT in geniuses');
+  assert(!geniuses.some((g) => g.name === masterNpc.name), 'Master is NOT in geniuses');
   assert(!geniuses.some((g) => g.name === 'Thông Vô Kỵ'), 'Thông Vô Kỵ is NOT in geniuses');
 
   const knownNpcs = s.npcs.filter((n) =>
@@ -116,7 +117,7 @@ async function run() {
     !geniuses.some((g) => g.name === n.name)
   );
 
-  assert(!knownNpcs.some((n) => n.name === 'Thông Thiếu Khanh'), 'Master Thông Thiếu Khanh is NOT duplicated in knownNpcs');
+  assert(!knownNpcs.some((n) => n.name === masterNpc.name), 'Master is NOT duplicated in knownNpcs');
 
   // 5. Test disciple roster (Thân truyền đệ tử, Nội môn đệ tử, Ngoại môn đệ tử)
   const { discipleRoster, getOrCreateDiscipleNpc } = await import('../src/engine/sectx');
@@ -129,12 +130,13 @@ async function run() {
   // Check Honghuang heritage
   const hoaLinh = coreDisciples.find((d) => d.title.includes('Hỏa Linh'));
   assert(!!hoaLinh, 'Found descendant of Hỏa Linh Thánh Mẫu');
-  assert(hoaLinh!.name.startsWith('Hỏa '), `Descendant has surname Hỏa: ${hoaLinh?.name}`);
-  assert(hoaLinh!.d.includes('Hậu nhân họ Hỏa kế thừa đạo hiệu Hỏa Linh Đạo Nhân'), `Description has lineage: ${hoaLinh?.d}`);
+  assert(!hoaLinh!.name.startsWith('Hỏa '), `Hỏa Linh successor has no fake surname Hỏa: ${hoaLinh?.name}`);
+  assert(hoaLinh!.d.includes('Y bát truyền nhân kế thừa truyền thừa Hỏa Linh Thánh Mẫu'), `Description has lineage: ${hoaLinh?.d}`);
 
   const nhatKhi = coreDisciples.find((d) => d.title.includes('Nhất Khí Tiên'));
   assert(!!nhatKhi, 'Found descendant of Nhất Khí Tiên Dư Nguyên');
-  assert(nhatKhi!.name.startsWith('Dư '), `Descendant has surname Dư: ${nhatKhi?.name}`);
+  assert(nhatKhi!.name.startsWith('Dư '), `Descendant has authentic surname Dư: ${nhatKhi?.name}`);
+  assert(nhatKhi!.d.includes('Hậu nhân họ Dư kế thừa truyền thừa của Dư Nguyên'), `Description has lineage: ${nhatKhi?.d}`);
 
   const innerDisciples = myDisciples.filter((d) => d.rankKey === 'noimon');
   assert(innerDisciples.length === 5, `Found ${innerDisciples.length} Nội môn đệ tử`);
@@ -161,7 +163,7 @@ async function run() {
   assert(!!discNpc1 && discNpc1.name === dToMeet.name, `Created NPC for disciple: ${discNpc1.name}`);
   assert(discNpc1.sect === jieId, 'Disciple belongs to Tiệt Giáo');
   assert(s.npcs.some((n) => n.id === discNpc1.id), 'Disciple is registered in s.npcs');
-  assert(discNpc1.how?.includes('Hậu nhân họ'), 'NPC how contains Honghuang lineage');
+  assert(discNpc1.how?.includes('truyền thừa'), 'NPC how contains Honghuang lineage');
 
   // Idempotent test
   const discNpc2 = getOrCreateDiscipleNpc(dToMeet, jieId);
