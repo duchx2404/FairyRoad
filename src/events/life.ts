@@ -115,8 +115,6 @@ const curTier = () => (s.tech ? TECHS[s.tech].tier : 0);
 
 // người nhà, đạo lữ
 const plain: NF = (n) => !['master', 'disciple', 'kin', 'daolu', 'enemy', 'rival'].includes(n.tag);
-/** Không có tông môn riêng (tán tu, hoặc cùng tông với ngươi). */
-const noOwnSect: NF = (n) => !n.sect || n.sect === s.sect?.id;
 const childIds = (): string[] => (s.flags.lifeChildren ||= []);
 const isChild: NF = (n) => childIds().includes(n.id);
 const surname = () => s.name.split(' ')[0];
@@ -880,44 +878,6 @@ register([
 // ---------------------------------------------------------------- B. NHÂN MẠCH
 
 register([
-  // ----- Bạn cũ tới nhờ giúp (chuỗi) -----
-  // Người có tông môn riêng (không phải tông của ngươi) thì đi chuỗi "bị hãm hại phải rời tông" ở events/exile.ts.
-  {
-    id: 'life_friend_help',
-    where: ['any'],
-    w: 5,
-    cd: 8,
-    cond: () => exists((n) => plain(n) && n.rel >= 40 && noOwnSect(n)),
-    title: 'Cố nhân tìm tới',
-    text: () => {
-      const n = choose((x) => plain(x) && x.rel >= 40 && noOwnSect(x));
-      return `${npcTitle(n)} tìm tới, áo dính bụi đường, mắt thâm quầng. "Ta không còn ai để nhờ. Một bọn tán tu cướp mất di vật sư phụ để lại cho ta, chúng đóng ở hẻm núi phía bắc."`;
-    },
-    ch: () => {
-      const n = the((x) => plain(x));
-      return [
-        {
-          t: 'Đi cùng',
-          cls: 'prime',
-          fn: (): Outcome => {
-            const d = duel(cultivator('Đầu lĩnh tán tu', 0, 1.05));
-            if (!d.win) { relChange(n, 10); return `${d.t} Hai người thoát được, nhưng di vật vẫn chưa lấy lại. ${n.name} cười buồn: "Ngươi chịu đi là đủ rồi."`; }
-            relChange(n, 25);
-            return {
-              text: `${d.t} Trong hang ổ, ngoài di vật của ${n.name} còn một rương linh thạch.`,
-              choices: [
-                { t: 'Chia đôi', fn: () => `Hai người chia đôi dưới ánh lửa. ${n.name} nâng bình rượu: "Kiếp này có ngươi là đủ."` + money(M(20)) },
-                { t: 'Nhường hết cho bạn', fn: () => { relChange(n, 15); good(1); return `${n.name} không nói gì, chỉ nắm chặt tay ngươi.` + statUp('tam', 1); } },
-              ],
-            };
-          },
-        },
-        { t: 'Đưa ít linh thạch để bạn thuê người', dis: !canPay(M(15)), fn: () => { s.money -= M(15); relChange(n, 5); return `${n.name} nhận, cảm ơn, nhưng ánh mắt hơi tối đi.`; } },
-        { t: 'Từ chối', fn: () => { relChange(n, -15); return `${n.name} gật đầu, quay đi. Bóng lưng ${he(n)} lúc ấy, ngươi nhớ rất lâu.`; } },
-      ];
-    },
-  },
-
   // ----- Bạn mượn tiền -----
   {
     id: 'life_friend_borrow',

@@ -68,8 +68,8 @@ const pickChoice = (cs: { t: string; fn: () => any }[], t: string) => cs.find((c
     const n = saintOf(s);
     n.rel = 60;
     const ev = EVENTS.find((e) => e.id === 'life_friend_exile')!;
-    const old = EVENTS.find((e) => e.id === 'life_friend_help')!;
-    if (i === 0) ok(!!ev.cond!() && !old.cond!(), 'Người có tông môn riêng: đi chuỗi rời tông, không đi bản cũ');
+    const old = EVENTS.find((e) => e.id === 'life_friend_help');
+    if (i === 0) ok(!!ev.cond!() && old === undefined, 'Sự kiện cũ life_friend_help đã bỏ, dùng chuỗi rời tông & đồng hành');
     const t = ev.text();
     if (i === 0) ok(n.sect === null && t.includes('Ta không còn là thánh nữ') && t.includes('Sư phụ'), 'Sự kiện xảy ra: mất tông môn, chức vụ; sư phụ hy sinh');
     s.r = 3; s.hurt = 0; // đủ mạnh để thường thắng truy binh
