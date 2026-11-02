@@ -7,7 +7,7 @@ import { setSurname, ORIGINS, originName, RACE_GROUPS, RACE_INFO, originRace, PE
 import { LOCS } from '../data/world';
 import { rollFate, fitRoot, newLife, rerolls, freeMode, UPGRADES, upLv, buyUpgrade, originUnlocked, unlockOrigin, scoreParts, lastLife, perkAllowed, type Fate } from '../engine/life';
 import { mkName } from '../engine/core';
-import { biography } from '../ai/ollama';
+import { biography, aiBlockReason } from '../ai/ollama';
 import { avatarSvg, playerPortrait } from './hud';
 
 const scr = $('#screen');
@@ -229,7 +229,10 @@ export function deathScreen() {
         rec.bio = t;
         saveMeta();
         bio.append(h('div', {}, t), h('div', { class: 'ai-tag small', style: { color: 'var(--violet)' } }, '✎ Tiểu sử do AI viết'));
-      } else bio.append(h('span', { class: 'muted' }, 'AI không phản hồi — bỏ qua tiểu sử.'));
+      } else {
+        const r = aiBlockReason();
+        bio.append(h('span', { class: 'muted' }, r ? `AI không viết được tiểu sử: ${r}` : 'AI không phản hồi — bỏ qua tiểu sử.'));
+      }
     });
   } else if (!rec.bio) bio.remove();
   void REALMS;

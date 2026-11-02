@@ -48,7 +48,7 @@ import { turnLen, tamList, tamActive, tamSlots, pqList, myLinh } from '../engine
 import { getLinh, feedLinh, STAGE_NAMES } from '../engine/beast-companion';
 import { formatStonesDetail, formatStonesShort } from '../engine/stones';
 import { showScene, toast, refresh, openModal, closeModal } from './modal';
-import { listModels, setAi } from '../ai/ollama';
+import { listModels, setAi, aiBlockReason } from '../ai/ollama';
 import { fmt, yearsTxt, esc } from '../core/util';
 
 export const NAV: [string, string][] = [
@@ -1092,8 +1092,15 @@ function achPanel(): HTMLElement[] {
 function setPanel(): HTMLElement[] {
   const st = meta.settings;
   const status = h('div', { class: 'small muted' });
+  // AI bật mà game không gọi được (vd. đang chơi bản web): báo rõ lý do ngay trong Cài đặt
+  const blocked = h('div', { class: 'small ai-blocked', style: { color: 'var(--seal)', margin: '4px 0' } });
+  const showBlocked = () => { const r = aiBlockReason(); blocked.textContent = r ? `AI không hoạt động: ${r}` : ''; blocked.hidden = !r; };
+  showBlocked();
   const modelSel = h('select', { onchange: (e: Event) => setAi({ model: (e.target as HTMLSelectElement).value }) }, h('option', { value: st.model }, st.model));
   const check = async () => {
+    showBlocked();
+    const r = aiBlockReason();
+    if (r) { status.textContent = ''; return; }
     status.textContent = 'Đang kiểm tra...';
     try {
       const ms = await listModels();
@@ -1105,14 +1112,15 @@ function setPanel(): HTMLElement[] {
       status.textContent = 'Không kết nối được Ollama tại ' + st.url + '. Hãy bật Ollama (ollama serve).';
     }
   };
-  const cb = (label: string, k: 'ai' | 'aiBio', sub?: string) => h('label', { style: { display: 'block', margin: '4px 0' } }, h('input', { type: 'checkbox', checked: st[k], onchange: (e: Event) => setAi({ [k]: (e.target as HTMLInputElement).checked }) }), ' ', label, sub ? h('div', { class: 'small muted', style: { marginLeft: '22px' } }, sub) : null);
+  const cb = (label: string, k: 'ai' | 'aiBio', sub?: string) => h('label', { style: { display: 'block', margin: '4px 0' } }, h('input', { type: 'checkbox', checked: st[k], onchange: (e: Event) => { setAi({ [k]: (e.target as HTMLInputElement).checked }); showBlocked(); } }), ' ', label, sub ? h('div', { class: 'small muted', style: { marginLeft: '22px' } }, sub) : null);
   return [
     h('h4', {}, 'AI kể chuyện (Ollama, chạy trên máy)'),
     cb('Bật AI', 'ai', 'Khi bật, AI kể lại phần mở đầu và kết quả của mọi sự kiện. Khi tắt, dùng lời kể cố định. Số liệu và phần thưởng không đổi.'),
     cb('Viết tiểu sử khi một kiếp kết thúc', 'aiBio'),
-    h('div', { style: { margin: '8px 0' } }, 'Địa chỉ: ', h('input', { type: 'text', value: st.url, style: { width: '220px' }, onchange: (e: Event) => setAi({ url: (e.target as HTMLInputElement).value.trim() }) })),
+    h('div', { style: { margin: '8px 0' } }, 'Địa chỉ: ', h('input', { type: 'text', value: st.url, style: { width: '220px' }, onchange: (e: Event) => { setAi({ url: (e.target as HTMLInputElement).value.trim() }); showBlocked(); } })),
     h('div', { style: { margin: '8px 0' } }, 'Model: ', modelSel, ' ', btn('Kiểm tra', check, 'small')),
     status,
+    blocked,
     h('h4', {}, 'Chế độ tự do'),
     h('label', { style: { display: 'block', margin: '4px 0' } }, h('input', { type: 'checkbox', checked: st.free, onchange: (e: Event) => setAi({ free: (e.target as HTMLInputElement).checked }) }), ' Mở hết xuất thân, nâng cấp luân hồi, gieo mệnh không giới hạn, tự chọn linh căn / thể chất / thiên phú',
       h('div', { class: 'small muted', style: { marginLeft: '22px' } }, 'Áp dụng từ lần đầu thai tới.')),

@@ -1,4 +1,4 @@
-import { serviceAvailable } from './service-access';
+import { serviceAvailable, serviceBlockReason } from './service-access';
 // AI kể chuyện chạy local qua Ollama (tùy chọn). Không có AI thì game vẫn chạy với văn bản soạn sẵn.
 import { meta, saveMeta, s } from '../engine/state';
 import type { LifeRec } from '../engine/state';
@@ -7,6 +7,8 @@ import type { LifeRec } from '../engine/state';
 const NUM_CTX = 8192;
 
 export const aiOn = () => meta.settings.ai && serviceAvailable(meta.settings.url);
+/** Người chơi đã bật AI nhưng game không gọi được: trả lý do để hiển thị. AI tắt hoặc dùng được → null. */
+export const aiBlockReason = () => (meta.settings.ai ? serviceBlockReason(meta.settings.url) : null);
 
 export async function listModels(): Promise<string[]> {
   const r = await fetch(`${meta.settings.url}/api/tags`, { signal: AbortSignal.timeout(4000) });

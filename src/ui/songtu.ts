@@ -1,4 +1,4 @@
-import { aiOn } from '../ai/ollama';
+import { aiOn, aiBlockReason } from '../ai/ollama';
 import { h, btn } from './dom';
 import type { SongTuContext } from '../engine/songtu';
 import { loadDefaultSongTu, loadSongTuPrompt, writeSongTu, requestSongTuMedia, SONGTU_SERVER } from '../ai/songtu';
@@ -63,7 +63,7 @@ export function songTuPanel(context: SongTuContext): HTMLElement {
     writing = true; retry.disabled = true; parts.forEach(p => p.refresh());
     storyStatus.textContent = 'AI đang viết cảnh Song Tu…';
     try {
-      if (!aiOn()) throw new Error('AI đang tắt.');
+      if (!aiOn()) throw new Error(aiBlockReason() ?? 'AI đang tắt. Bật lại ở Cài đặt.');
       const prompt = await loadSongTuPrompt(controller.signal);
       if (!live()) return;
       const text = await writeSongTu(prompt, context);

@@ -9,7 +9,7 @@ import type { Choice, Outcome, PickSpec } from '../engine/events';
 import type { FightResult } from '../engine/combat';
 import { die, checkAch } from '../engine/life';
 import { save } from '../engine/state';
-import { rewriteNarration, rewriteOutcome, aiOn } from '../ai/ollama';
+import { rewriteNarration, rewriteOutcome, aiOn, aiBlockReason } from '../ai/ollama';
 import { esc } from '../core/util';
 import { withFights } from './fightui';
 
@@ -113,6 +113,13 @@ function addAiNarration(el: HTMLElement, original: string, make: () => Promise<s
   }).finally(() => wait.remove());
 }
 
+/** AI đã bật nhưng không gọi được: ghi lý do dưới đoạn `el`, mỗi khung sự kiện chỉ một lần. */
+function noteAiBlocked(el: HTMLElement) {
+  const reason = aiBlockReason();
+  if (!reason || modal.querySelector('.ai-blocked')) return;
+  el.append(h('div', { class: 'ai-tag ai-blocked' }, `AI không kể lại được: ${reason} Đang hiển thị lời kể cố định.`));
+}
+
 /** Hiển thị một Scene. Scene loại info không có lựa chọn → chỉ bắn thông báo nhỏ. */
 export function showScene(sc: Scene) {
   if (sc.then) queued = sc.then;
@@ -130,8 +137,9 @@ export function showScene(sc: Scene) {
   const box = h('div', { class: 'choices' });
   body.push(box);
   openModal(sc.title, body, { noClose: true, seal: sc.kind === 'event' ? 'fate' : undefined });
-  if (sc.kind === 'event' && sc.text.length > 0 && aiOn()) {
-    addAiNarration(story, sc.text, () => rewriteNarration(sc.title, sc.text, sc.aiContext, sc.aiCast));
+  if (sc.kind === 'event' && sc.text.length > 0) {
+    if (aiOn()) addAiNarration(story, sc.text, () => rewriteNarration(sc.title, sc.text, sc.aiContext, sc.aiCast));
+    else noteAiBlocked(story);
   }
   renderChoices(box, sc.choices, sc);
 }
@@ -202,8 +210,9 @@ function showOutcome(c: Choice, box: HTMLElement, sc: Scene, out: Outcome) {
   }
   void prev;
   if (typeof out !== 'string' && out.songTu) box.before(songTuPanel(out.songTu));
-  else if (aiOn() && (sc.kind === 'event' ? text.length > 0 : text.length > 25 && !s?.dead)) {
-    addAiNarration(res, text, () => rewriteOutcome(sc.title, sc.text.slice(-600), c.t, text, sc.aiContext, sc.aiCast));
+  else if (sc.kind === 'event' ? text.length > 0 : text.length > 25 && !s?.dead) {
+    if (aiOn()) addAiNarration(res, text, () => rewriteOutcome(sc.title, sc.text.slice(-600), c.t, text, sc.aiContext, sc.aiCast));
+    else noteAiBlocked(res);
   }
   if (typeof out !== 'string' && out.pick && !pendingDeath()) renderPick(box, out.pick, { ...sc, text: text });
   else renderChoices(box, next, { ...sc, text: text });
