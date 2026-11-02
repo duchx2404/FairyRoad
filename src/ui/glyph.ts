@@ -132,7 +132,7 @@ export const SLOT_GLYPH = ['weapon', 'armor', 'treasure', 'ring', 'boots', 'furn
 /** Biểu tượng cấp tông môn (1–4); tà phái dùng 'demon'. */
 export const SECT_GLYPH = ['', 'gate', 'pagoda', 'banner', 'holy'];
 /** Biểu tượng loại vật phẩm theo tiền tố id. */
-export const ITEM_KIND_GLYPH: Record<string, string> = { h: 'herb', p: 'pill', m: 'ore', t: 'talisman', cp: 'book', sk: 'skill', x: 'special', gear: 'gear', recipe: 'recipe', craft: 'furnace' };
+export const ITEM_KIND_GLYPH: Record<string, string> = { h: 'herb', p: 'pill', m: 'ore', t: 'talisman', cp: 'book', sk: 'skill', x: 'special', gear: 'gear', recipe: 'recipe', craft: 'furnace', beast: 'paw' };
 
 /** Chuỗi <svg> nét theo màu chữ hiện hành (currentColor). */
 export function glyphSvg(name: string, size = 20, sw = 1.8, cls = ''): string {

@@ -11,7 +11,8 @@ import { LOCS, SECTS, SECT_RANKS, RK, rankLabel, promoReq, headTitle } from '../
 import { PILLS, TALIS, HERBS, SLOTS, TECHS, GEAR_GRADE_C, TIER_C, TIER_N, gearLabel, pillGiai } from '../data/items';
 import { RMAX, REALMS } from '../data/core';
 import { effRi, itemName, itemDesc, itemTier, count } from '../engine/char';
-import { stock, buy, sellPrice, sellItem, unsellable, sellGear, sellGearPrice, lots, winLot, consign, consignGear, auctionHeld, nextAuction, type Ware, type Lot } from '../engine/trade';
+import { stock, buy, sellPrice, sellItem, unsellable, sellGear, sellGearPrice, lots, winLot, consign, consignGear, auctionHeld, nextAuction, isBigTown, type Ware, type Lot } from '../engine/trade';
+import { CHANLINH, MOUNT_GRADE, clEffect } from '../data/spirit';
 import { brew, canBrew, alchChance, draw as drawTalis, canDraw, talisChance, makePaper, PAPER_REC, forge, canForge, forgeMats, craftTitle, craftProficiency, xpNeed, itemIdOf, pillRec, talisRec } from '../engine/craft';
 import { missionPool, sectWares, promoInfo, promote, leaveSect, rankName, retire } from '../engine/sect';
 import { doMission } from '../engine/actions';
@@ -20,6 +21,7 @@ import { fmt, pct, rf, ch } from '../core/util';
 import { TALIS_REC, PHU_PHAM } from '../data/items';
 
 export function icon(id: string, g?: number) {
+  if (id.startsWith('beast:')) return h('div', { class: 'ic', style: { background: '#b45309' }, html: glyphSvg('paw', 18) });
   const svg = id.startsWith('sk:') ? scrollIconSvg(id, 30) : itemArtSvg(id, 30, g ?? 1);
   if (svg) return h('div', { class: 'ic ic-svg', html: svg });
   const k = id.split(':')[0];
@@ -203,10 +205,17 @@ export function openAuction() {
     body.append(list);
   };
   draw(0);
-  openModal(`Nhà đấu giá · ${l.n}`, body, { wide: true, seal: 'gavel' });
+  const isBig = (l.type === 'town' && isBigTown(l.n)) || !!l.auction;
+  openModal(`${isBig ? 'Đại hội đấu giá' : 'Đấu giá hội nhỏ'} · ${l.n}`, body, { wide: true, seal: 'gavel' });
 }
 function lotRow(lot: Lot, redraw: () => void) {
-  const desc = lot.gear ? `${gearLabel(lot.gear)} · ${SLOTS[lot.gear.slot]} · ${REALMS[lot.gear.lv].n} · ${gearLine(lot.gear)}` : itemDesc(lot.id);
+  const isBeast = lot.id.startsWith('beast:');
+  const bDef = isBeast ? CHANLINH[lot.id.slice(6)] : null;
+  const desc = lot.gear
+    ? `${gearLabel(lot.gear)} · ${SLOTS[lot.gear.slot]} · ${REALMS[lot.gear.lv].n} · ${gearLine(lot.gear)}`
+    : bDef
+    ? `${bDef.d} · Tọa kỵ ${MOUNT_GRADE[bDef.mount]} · ${clEffect(bDef)}`
+    : itemDesc(lot.id);
   const row = h('div', { class: 'item' }, lot.gear ? gearIcon(lot.gear) : icon(lot.id, lot.g), h('div', { class: 'nm' }, lot.n, h('small', {}, desc)));
   const acts = h('div', { class: 'acts' });
   if (lot.sold) acts.append(h('span', { class: 'small muted' }, 'Đã bán'));

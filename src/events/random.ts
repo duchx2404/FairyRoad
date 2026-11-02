@@ -5,6 +5,7 @@ import { RMAX, effRi, seenRealm,
   meet, relChange, mark, here, realmN, he, npcTitle, sectName, years, SECTS, REALMS, findNpc, type Outcome, type NPC,
 } from '../engine/api';
 import { holyNpcName } from '../engine/core';
+import { winSectWar } from '../engine/sect';
 
 const atHome = () => !!s.sect && here().sect === s.sect.id;
 const holyLands = () => Object.values(SECTS).filter((x) => x.tier === 4);
@@ -118,7 +119,7 @@ register([
               text: `${r1}\n\nTrận tuyến bên trái vỡ. Một trưởng lão ${foe.n} đang phá trận nhãn — nếu trận nhãn mất, hộ sơn đại trận sụp.`,
               choices: [
                 { t: 'Lao tới giữ trận nhãn', cls: 'danger', fn: () => battle({ name: `Trưởng lão ${foe.n}`, r: Math.min(RMAX(), effRi() + 1), st: 0, kind: 'boss', mult: 0.9, el: foe.el[0] }, { lethal: false,
-                  win: () => { mark(`Giữ trận nhãn trong đại chiến với ${foe.n}`); fame(150); return `Trưởng lão địch trọng thương rút lui. Trận nhãn giữ được, ${foe.n} lui binh. Chưởng môn gọi tên ngươi trước toàn tông.` + contrib(200) + giveGear(effRi(), 2); },
+                  win: () => { mark(`Giữ trận nhãn trong đại chiến với ${foe.n}`); fame(150); const wMsg = winSectWar(foe.id); return `Trưởng lão địch trọng thương rút lui. Trận nhãn giữ được, ${foe.n} lui binh. Chưởng môn gọi tên ngươi trước toàn tông.\n\n${wMsg}` + contrib(200) + giveGear(effRi(), 2); },
                   lose: () => 'Ngươi bị đánh văng, nhưng giữ chân đủ lâu để trưởng lão bên mình tới kịp.' + contrib(80) + hurt(25),
                 }) },
                 { t: 'Đi cứu đồng môn bị thương', fn: () => { good(2); return 'Ngươi cõng từng người về sau trận. Chiến công không ai ghi, nhưng có mười mấy người sống sót.' + contrib(60) + statUp('tam', 1); } },

@@ -17,20 +17,20 @@ import { wander, work, explore, gatherScene, travelInfo, travelTo, formationInfo
 import { whereOf, ownerTxt } from '../data/world';
 import { EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, courtReq, empireAt } from '../data/world';
 import { myCourt, audience, canTakePost, takePost, resignPost, courtTask } from '../engine/court';
-import { missionPool, promoInfo, canJoin, joinSect, sectWares, isExclusiveTech, markVaultSold } from '../engine/sect';
+import { missionPool, promoInfo, canJoin, joinSect, sectWares, isExclusiveTech, markVaultSold, donateItemToVault, donateGearToVault } from '../engine/sect';
 import { HERBS, MATS, TALIS } from '../data/items';
-import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows } from '../engine/char';
+import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows, itemPrice } from '../engine/char';
 import { TAMPHAP, tamGrade, tamEffect, learnReq, realmForGiai, TIER_N, TECHS, SKILLS, PILLS, TIER_C, techSpeed, techGrade, skillGrade, pillGrade, skHue, SK_KIND, skillEffect, type Skill, type Tech } from '../data/items';
 import { techAff, count, addItem, itemName, tamList, pqList } from '../engine/char';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
 import { itemArtSvg, gearArtSvg } from './art';
 import { skillIconSvg, techIconSvg, pillIconSvg, tamIconSvg, pqIconSvg, scrollIconSvg, gearIconSvg, matIconSvg } from './icons';
 import { CRAFT_N } from '../engine/craft';
-import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, schoolKeyOfSect, SCHOOL_HEAD_TITLE, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate } from '../engine/sectx';
+import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, schoolKeyOfSect, SCHOOL_HEAD_TITLE, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate, sectWarScene } from '../engine/sectx';
 import { master } from '../engine/core';
 import { rankLabel, headTitle } from '../data/world';
-import { auctionHeld, nextAuction, stock, buy, wareCat, SHOP_CATS } from '../engine/trade';
-import { gearLabel, SLOTS, WEAPON_N } from '../data/items';
+import { auctionHeld, nextAuction, stock, buy, wareCat, SHOP_CATS, isBigTown } from '../engine/trade';
+import { gearLabel, SLOTS, WEAPON_N, gearPrice } from '../data/items';
 import { gearLine } from '../engine/items';
 import { itemDesc, itemTier, bagUsed, bagCap } from '../engine/char';
 import { openShop, openAuction, openSectHall, openCraft } from './menus';
@@ -202,7 +202,18 @@ export function openPlace(id = s.loc) {
       cards.push({ t: l.type === 'market' ? 'Vào phường thị' : 'Ghé tiệm', sub: 'Công pháp, pháp khí, đan dược, phù lục, vật liệu', fn: () => openStore(0) });
       cards.push({ t: 'Bán vật phẩm', sub: 'Đổi đồ trong túi lấy linh thạch', fn: after(() => openShop(1)) });
     }
-    if (l.auction) cards.push({ t: auctionHeld() ? 'Hội đấu giá · đang mở' : 'Hội đấu giá', sub: auctionHeld() ? `Năm nay ${l.n} mở hội đấu giá` : `Phiên tới năm ${nextAuction()} · vẫn nhận ký gửi`, hl: auctionHeld(), fn: after(() => openAuction()) });
+    const hasAuc = l.auction || l.type === 'town' || l.type === 'market';
+    const isBig = (l.type === 'town' && isBigTown(l.n)) || !!l.auction;
+    if (hasAuc) {
+      cards.push({
+        t: auctionHeld() ? `${isBig ? 'Đại hội đấu giá' : 'Đấu giá hội nhỏ'} · đang mở` : (isBig ? 'Đại hội đấu giá' : 'Đấu giá hội nhỏ'),
+        sub: auctionHeld()
+          ? (isBig ? `Đại hội tại ${l.n} mở phiên · nguyên liệu hiếm, pháp bảo cao cấp & linh thú ấu niên` : `Phiên đấu giá nhỏ tại ${l.n} đang mở phiên`)
+          : `Phiên tới năm ${nextAuction()} · vẫn nhận ký gửi`,
+        hl: auctionHeld(),
+        fn: after(() => openAuction()),
+      });
+    }
     if (l.type !== 'village') cards.push({ t: 'Vào trà lâu', sub: `${fmt(teaPrice())} linh thạch · nghe thuyết thư, dò tin`, dis: s.money < teaPrice(), fn: after(() => run(teahouse)) });
     const emp = empireAt(l.id);
     if (emp) cards.push({ t: `Hoàng cung · ${emp.n}`, sub: `${EMPIRE_TIER[emp.tier]} · ${emp.ruler} · hộ quốc lão tổ ${REALMS[EMPIRE_GUARD[emp.tier]].n}${myCourt()?.id === emp.id ? ' · ngươi là ' + COURT_RANKS[myCourt()!.rank] : ''}`, hl: true, fn: () => openCourt(emp.id) });
@@ -229,6 +240,15 @@ export function openPlace(id = s.loc) {
       cards.push({ t: 'Tông môn tỉ thí', sub: sparDone() ? 'Năm nay đã tham gia' : 'Ba vòng lôi đài với đồng môn, thua không tổn tính mệnh', dis: sparDone(), fn: after(() => run(tiThi)) });
       cards.push({ t: daiBiOpen() ? 'Tông môn đại bỉ · đang mở' : 'Tông môn đại bỉ', sub: daiBiOpen() ? (daiBiDone() ? 'Năm nay đã tham gia' : 'Mười năm một lần, năm vòng lôi đài, thưởng lớn') : `Năm ${daiBiNext()} (còn ${daiBiNext() - Math.floor(s.year)} năm)`, hl: daiBiOpen() && !daiBiDone(), dis: !daiBiOpen() || daiBiDone(), fn: after(() => run(daiBi)) });
       cards.push({ t: 'Bế quan linh mạch', sub: `${yearsTxt(T() * 3)} · ${veinCost()} cống hiến · tu nhanh gấp đôi`, dis: s.sect!.contrib < veinCost(), why: s.sect!.contrib < veinCost() ? `Cần ${veinCost()} cống hiến` : undefined, fn: after(() => run(veinCultivate)) });
+      cards.push({
+        t: 'Tông môn chiến',
+        sub: s.flags.lastSectWar && Math.floor(s.year) - s.flags.lastSectWar < 3
+          ? `Đang chỉnh đốn sau đại chiến (năm ${s.flags.lastSectWar + 3} có thể tiếp tục)`
+          : 'Chinh phạt / Nghênh chiến tông môn đối địch (thắng nhận sách, pháp bảo, nguyên liệu)',
+        dis: !!(s.flags.lastSectWar && Math.floor(s.year) - s.flags.lastSectWar < 3),
+        hl: !(s.flags.lastSectWar && Math.floor(s.year) - s.flags.lastSectWar < 3),
+        fn: after(() => run(sectWarScene)),
+      });
       cards.push({ t: pi.can ? 'Thăng cấp · đủ điều kiện' : `Thân phận · ${rankLabel(s.sect!.rank, sc, s.g)}`, sub: pi.why, hl: pi.can, fn: after(() => openSectHall(2)) });
       cards.push({ t: 'Dạo quanh sơn môn', sub: `${yearsTxt(Math.max(1 / 12, T() * 0.25))} · gặp đồng môn`, fn: after(() => run(wander)) });
       cards.push({ t: 'Rời tông môn', sub: 'Làm tán tu tự do', fn: after(() => openSectHall(2)) });
@@ -414,107 +434,156 @@ export function openLibrary(kind: 'book' | 'vault', tab = 0) {
   if (!s.sect) return;
   const sc = SECTS[s.sect.id];
   const PFX = ['cp:', 'sk:', 'tp:', 'fq:'];
-  const VAULT_CATS = ['Pháp khí', 'Đan dược', 'Phù lục', 'Vật liệu luyện đan', 'Vật liệu luyện khí', 'Vật liệu chế phù'];
+  const VAULT_CATS = ['Pháp khí', 'Đan dược', 'Phù lục', 'Vật liệu luyện đan', 'Vật liệu luyện khí', 'Vật liệu chế phù', 'Nộp đổi cống hiến'];
   const vcat = (w: { id: string }) => { const c = wareCat({ id: w.id } as never); return c === 1 ? 0 : c - 1; };
   const allW = sectWares().filter((w) => !/^(cp|sk|tp|fq):/.test(w.id));
-  const wares = kind === 'book' ? sectWares().filter((w) => w.id.startsWith(PFX[tab])) : allW.filter((w) => vcat(w) === tab);
-  const giaiOf = (id: string, gr?: { g: number }) => { if (gr) return Math.max(1, gr.g); const [k, key] = id.split(':'); if (k === 'h') return Math.max(1, HERBS[key].tier - 1); if (k === 'm') return Math.max(1, Math.min(6, MATS[key].tier - 1)); if (k === 't') return TALIS[key].tier; return k === 'cp' ? TECHS[key].tier : k === 'sk' ? SKILLS[key].tier : k === 'tp' ? TAMPHAP[key].tier : k === 'fq' ? PHAPQUYET[key].tier : PILLS[key].tier <= 1 ? 1 : Math.min(6, PILLS[key].tier - 1); };
-  // xếp: trấn tông trước, rồi theo giai, theo giá
-  const ord = (id: string) => (id.startsWith('cp:') && isExclusiveTech(id.slice(3)) ? 0 : 1);
-  wares.sort((a, b) => giaiOf(a.id, a.gear) - giaiOf(b.id, b.gear) || ord(a.id) - ord(b.id) || a.cost - b.cost);
-  const cards: Card[] = wares.map((w) => {
-    const [k, key] = w.id.split(':');
-    const locked = s.sect!.rank < w.minRank;
-    const poor = s.sect!.contrib < w.cost;
-    let t = w.n, sub = `${w.cost} cống hiến`, icon = '', edge = '', note = '';
-    if (k === 'cp') {
-      const tc = TECHS[key];
-      t = `${isExclusiveTech(key) ? 'Công pháp trấn tông' : 'Công pháp'}: ${tc.n}`;
-      sub += ` · ${tc.el.length ? tc.el.map((e) => EL[e].n).join(' · ') + ' hệ' : 'vô thuộc tính'} · ${techGrade(tc)} · ${techEffect(tc)}`;
-      icon = itemArtSvg('cp:' + key, 34)!;
-      edge = TIER_C[tc.tier];
-      if (s.tech === key) note = 'đang tu';
-    } else if (k === 'sk') {
-      const sk = SKILLS[key];
-      t = `Võ công: ${sk.n}`;
-      sub += ` · ${skHue(sk) ? skHue(sk)!.n + ' hệ' : 'vô thuộc tính'} · ${skillGrade(sk)} · ${SK_KIND[sk.k]} ${skillEffect(sk)} · ${skCost(sk)} linh lực`;
-      icon = skillIconSvg(sk, 34);
-      edge = TIER_C[sk.tier];
-      if (s.known.includes(key)) note = 'đã học';
-      else if (effRi() < learnReq(sk.tier)) note = `lĩnh hội cần ${REALMS[learnReq(sk.tier)].n}`;
-    } else if (k === 'tp') {
-      const x = TAMPHAP[key];
-      t = `Tâm kinh: ${x.n}`;
-      sub += ` · ${tamGrade(x)} · ${tamEffect(x)}`;
-      icon = itemArtSvg('tp:' + key, 34)!;
-      edge = TIER_C[x.tier];
-      if (tamList().includes(key)) note = 'đã lĩnh hội';
-      else if (effRi() < learnReq(x.tier)) note = `lĩnh hội cần ${REALMS[learnReq(x.tier)].n}`;
-    } else if (k === 'fq') {
-      const x = PHAPQUYET[key];
-      t = `Pháp quyết: ${x.n}`;
-      sub += ` · ${pqGrade(x)} · ${x.d}`;
-      icon = itemArtSvg('fq:' + key, 34)!;
-      edge = TIER_C[x.tier];
-      if (pqList().includes(key)) note = 'đã lĩnh hội';
-      else if (effRi() < learnReq(x.tier)) note = `lĩnh hội cần ${REALMS[learnReq(x.tier)].n}`;
-    } else if (w.gear) {
-      const gr = w.gear;
-      t = `Pháp khí: ${gr.n}`;
-      sub += ` · ${gearLabel(gr)} · ${SLOTS[gr.slot]} · ${REALMS[gr.lv].n}${gr.el ? ' · ' + EL[gr.el].n : ''} · ${gearLine(gr)}`;
-      icon = gearArtSvg(gr, 34);
-      edge = TIER_C[gr.g];
-    } else if (k !== 'p') {
-      t = itemName(w.id, w.g);
-      const d = itemDesc(w.id);
-      if (d) sub += ` · ${d}`;
-      icon = itemArtSvg(w.id, 34, w.g ?? 1) || matIconSvg(w.id, 34);
-      edge = TIER_C[Math.min(6, itemTier(w.id))];
-      note = `trong túi: ${count(w.id)}`;
-    } else {
-      const p = PILLS[key];
-      t = `Đan dược: ${p.n}`;
-      sub += ` · ${pillGrade(p, 1)} · ${p.d}`;
-      edge = '#9b2a1f';
-      icon = itemArtSvg('p:' + key, 34)!;
-      note = `trong túi: ${count(w.id)}`;
+  const isDonateTab = kind === 'vault' && tab === 6;
+
+  let cards: Card[] = [];
+  if (isDonateTab) {
+    for (const b of s.bag) {
+      const baseP = itemPrice(b.id, b.g);
+      const c1 = Math.max(1, Math.round(baseP * 0.45));
+      const cAll = c1 * b.n;
+      cards.push({
+        t: `${itemName(b.id, b.g)} ×${b.n}`,
+        sub: `Giao nộp nhận cống hiến · 1 cái nhận +${c1} cống hiến · nộp hết nhận +${cAll} cống hiến`,
+        note: `trong túi: ${b.n}`,
+        icon: itemArtSvg(b.id, 34, b.g) || matIconSvg(b.id, 34),
+        edge: '#4f7a55',
+        hl: true,
+        fn: () => {
+          const res = donateItemToVault(b.id, b.n);
+          toastMsg(res.msg);
+          refresh();
+          openLibrary('vault', 6);
+        },
+      });
     }
-    return {
-      t, sub, icon, edge, note,
-      dis: locked || poor || note === 'đang tu' || note === 'đã học' || note === 'đã lĩnh hội',
-      why: note === 'đang tu' || note === 'đã học' || note === 'đã lĩnh hội' ? undefined : locked ? `cần ${rankLabel(w.minRank, sc, s.g)}` : poor ? 'chưa đủ cống hiến' : undefined,
-      hl: !locked && !poor && !note.startsWith('đã') && !note.startsWith('đang'),
-      fn: () => {
-        if (w.gear) {
-          if (!addGear({ ...w.gear, uid: Math.random().toString(36).slice(2, 10), refined: true })) return toastMsg('Túi đầy.');
-          markVaultSold(w.gear.uid);
-        } else if (!addItem(w.id, 1, k === 'p' ? 1 : k === 't' ? w.g ?? 1 : undefined)) return toastMsg('Túi đầy.');
-        s.sect!.contrib -= w.cost;
-        toastMsg(`Đổi được ${w.gear ? w.gear.n : itemName(w.id, w.g)}.`);
-        refresh();
-        openLibrary(kind, tab);
-      },
-      _g: giaiOf(w.id, w.gear),
-    } as Card & { _g: number };
-  });
+    for (const gr of s.gearBag) {
+      const cg = Math.max(5, Math.round(gearPrice(gr) / 7));
+      cards.push({
+        t: gr.n,
+        sub: `${gearLabel(gr)} · ${SLOTS[gr.slot]} · ${REALMS[gr.lv].n} · Giao nộp nhận +${cg} cống hiến`,
+        icon: gearArtSvg(gr, 34),
+        edge: TIER_C[gr.g],
+        hl: true,
+        fn: () => {
+          const res = donateGearToVault(gr.uid);
+          toastMsg(res.msg);
+          refresh();
+          openLibrary('vault', 6);
+        },
+      });
+    }
+  } else {
+    const wares = kind === 'book' ? sectWares().filter((w) => w.id.startsWith(PFX[tab])) : allW.filter((w) => vcat(w) === tab);
+    const giaiOf = (id: string, gr?: { g: number }) => { if (gr) return Math.max(1, gr.g); const [k, key] = id.split(':'); if (k === 'h') return Math.max(1, HERBS[key].tier - 1); if (k === 'm') return Math.max(1, Math.min(6, MATS[key].tier - 1)); if (k === 't') return TALIS[key].tier; return k === 'cp' ? TECHS[key].tier : k === 'sk' ? SKILLS[key].tier : k === 'tp' ? TAMPHAP[key].tier : k === 'fq' ? PHAPQUYET[key].tier : PILLS[key].tier <= 1 ? 1 : Math.min(6, PILLS[key].tier - 1); };
+    // xếp: trấn tông trước, rồi theo giai, theo giá
+    const ord = (id: string) => (id.startsWith('cp:') && isExclusiveTech(id.slice(3)) ? 0 : 1);
+    wares.sort((a, b) => giaiOf(a.id, a.gear) - giaiOf(b.id, b.gear) || ord(a.id) - ord(b.id) || a.cost - b.cost);
+    cards = wares.map((w) => {
+      const [k, key] = w.id.split(':');
+      const locked = s.sect!.rank < w.minRank;
+      const poor = s.sect!.contrib < w.cost;
+      let t = w.n, sub = `${w.cost} cống hiến`, icon = '', edge = '', note = '';
+      if (k === 'cp') {
+        const tc = TECHS[key];
+        t = `${isExclusiveTech(key) ? 'Công pháp trấn tông' : 'Công pháp'}: ${tc.n}`;
+        sub += ` · ${tc.el.length ? tc.el.map((e) => EL[e].n).join(' · ') + ' hệ' : 'vô thuộc tính'} · ${techGrade(tc)} · ${techEffect(tc)}`;
+        icon = itemArtSvg('cp:' + key, 34)!;
+        edge = TIER_C[tc.tier];
+        if (s.tech === key) note = 'đang tu';
+      } else if (k === 'sk') {
+        const sk = SKILLS[key];
+        t = `Võ công: ${sk.n}`;
+        sub += ` · ${skHue(sk) ? skHue(sk)!.n + ' hệ' : 'vô thuộc tính'} · ${skillGrade(sk)} · ${SK_KIND[sk.k]} ${skillEffect(sk)} · ${skCost(sk)} linh lực`;
+        icon = skillIconSvg(sk, 34);
+        edge = TIER_C[sk.tier];
+        if (s.known.includes(key)) note = 'đã học';
+        else if (effRi() < learnReq(sk.tier)) note = `lĩnh hội cần ${REALMS[learnReq(sk.tier)].n}`;
+      } else if (k === 'tp') {
+        const x = TAMPHAP[key];
+        t = `Tâm kinh: ${x.n}`;
+        sub += ` · ${tamGrade(x)} · ${tamEffect(x)}`;
+        icon = itemArtSvg('tp:' + key, 34)!;
+        edge = TIER_C[x.tier];
+        if (tamList().includes(key)) note = 'đã lĩnh hội';
+        else if (effRi() < learnReq(x.tier)) note = `lĩnh hội cần ${REALMS[learnReq(x.tier)].n}`;
+      } else if (k === 'fq') {
+        const x = PHAPQUYET[key];
+        t = `Pháp quyết: ${x.n}`;
+        sub += ` · ${pqGrade(x)} · ${x.d}`;
+        icon = itemArtSvg('fq:' + key, 34)!;
+        edge = TIER_C[x.tier];
+        if (pqList().includes(key)) note = 'đã lĩnh hội';
+        else if (effRi() < learnReq(x.tier)) note = `lĩnh hội cần ${REALMS[learnReq(x.tier)].n}`;
+      } else if (w.gear) {
+        const gr = w.gear;
+        t = `Pháp khí: ${gr.n}`;
+        sub += ` · ${gearLabel(gr)} · ${SLOTS[gr.slot]} · ${REALMS[gr.lv].n}${gr.el ? ' · ' + EL[gr.el].n : ''} · ${gearLine(gr)}`;
+        icon = gearArtSvg(gr, 34);
+        edge = TIER_C[gr.g];
+      } else if (k !== 'p') {
+        t = itemName(w.id, w.g);
+        const d = itemDesc(w.id);
+        if (d) sub += ` · ${d}`;
+        icon = itemArtSvg(w.id, 34, w.g ?? 1) || matIconSvg(w.id, 34);
+        edge = TIER_C[Math.min(6, itemTier(w.id))];
+        note = `trong túi: ${count(w.id)}`;
+      } else {
+        const p = PILLS[key];
+        t = `Đan dược: ${p.n}`;
+        sub += ` · ${pillGrade(p, 1)} · ${p.d}`;
+        edge = '#9b2a1f';
+        icon = itemArtSvg('p:' + key, 34)!;
+        note = `trong túi: ${count(w.id)}`;
+      }
+      return {
+        t, sub, icon, edge, note,
+        dis: locked || poor || note === 'đang tu' || note === 'đã học' || note === 'đã lĩnh hội',
+        why: note === 'đang tu' || note === 'đã học' || note === 'đã lĩnh hội' ? undefined : locked ? `cần ${rankLabel(w.minRank, sc, s.g)}` : poor ? 'chưa đủ cống hiến' : undefined,
+        hl: !locked && !poor && !note.startsWith('đã') && !note.startsWith('đang'),
+        fn: () => {
+          if (w.gear) {
+            if (!addGear({ ...w.gear, uid: Math.random().toString(36).slice(2, 10), refined: true })) return toastMsg('Túi đầy.');
+            markVaultSold(w.gear.uid);
+          } else if (!addItem(w.id, 1, k === 'p' ? 1 : k === 't' ? w.g ?? 1 : undefined)) return toastMsg('Túi đầy.');
+          s.sect!.contrib -= w.cost;
+          toastMsg(`Đổi được ${w.gear ? w.gear.n : itemName(w.id, w.g)}.`);
+          refresh();
+          openLibrary(kind, tab);
+        },
+        _g: giaiOf(w.id, w.gear),
+      } as Card & { _g: number };
+    });
+  }
   const intro = kind === 'book'
     ? [`Kinh thư của ${sc.n}. Cống hiến hiện có: `, h('b', {}, String(s.sect.contrib)), '.', h('br', {}), `Thân phận: ${rankLabel(s.sect.rank, sc, s.g)}.`, h('br', {}), `Công pháp trấn tông chỉ ${sc.n} mới có; tuyệt học giai cao chỉ truyền cho đệ tử bậc cao. Võ công, tâm kinh, pháp quyết phải đủ cảnh giới mới lĩnh hội được.`]
-    : [`Bảo khố ${sc.n}: pháp khí, đan dược, phù lục, vật liệu — đổi bằng cống hiến. Cống hiến hiện có: `, h('b', {}, String(s.sect.contrib)), '.', h('br', {}), `Thân phận: ${rankLabel(s.sect.rank, sc, s.g)}. Bảo khố nhập hàng mới mỗi năm; ${sc.n} giỏi ${CRAFT_LABEL[sc.craft]} nên loại hàng này nhiều hơn. Pháp khí của tông đã được luyện hóa sẵn.`];
-  const body: HTMLElement[] = [h('p', { class: 'pl-intro' }, ...intro)];
-  if (kind === 'vault') body.push(h('div', { class: 'lib-tabs shop-tabs' }, ...VAULT_CATS.map((n, i) => { const c = allW.filter((w) => vcat(w) === i).length; return h('button', { class: i === tab ? 'on' : '', disabled: !c, onclick: () => openLibrary('vault', i) }, n, h('small', {}, ` (${c})`)); })));
-  if (kind === 'book') body.push(h('div', { class: 'lib-tabs' }, ...['Công pháp', 'Võ công', 'Tâm kinh', 'Pháp quyết'].map((n, i) => h('button', { class: i === tab ? 'on' : '', onclick: () => openLibrary('book', i) }, n, h('small', {}, ` (${sectWares().filter((w) => w.id.startsWith(PFX[i])).length})`)))));
-  const REALM_SEC = ['', 'Luyện Khí', 'Trúc Cơ', 'Kết Đan', 'Nguyên Anh', 'Hóa Thần', 'Luyện Hư trở lên'];
-  let start = 0;
-  for (let g = 1; g <= 6; g++) {
-    const part = (cards as (Card & { _g: number })[]).filter((c) => c._g === g);
-    if (!part.length) continue;
-    const mine = realmForGiai(g) === Math.max(1, Math.min(6, effRi()));
-    body.push(h('h4', { class: 'lib-sec' + (mine ? ' mine' : '') }, `${REALM_SEC[g]} · ${TIER_N[g]}`, mine ? h('small', {}, '  — hợp cảnh giới hiện tại') : null));
-    body.push(grid(part, start));
-    start += part.length;
+    : [`Bảo khố ${sc.n}: pháp khí, đan dược, phù lục, vật liệu — đổi bằng cống hiến. Cống hiến hiện có: `, h('b', {}, String(s.sect.contrib)), '.', h('br', {}), `Thân phận: ${rankLabel(s.sect.rank, sc, s.g)}. Bảo khố nhập hàng mới mỗi năm; đệ tử có thể dùng cống hiến để đổi hoặc giao nộp vật phẩm lấy cống hiến. Pháp khí của tông đã được luyện hóa sẵn.`];
+  if (s.flags.sectWarWins) {
+    intro.push(h('br', {}), h('span', { style: { color: '#047857', fontWeight: 'bold' } }, `Chiến tích: Tông môn đã toàn thắng ${s.flags.sectWarWins} lần tông môn chiến — Tàng Kinh Các và Bảo khố đã thu nạp thêm nhiều sách, pháp bảo và nguyên liệu chiến lợi phẩm!`));
   }
-  if (!cards.length) body.push(h('div', { class: 'empty' }, 'Không có gì để đổi.'));
-  body.push(grid([{ t: 'Trở lại', fn: () => openPlace() }], start));
+  const body: HTMLElement[] = [h('p', { class: 'pl-intro' }, ...intro)];
+  if (kind === 'vault') body.push(h('div', { class: 'lib-tabs shop-tabs' }, ...VAULT_CATS.map((n, i) => { const c = i === 6 ? s.bag.length + s.gearBag.length : allW.filter((w) => vcat(w) === i).length; return h('button', { class: i === tab ? 'on' : '', disabled: !c, onclick: () => openLibrary('vault', i) }, n, h('small', {}, ` (${c})`)); })));
+  if (kind === 'book') body.push(h('div', { class: 'lib-tabs' }, ...['Công pháp', 'Võ công', 'Tâm kinh', 'Pháp quyết'].map((n, i) => h('button', { class: i === tab ? 'on' : '', onclick: () => openLibrary('book', i) }, n, h('small', {}, ` (${sectWares().filter((w) => w.id.startsWith(PFX[i])).length})`)))));
+  if (isDonateTab) {
+    if (cards.length) body.push(grid(cards, 0));
+    else body.push(h('div', { class: 'empty' }, 'Túi đồ không có vật phẩm hoặc trang bị nào để giao nộp đổi cống hiến.'));
+  } else {
+    const REALM_SEC = ['', 'Luyện Khí', 'Trúc Cơ', 'Kết Đan', 'Nguyên Anh', 'Hóa Thần', 'Luyện Hư trở lên'];
+    let start = 0;
+    for (let g = 1; g <= 6; g++) {
+      const part = (cards as (Card & { _g: number })[]).filter((c) => c._g === g);
+      if (!part.length) continue;
+      const mine = realmForGiai(g) === Math.max(1, Math.min(6, effRi()));
+      body.push(h('h4', { class: 'lib-sec' + (mine ? ' mine' : '') }, `${REALM_SEC[g]} · ${TIER_N[g]}`, mine ? h('small', {}, '  — hợp cảnh giới hiện tại') : null));
+      body.push(grid(part, start));
+      start += part.length;
+    }
+    if (!cards.length) body.push(h('div', { class: 'empty' }, 'Không có gì để đổi.'));
+  }
+  body.push(grid([{ t: 'Trở lại', fn: () => openPlace() }], cards.length));
   openModal(kind === 'book' ? 'Tàng Kinh Các' : 'Bảo khố tông môn', body, { wide: true, noClose: true, xBtn: true, sub: `${whereOf(LOCS[s.loc])} · ${sc.n}` });
 }
 

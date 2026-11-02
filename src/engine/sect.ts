@@ -1,5 +1,5 @@
 import { worldDefinitions } from '../data/local-items';
-import { itemName } from './char';
+import { itemName, count, removeItem, itemPrice } from './char';
 import { localItemId, limitGear } from '../data/local-items';
 import { branchSchool } from '../data/declining-schools';
 import { worldArtCap } from '../data/treasure-grades';
@@ -9,11 +9,10 @@ import { PHAPQUYET } from '../data/spirit';
 import { RMAX, REALMS, EL } from '../data/core';
 import { SECTS, SECT_RANKS, SECT_TIER, SECT_TIER_INFO, RK, rankLabel, promoReq, headTitle } from '../data/world';
 import { MAX_SKILLS, TECHS, SKILLS, PILLS, TAMPHAP, TALIS, HERBS, MATS, mkGear, gearPrice, type Gear } from '../data/items';
-import { seeded, hashStr } from '../core/util';
+import { seeded, hashStr, clamp, ch, pick } from '../core/util';
 import { s, codexAdd } from './state';
 import { effRi, seenRoot as root, root as trueRoot, thapHidden } from './char';
 import { mark, addLog, setLoc, mkNpc, addNpc } from './core';
-import { ch, pick } from '../core/util';
 import { queueJoinCongrats } from './bride';
 import { allyFollow } from './ally';
 
@@ -139,7 +138,14 @@ export function retire(): string {
   return `Ngươi trao ấn ${headTitle(sc).toLowerCase()} cho người kế nhiệm, lui về hậu sơn. Việc tông môn không còn trong tay ngươi — nhưng ngay cả ${headTitle(sc).toLowerCase()} mới gặp ngươi cũng phải cúi đầu gọi một tiếng "sư tôn".`;
 }
 
-/** Hàng đổi bằng cống hiến ở Tàng Kinh Các / Đan Phòng. */
+export interface SectWarSpoils {
+  wins: number;
+  books: { id: string; n: string; source: string; cost: number; minRank: number }[];
+  gears: Gear[];
+  mats: { id: string; n: string; cost: number; minRank: number; source: string }[];
+}
+
+/** Hàng đổi bằng cống hiến ở Tàng Kinh Các / Bảo khố tông môn. */
 export interface SectWare { id: string; n: string; cost: number; minRank: number; gear?: Gear; g?: number }
 export function sectWares(): SectWare[] {
   const sc = sect();
@@ -151,39 +157,180 @@ export function sectWares(): SectWare[] {
   for (const k of sks) out.push({ id: 'sk:' + k.id, n: k.n, cost: 25 * Math.pow(3.5, k.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][Math.min(6, k.tier)] });
   for (const x of worldDefinitions('tp')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
   for (const x of worldDefinitions('fq')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+  
+  // Đan dược: Bảo khố bày đủ các cấp đan dược (đột phá, hỗ trợ, tu luyện, thọ nguyên...)
   for (const p of worldDefinitions('p')) {
-    if (p.tier > effRi() + 1 || p.tier < effRi() - 1) continue;
-    out.push({ id: 'p:' + p.id, n: p.n, cost: Math.round(8 * Math.pow(3, p.tier - 1) * (p.k === 'break' ? 4 : p.k === 'root' ? 6 : 1)), minRank: p.k === 'break' ? RK.NOI : RK.NGOAI });
+    if (p.tier <= Math.min(6, sc.tier + 2)) {
+      out.push({ id: 'p:' + p.id, n: p.n, cost: Math.round(8 * Math.pow(3, p.tier - 1) * (p.k === 'break' ? 4 : p.k === 'root' ? 6 : 1)), minRank: p.k === 'break' ? RK.NOI : RK.NGOAI });
+    }
   }
-  // ---- Bảo khố: pháp khí, phù lục, vật liệu (đổi theo năm, thiên về nghề của tông) ----
+
+  // ---- Bảo khố: pháp khí đầy đủ các ô trang bị, phù lục, linh thảo, nguyên liệu ----
   const rnd = seeded(hashStr(`vault:${sc.id}:${Math.floor(s.year)}:${s.id}`));
   const sold = ((s.flags.vaultSold ||= {}) as Record<string, number>);
   const yk = `${sc.id}:${Math.floor(s.year)}`;
   const giaiCap = Math.min(6, sc.tier + 1);
-  const nGear = sc.craft === 'forge' ? 6 : 4;
-  for (let i = 0; i < nGear; i++) {
-    const key = `gear${i}`;
+
+  // Pháp khí bày đủ 8 ô trang bị
+  for (let sIdx = 0; sIdx < 8; sIdx++) {
+    const key = `gear_slot_${sIdx}`;
     if (sold[yk + key]) continue;
     const saved = Math.random;
     Math.random = rnd;
     const lv = Math.max(0, Math.min(RMAX(), effRi() + (rnd() < 0.3 ? 1 : 0) - (rnd() < 0.3 ? 1 : 0)));
     const g = Math.max(1, Math.min(giaiCap, Math.round(1 + rnd() * giaiCap * 0.8)));
-    const gr = mkGear(lv, g, (i + Math.floor(rnd() * 5)) % 5);
+    const gr = mkGear(lv, g, sIdx);
     Math.random = saved;
     gr.uid = `v${key}${yk}`;
     out.push({ id: 'gear', n: gr.n, cost: Math.round(gearPrice(gr) / 6), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][g], gear: gr });
   }
-  for (const tl of worldDefinitions('t')) if (!tl.co && tl.tier <= giaiCap && (sc.craft === 'talis' || tl.tier <= Math.max(1, sc.tier))) out.push({ id: 't:' + tl.id, n: tl.n, cost: Math.round(6 * Math.pow(3.2, tl.tier - 1)), minRank: tl.tier >= 3 ? RK.NOI : RK.NGOAI, g: sc.craft === 'talis' ? 2 : 1 });
+
+  // Phù lục: đầy đủ các loại phù
+  for (const tl of worldDefinitions('t')) if (!tl.co && tl.tier <= giaiCap) out.push({ id: 't:' + tl.id, n: tl.n, cost: Math.round(6 * Math.pow(3.2, tl.tier - 1)), minRank: tl.tier >= 3 ? RK.NOI : RK.NGOAI, g: sc.craft === 'talis' ? 2 : 1 });
+
+  // Linh thảo luyện đan & Nguyên liệu luyện khí, luyện phù: đầy đủ mọi loại
   const herbCap = Math.min(6, sc.tier + 2);
-  for (const hb of Object.values(HERBS)) if (hb.tier <= herbCap && (sc.craft === 'alch' || hb.tier <= sc.tier + 1)) out.push({ id: 'h:' + hb.id, n: hb.n, cost: Math.round(3 * Math.pow(3, hb.tier - 1)), minRank: hb.tier >= 4 ? RK.NOI : RK.NGOAI });
+  for (const hb of Object.values(HERBS)) if (hb.tier <= herbCap) out.push({ id: 'h:' + hb.id, n: hb.n, cost: Math.round(3 * Math.pow(3, hb.tier - 1)), minRank: hb.tier >= 4 ? RK.NOI : RK.NGOAI });
   for (const m of Object.values(MATS)) if (m.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'm:' + m.id, n: m.n, cost: Math.round(4 * Math.pow(3, m.tier - 1)), minRank: m.tier >= 4 ? RK.NOI : RK.NGOAI });
+
+  // Chiến lợi phẩm thu được từ các lần tông môn chiến chiến thắng
+  const sp = (s.flags.sectWarSpoils ||= { wins: 0, books: [], gears: [], mats: [] }) as SectWarSpoils;
+  for (const b of sp.books || []) {
+    out.push({ id: b.id, n: `${b.n} (Chiến lợi ${b.source})`, cost: b.cost, minRank: b.minRank, source: b.source } as any);
+  }
+  for (const gr of sp.gears || []) {
+    if (!sold[gr.uid]) {
+      out.push({ id: 'gear', n: gr.n, cost: Math.round(gearPrice(gr) / 7), minRank: RK.NOI, gear: gr, source: 'war' } as any);
+    }
+  }
+  for (const m of sp.mats || []) {
+    out.push({ id: m.id, n: `${m.n} (Chiến lợi ${m.source})`, cost: m.cost, minRank: m.minRank, source: m.source } as any);
+  }
+
   const cap = branchSchool(sc.n) ? Math.min(4, worldArtCap()) : worldArtCap();
   const seen = new Set<string>();
   return out.map(w => {
     if (w.gear) limitGear(w.gear, s.world ?? 0, cap);
     const id = localItemId(w.id, s.world ?? 0, cap);
-    return { ...w, id, n: id === w.id ? w.n : itemName(id), cost: Math.max(1, Math.round(w.cost)) };
-  }).filter(w => { if (w.id === 'gear') return true; if (seen.has(w.id)) return false; seen.add(w.id); return true; });
+    const name = (w as any).source ? w.n : (id === w.id ? w.n : itemName(id));
+    return { ...w, id, n: name, cost: Math.max(1, Math.round(w.cost)) };
+  }).filter(w => {
+    if (w.id === 'gear') return true;
+    const seenKey = (w as any).source ? `${w.id}:${(w as any).source}` : w.id;
+    if (seen.has(seenKey)) return false;
+    seen.add(seenKey);
+    return true;
+  });
+}
+
+/** Thắng tông môn chiến: Tàng Kinh Các nhận thêm sách của địch, Bảo khố có thêm pháp bảo và nguyên liệu quý. */
+export function winSectWar(foeId: string): string {
+  const sc = sect();
+  const foe = SECTS[foeId] || Object.values(SECTS).find((x) => x.id !== sc?.id);
+  if (!sc || !foe) return '';
+  s.flags.sectWarWins = (s.flags.sectWarWins || 0) + 1;
+  const sp = (s.flags.sectWarSpoils ||= { wins: 0, books: [], gears: [], mats: [] }) as SectWarSpoils;
+  sp.wins = s.flags.sectWarWins;
+
+  const added: string[] = [];
+
+  // 1. Tàng Kinh Các có thêm sách từ địch:
+  const foeTech = TECHS[foe.tech];
+  if (foeTech && !sp.books.some((b) => b.id === 'cp:' + foeTech.id)) {
+    sp.books.push({
+      id: 'cp:' + foeTech.id,
+      n: `《${foeTech.n}》`,
+      source: foe.n,
+      cost: 40 * Math.pow(4, foeTech.tier - 1),
+      minRank: RK.NOI,
+    });
+    added.push(`Công pháp trấn tông 《${foeTech.n}》`);
+  }
+  const skPool = worldDefinitions('sk').filter((k) => (foe.el.includes(k.el as any) || skillOwners(k.id).includes(foe.id)) && !sp.books.some((b) => b.id === 'sk:' + k.id));
+  if (skPool.length) {
+    const sk = skPool[Math.floor(Math.random() * skPool.length)];
+    sp.books.push({
+      id: 'sk:' + sk.id,
+      n: sk.n,
+      source: foe.n,
+      cost: 25 * Math.pow(3.5, sk.tier - 1),
+      minRank: RK.NOI,
+    });
+    added.push(`Võ công 《${sk.n}》`);
+  }
+  const tpPool = worldDefinitions('tp').filter((x) => x.tier >= 2 && x.tier <= Math.min(6, sc.tier + 2) && !sp.books.some((b) => b.id === 'tp:' + x.id));
+  if (tpPool.length) {
+    const tp = tpPool[Math.floor(Math.random() * tpPool.length)];
+    sp.books.push({
+      id: 'tp:' + tp.id,
+      n: tp.n,
+      source: foe.n,
+      cost: Math.round(30 * Math.pow(4, tp.tier - 1) * (1 + tp.pq * 0.3)),
+      minRank: RK.NOI,
+    });
+    added.push(`Tâm kinh 《${tp.n}》`);
+  }
+
+  // 2. Bảo khố có thêm pháp bảo cao cấp:
+  const cap = Math.min(6, sc.tier + 2);
+  const nGears = 2;
+  for (let i = 0; i < nGears; i++) {
+    const gr = mkGear(Math.min(RMAX(), effRi() + 1), clamp(Math.round(2 + Math.random() * (cap - 1)), 2, 6), (i * 2 + 1) % 8);
+    gr.n = `${gr.n} · chiến lợi phẩm ${foe.n}`;
+    gr.refined = true;
+    gr.uid = `war_gear_${s.flags.sectWarWins}_${i}_${Math.random().toString(36).slice(2, 7)}`;
+    sp.gears.push(gr);
+  }
+  added.push(`${nGears} kiện pháp bảo chiến lợi`);
+
+  // 3. Bảo khố có thêm nguyên liệu quý từ khoáng mạch và dược điền địch:
+  const rareMats = Object.values(MATS).filter((m) => m.tier >= 2 && m.tier <= cap);
+  const rareHerbs = Object.values(HERBS).filter((h) => h.tier >= 2 && h.tier <= cap);
+  for (let i = 0; i < 3 && rareMats.length; i++) {
+    const m = rareMats[Math.floor(Math.random() * rareMats.length)];
+    if (!sp.mats.some((x) => x.id === 'm:' + m.id)) {
+      sp.mats.push({ id: 'm:' + m.id, n: m.n, cost: Math.round(4 * Math.pow(3, m.tier - 1)), minRank: RK.NGOAI, source: foe.n });
+    }
+  }
+  for (let i = 0; i < 3 && rareHerbs.length; i++) {
+    const h = rareHerbs[Math.floor(Math.random() * rareHerbs.length)];
+    if (!sp.mats.some((x) => x.id === 'h:' + h.id)) {
+      sp.mats.push({ id: 'h:' + h.id, n: h.n, cost: Math.round(3 * Math.pow(3, h.tier - 1)), minRank: RK.NGOAI, source: foe.n });
+    }
+  }
+  added.push('nhiều nguyên liệu luyện đan, luyện khí, phù lục quý');
+
+  s.fame += 100 * sc.tier;
+  if (s.sect) s.sect.contrib += 300 * sc.tier;
+  addLog(`Chiến thắng tông môn chiến trước ${foe.n}! Tàng Kinh Các và Bảo khố thu về: ${added.join(', ')}.`, 'good');
+  return `Chiến thắng đại tiệc khải hoàn! Toàn tông vang rền tiếng chiêng trống mừng thắng lợi trước ${foe.n}. Tàng Kinh Các đã nhập thêm kinh tịch mới; Bảo khố tông môn bổ sung thêm pháp bảo và nguyên liệu quý tịch thu từ đối phương!`;
+}
+
+/** Đệ tử nộp vật phẩm từ túi vào bảo khố tông môn để đổi lấy cống hiến. */
+export function donateItemToVault(id: string, qty = 1, g?: number): { ok: boolean; msg: string; contrib: number } {
+  if (!s.sect) return { ok: false, msg: 'Chưa gia nhập tông môn.', contrib: 0 };
+  const cur = count(id, g);
+  if (cur < qty) return { ok: false, msg: `Không đủ số lượng trong túi (${cur}/${qty}).`, contrib: 0 };
+  const baseP = itemPrice(id, g);
+  const singleC = Math.max(1, Math.round(baseP * 0.45));
+  const totalC = singleC * qty;
+  removeItem(id, qty, g);
+  s.sect.contrib += totalC;
+  addLog(`Giao nộp ${qty}x ${itemName(id, g)} vào bảo khố tông môn, nhận ${totalC} cống hiến.`, 'good');
+  return { ok: true, msg: `Đã giao nộp ${qty}x ${itemName(id, g)}, nhận được ${totalC} cống hiến!`, contrib: totalC };
+}
+
+/** Đệ tử nộp trang bị vào bảo khố tông môn để đổi lấy cống hiến. */
+export function donateGearToVault(uid: string): { ok: boolean; msg: string; contrib: number } {
+  if (!s.sect) return { ok: false, msg: 'Chưa gia nhập tông môn.', contrib: 0 };
+  const idx = s.gearBag.findIndex((g) => g.uid === uid);
+  if (idx < 0) return { ok: false, msg: 'Không tìm thấy trang bị trong túi.', contrib: 0 };
+  const gr = s.gearBag[idx];
+  const contrib = Math.max(5, Math.round(gearPrice(gr) / 7));
+  s.gearBag.splice(idx, 1);
+  s.sect.contrib += contrib;
+  addLog(`Giao nộp pháp bảo ${gr.n} vào bảo khố tông môn, nhận ${contrib} cống hiến.`, 'good');
+  return { ok: true, msg: `Đã giao nộp ${gr.n}, nhận được ${contrib} cống hiến!`, contrib };
 }
 
 export function missionPool(): { n: string; d: string; y: number; danger: number; reward: number }[] {

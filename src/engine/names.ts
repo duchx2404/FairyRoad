@@ -22,9 +22,16 @@ export function ensureWorldNames(people: TcPerson[] = s.flags.tienco?.people ?? 
     if (w === (s.world ?? 0)) residents.push(...s.npcs.filter(n => !linked.has(n.id)).map(npc => ({ npc })));
     const signature = () => `${s.id}|${w === (s.world ?? 0) ? s.name : ''}|` + residents.map(({ person: p, npc: n }) => `${p?.id}:${p?.name}:${n?.id}:${n?.name}`).join('|');
     if (checkedWorlds.get(w) === signature()) continue;
-    const ordered = [...residents].sort((a, b) => Number(!!(b.person?.chief || b.person?.fengshen || b.person?.lord || b.person?.heroine)) - Number(!!(a.person?.chief || a.person?.fengshen || a.person?.lord || a.person?.heroine)));
+    const score = (r: { person?: TcPerson; npc?: NPC }) => {
+      let sc = 0;
+      if (r.person?.chief || r.person?.fengshen || r.person?.lord || r.person?.heroine) sc += 10;
+      if (r.person?.legacyRole) sc += 8;
+      if (r.npc?.tag === 'master' || r.npc?.tag === 'daolu') sc += 6;
+      return sc;
+    };
+    const ordered = [...residents].sort((a, b) => score(b) - score(a));
     for (const { person: p, npc: n } of ordered) {
-      const record = n ?? p!;
+      const record = (p && p.legacyRole) ? p : (n ?? p!);
       const key = nameKey(record.name);
       // A legendary figure also listed by an office is the same person, not a namesake.
       const isCanonical = !!p && !!(p.chief || p.fengshen) && canonical.has(key) && !claimedCanonical.has(key);

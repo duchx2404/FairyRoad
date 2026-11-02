@@ -1,9 +1,10 @@
 import { worldDefinitions } from '../data/local-items';
 import { localItemId, localRecipeId } from '../data/local-items';
 import { RMAX } from '../data/core';
-import { PHAPQUYET } from '../data/spirit';
+import { PHAPQUYET, CHANLINH, MOUNT_GRADE, clEffect } from '../data/spirit';
+import { worldArtCap } from '../data/treasure-grades';
 // Cửa tiệm, bán đồ, nhà đấu giá, học nghề.
-import { PILLS, HERBS, MATS, TALIS, TECHS, SKILLS, SPECIALS, mkGear, gearPrice, type Gear } from '../data/items';
+import { PILLS, HERBS, MATS, TALIS, TECHS, SKILLS, SPECIALS, registerSpecial, mkGear, gearPrice, type Gear } from '../data/items';
 import { LOCS, REGIONS } from '../data/world';
 import { s } from './state';
 import { effRi, itemPrice, itemName, addItem, addGear, buyMult, sellMult, removeItem, bagFree } from './char';
@@ -49,6 +50,7 @@ export function stock(): Ware[] {
 
   // đan đột phá ở thành trì: thành lớn (Thành/Kinh/Đô) bày đủ mọi cấp, kể cả cấp cao; thành nhỏ (Trấn) bày đủ cấp thấp và cấp trung
   const town = l.type === 'town';
+  const big = (town && isBigTown(l.n)) || l.type === 'market';
   if (town) {
     const maxT = isBigTown(l.n) ? BREAK_TIER.hi[1] : BREAK_TIER.mid[1];
     for (const p of worldDefinitions('p').filter((x) => x.k === 'break' && x.tier <= maxT).sort((a, b) => a.tier - b.tier)) {
@@ -57,32 +59,50 @@ export function stock(): Ware[] {
     }
   }
   // đan dược
-  const pills = worldDefinitions('p').filter((p) => tierOk(p.tier) && (l.type === 'market' || p.tier <= 2) && p.k !== 'root' && !(town && p.k === 'break'));
-  for (let i = 0; i < (l.type === 'market' ? 8 : 5) && pills.length; i++) {
+  const pills = big
+    ? worldDefinitions('p').filter((p) => p.k !== 'break' && p.tier <= Math.min(5, worldArtCap()))
+    : worldDefinitions('p').filter((p) => tierOk(p.tier) && (l.type === 'market' || p.tier <= 2) && p.k !== 'root' && !(town && p.k === 'break'));
+  const pillLimit = big ? 15 : l.type === 'market' ? 8 : 5;
+  for (let i = 0; i < pillLimit && pills.length; i++) {
     const p = pickR(pills);
     const id = 'p:' + p.id;
     if (out.some((o) => o.id === id)) continue;
     const isBreak = p.k === 'break';
-    add({ id, n: itemName(id), price: Math.round(itemPrice(id) * mul * 1.4), qty: isBreak ? 1 : 3 + Math.floor(rnd() * 4), g: 1 });
+    add({ id, n: itemName(id), price: Math.round(itemPrice(id) * mul * 1.4), qty: isBreak ? 1 : (big ? 6 : 3) + Math.floor(rnd() * 6), g: 1 });
   }
-  // linh thảo theo vùng
-  const herbs = Object.values(HERBS).filter((h) => h.reg.includes(reg.id) && tierOk(h.tier));
-  for (const h of herbs.slice(0, 7)) add({ id: 'h:' + h.id, n: h.n, price: Math.round(itemPrice('h:' + h.id) * mul * 1.3), qty: 2 + Math.floor(rnd() * 5) });
-  // vật liệu
-  // giấy bút chế phù: thành nào cũng có
-  for (const id of ['phuchi', 'chusa']) add({ id: 'm:' + id, n: MATS[id].n, price: Math.round(itemPrice('m:' + id) * mul * 1.2), qty: 6 + Math.floor(rnd() * 10) });
-  const mats = Object.values(MATS).filter((m) => m.id !== 'phuchi' && m.id !== 'chusa' && (tierOk(m.tier) || m.id === 'huyenthiet' || m.id === 'dayeu'));
-  for (let i = 0; i < (l.forge ? 9 : 6) && mats.length; i++) {
-    const m = pickR(mats);
-    if (out.some((o) => o.id === 'm:' + m.id)) continue;
-    add({ id: 'm:' + m.id, n: m.n, price: Math.round(itemPrice('m:' + m.id) * mul * 1.3), qty: 3 + Math.floor(rnd() * 6) });
+  // linh thảo
+  // Thành lớn bày bán đầy đủ mọi loại linh thảo luyện đan; trấn nhỏ bán thảo dược bản địa
+  const herbs = big
+    ? Object.values(HERBS).filter((h) => h.tier <= Math.min(6, worldArtCap()))
+    : Object.values(HERBS).filter((h) => h.reg.includes(reg.id) && tierOk(h.tier));
+  for (const h of (big ? herbs : herbs.slice(0, 7))) {
+    add({ id: 'h:' + h.id, n: h.n, price: Math.round(itemPrice('h:' + h.id) * mul * 1.3), qty: big ? 12 + Math.floor(rnd() * 15) : 2 + Math.floor(rnd() * 5) });
+  }
+  // vật liệu luyện khí & chế phù
+  // Thành lớn bày bán đầy đủ nguyên liệu luyện khí, luyện phù (phù chỉ, chu sa, yêu bì, linh mộc, quặng, da/đan yêu thú...)
+  if (big) {
+    for (const m of Object.values(MATS).filter((m) => m.tier <= Math.min(6, worldArtCap()))) {
+      const isPaper = m.id === 'phuchi' || m.id === 'chusa';
+      add({ id: 'm:' + m.id, n: m.n, price: Math.round(itemPrice('m:' + m.id) * mul * (isPaper ? 1.2 : 1.3)), qty: isPaper ? 30 + Math.floor(rnd() * 30) : 10 + Math.floor(rnd() * 15) });
+    }
+  } else {
+    for (const id of ['phuchi', 'chusa']) add({ id: 'm:' + id, n: MATS[id].n, price: Math.round(itemPrice('m:' + id) * mul * 1.2), qty: 6 + Math.floor(rnd() * 10) });
+    const mats = Object.values(MATS).filter((m) => m.id !== 'phuchi' && m.id !== 'chusa' && (tierOk(m.tier) || m.id === 'huyenthiet' || m.id === 'dayeu'));
+    for (let i = 0; i < (l.forge ? 9 : 6) && mats.length; i++) {
+      const m = pickR(mats);
+      if (out.some((o) => o.id === 'm:' + m.id)) continue;
+      add({ id: 'm:' + m.id, n: m.n, price: Math.round(itemPrice('m:' + m.id) * mul * 1.3), qty: 3 + Math.floor(rnd() * 6) });
+    }
   }
   // phù lục
-  const tl = worldDefinitions('t').filter((t) => !t.co && tierOk(t.tier) && t.tier <= 3);
-  for (let i = 0; i < 6 && tl.length; i++) {
+  const tl = big
+    ? worldDefinitions('t').filter((t) => !t.co && t.tier <= Math.min(4, worldArtCap()))
+    : worldDefinitions('t').filter((t) => !t.co && tierOk(t.tier) && t.tier <= 3);
+  const tlLimit = big ? 10 : 6;
+  for (let i = 0; i < tlLimit && tl.length; i++) {
     const t = pickR(tl);
     if (out.some((o) => o.id === 't:' + t.id)) continue;
-    add({ id: 't:' + t.id, n: itemName('t:' + t.id, 1), price: Math.round(itemPrice('t:' + t.id) * mul * 1.3), qty: 2 + Math.floor(rnd() * 4), g: 1 });
+    add({ id: 't:' + t.id, n: itemName('t:' + t.id, 1), price: Math.round(itemPrice('t:' + t.id) * mul * 1.3), qty: big ? 4 + Math.floor(rnd() * 6) : 2 + Math.floor(rnd() * 4), g: 1 });
   }
   // sách: chỉ phường thị
   if (l.type === 'market') {
@@ -197,41 +217,121 @@ export const nextAuction = () => Math.floor(s.year) + (Math.floor(s.year) % 2 ==
 const RIVALS = ['Lão giả áo xám', 'Thiếu chủ Tiêu gia', 'Nữ tu che mặt', 'Hòa thượng béo', 'Phòng bao số ba', 'Thương nhân Tây Lương', 'Một đạo đồng', 'Ma tu đeo mặt nạ'];
 export function lots(): Lot[] {
   const l = LOCS[s.loc];
-  if (!l.auction) return [];
+  if (!l || (l.type !== 'town' && l.type !== 'market' && !l.auction)) return [];
   const key = `auc:${s.loc}:${Math.floor(s.year)}`;
   const rnd = seeded(hashStr(key + s.id));
   const pickR = <T,>(a: T[]) => a[Math.floor(rnd() * a.length)];
   const out: Lot[] = [];
-  const tier = clamp(effRi() + 1, 1, 8);
+  const isBig = (l.type === 'town' && isBigTown(l.n)) || !!l.auction;
+  const tier = clamp(effRi() + (isBig ? 2 : 1), 1, 8);
   const sold = (s.flags.aucSold ||= {}) as Record<string, boolean>;
   const pushLot = (id: string, n: string, base: number, g?: number, gear?: Gear) => {
     const local = localItemId(id);
     if (local !== id) { id = local; n = itemName(id, g); base = itemPrice(id, g); }
     const k = `${key}#${out.length}`;
-    out.push({ key: k, id, n, g, gear, start: Math.round(base * 1.2), rivalMax: Math.round(base * (1.3 + rnd() * 1.6)), rival: pickR(RIVALS), sold: !!sold[k] });
+    out.push({ key: k, id, n, g, gear, start: Math.round(base * (isBig ? 1.3 : 1.1)), rivalMax: Math.round(base * (1.3 + rnd() * (isBig ? 2.0 : 1.5))), rival: pickR(RIVALS), sold: !!sold[k] });
   };
-  const brk = worldDefinitions('p').filter((p) => p.k === 'break' && Math.abs(p.tier - tier) <= 1);
-  if (brk.length) { const p = pickR(brk); pushLot('p:' + p.id, p.n, itemPrice('p:' + p.id, 2), 2); }
-  const life = worldDefinitions('p').filter((p) => (p.k === 'life' || p.k === 'root' || p.k === 'stat') && p.tier <= tier + 1);
-  if (life.length) { const p = pickR(life); pushLot('p:' + p.id, p.n, itemPrice('p:' + p.id, 1), 1); }
-  const tcs = worldDefinitions('cp').filter((t) => !t.blood && t.tier >= 2 && t.tier <= Math.min(4, Math.ceil(tier / 2) + 1));
-  if (tcs.length) { const t = pickR(tcs); pushLot('cp:' + t.id, itemName('cp:' + t.id), itemPrice('cp:' + t.id)); }
-  for (let i = 0; i < 2; i++) {
+
+  // 1. Đan dược
+  const brk = worldDefinitions('p').filter((p) => p.k === 'break' && (isBig ? p.tier >= Math.max(1, tier - 2) : Math.abs(p.tier - tier) <= 1));
+  if (brk.length) { const p = pickR(brk); pushLot('p:' + p.id, p.n, itemPrice('p:' + p.id, isBig ? 3 : 2), isBig ? 3 : 2); }
+  const life = worldDefinitions('p').filter((p) => (p.k === 'life' || p.k === 'root' || p.k === 'stat') && (isBig ? p.tier >= 2 : p.tier <= tier));
+  if (life.length) { const p = pickR(life); pushLot('p:' + p.id, p.n, itemPrice('p:' + p.id, isBig ? 2 : 1), isBig ? 2 : 1); }
+
+  // 2. Pháp bảo cao cấp (ở đại hội thành lớn: phẩm cực phẩm, linh bảo, thần giai)
+  const gearCount = isBig ? 3 : 2;
+  for (let i = 0; i < gearCount; i++) {
     const saved = Math.random;
     Math.random = rnd;
-    const gr = mkGear(clamp(effRi(), 0, RMAX()), clamp((rnd() < 0.25 ? 3 : 2) + (effRi() >= 6 ? 2 : effRi() >= 4 ? 1 : 0), 0, 6));
+    const baseLv = clamp(effRi() + (isBig ? (rnd() < 0.4 ? 1 : 0) : 0), 0, RMAX());
+    const g = isBig
+      ? clamp(Math.round(3 + rnd() * 3), 3, 6)
+      : clamp(Math.round(1 + rnd() * 2), 1, 3);
+    const gr = mkGear(baseLv, g);
+    gr.refined = isBig;
     Math.random = saved;
-    pushLot('gear', gr.n, gearPrice(gr), undefined, gr);
+    pushLot('gear', gr.n, gearPrice(gr) * (isBig ? 1.4 : 1), undefined, gr);
   }
-  const sp = pickR(['x:thanhoa', 'x:phatnganh', 'x:kiemlenh', 'x:linhtuyen', 'x:tuitruvat']);
-  pushLot(sp, SPECIALS[sp.slice(2)].n, SPECIALS[sp.slice(2)].price * (1 + effRi() * 0.6));
-  const hb = Object.values(HERBS).filter((h) => h.tier === clamp(tier, 1, 6));
-  if (hb.length) { const h = pickR(hb); pushLot('h:' + h.id, h.n, itemPrice('h:' + h.id) * 3); }
+
+  // 3. Linh thú ấu niên (đại hội lớn bán linh thú thượng phẩm; hội bé bán linh thú sơ cấp)
+  if (isBig) {
+    const bigBeasts = ['chuoc', 'hacky', 'loiung', 'kimdieu', 'phonglinhhoa', 'huyenquy'].filter((k) => CHANLINH[k]);
+    if (bigBeasts.length) {
+      const bKey = pickR(bigBeasts);
+      const b = CHANLINH[bKey];
+      pushLot('beast:' + bKey, `[Linh thú ấu niên] ${b.n}`, 650 + b.mount * 350);
+    }
+  } else {
+    const smallBeasts = ['hoaly', 'thanhxa', 'ngantho', 'tuyetlang'].filter((k) => CHANLINH[k]);
+    if (smallBeasts.length) {
+      const bKey = pickR(smallBeasts);
+      const b = CHANLINH[bKey];
+      pushLot('beast:' + bKey, `[Linh thú ấu niên] ${b.n}`, 250 + b.mount * 150);
+    }
+  }
+
+  // 4. Nguyên liệu quý hiếm
+  if (isBig) {
+    const rareMatPool = ['m:hukhongthach', 'm:longlan', 'm:thienthach', 'm:cotuhuyet', 'm:tinhthannhuy', 'm:vannienthanhmoc', 'h:hongmongqua', 'h:cuuchuyenhoa', 'h:kimodienqua', 'h:hoalongqua'];
+    const chosenMats: string[] = [];
+    for (let i = 0; i < 2; i++) {
+      const mId = pickR(rareMatPool.filter((x) => !chosenMats.includes(x)));
+      if (mId) {
+        chosenMats.push(mId);
+        const isH = mId.startsWith('h:');
+        const key = mId.slice(2);
+        const n = isH ? HERBS[key]?.n : MATS[key]?.n;
+        if (n) pushLot(mId, n, itemPrice(mId) * 2.5);
+      }
+    }
+    const sp = pickR(['x:thanhoa', 'x:phatnganh', 'x:kiemlenh', 'x:linhtuyen', 'x:tuitruvat']);
+    pushLot(sp, SPECIALS[sp.slice(2)].n, SPECIALS[sp.slice(2)].price * (1 + effRi() * 0.6));
+  } else {
+    const commonMats = ['m:huyenthiet', 'm:tinhkim', 'm:hanngoc', 'm:dayeu', 'm:yeudan', 'h:tuyetlien'];
+    const mId = pickR(commonMats);
+    const isH = mId.startsWith('h:');
+    const key = mId.slice(2);
+    const n = isH ? HERBS[key]?.n : MATS[key]?.n;
+    if (n) pushLot(mId, n, itemPrice(mId) * 1.5);
+  }
+
+  // 5. Thư tịch công pháp
+  const tcs = worldDefinitions('cp').filter((t) => !t.blood && (isBig ? t.tier >= 3 : t.tier >= 2 && t.tier <= 3));
+  if (tcs.length) { const t = pickR(tcs); pushLot('cp:' + t.id, itemName('cp:' + t.id), itemPrice('cp:' + t.id) * (isBig ? 1.5 : 1)); }
+
   return out;
 }
 export function winLot(lot: Lot, price: number): string {
   if (s.money < price) return 'Không đủ linh thạch!';
-  if (lot.id === 'gear') {
+  if (lot.id.startsWith('beast:')) {
+    const beastId = lot.id.slice(6);
+    const b = CHANLINH[beastId];
+    if (b) {
+      if (!s.flags.chanlinh) {
+        s.flags.chanlinh = { id: beastId, name: b.n, bond: 40 };
+        s.money -= price;
+        (s.flags.aucSold ||= {})[lot.key] = true;
+        addLog(`Đấu giá được linh thú ấu niên ${b.n}, kết khế ước thành công!`, 'good');
+        return `Búa gõ ba tiếng. Ngươi đấu giá thành công ${b.n} (Ấu niên) với giá ${price} linh thạch. Chú thú non nép vào ngực ngươi, khế ước tương thông thành công!`;
+      } else {
+        const spKey = 'trung_' + beastId;
+        if (!SPECIALS[spKey]) {
+          registerSpecial({
+            id: spKey,
+            n: `Lồng linh thú: ${b.n} (Ấu niên)`,
+            d: `Phong ấn ấu thú ${b.n} mang huyết mạch linh thú. Dùng để thuần phục và ký kết khế ước làm chân linh tọa kỵ.`,
+            price: Math.round(price * 0.8),
+            use: 'Ký khế ước linh thú',
+          });
+        }
+        if (!addItem('x:' + spKey, 1)) return 'Túi đầy, không nhận được lồng linh thú.';
+        s.money -= price;
+        (s.flags.aucSold ||= {})[lot.key] = true;
+        addLog(`Đấu giá được Lồng linh thú: ${b.n}.`, 'good');
+        return `Búa gõ ba tiếng. Ngươi nhận được lồng phong ấn chứa ${b.n} (Ấu niên). Vật phẩm đã đưa vào túi, có thể ký khế ước bất cứ lúc nào!`;
+      }
+    }
+  } else if (lot.id === 'gear') {
     if (!addGear({ ...lot.gear!, uid: Math.random().toString(36).slice(2, 10) })) return 'Túi đầy, không nhận được.';
   } else if (lot.id === 'x:tuitruvat') {
     s.flags.bagExtra = (s.flags.bagExtra || 0) + 6;

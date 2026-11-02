@@ -1,11 +1,12 @@
 import { worldDefinitions } from '../data/local-items';
 // Chức năng mở rộng của đệ tử tông môn: Nhiệm Vụ Đường, Bái sư, Tỉ thí, Đại bỉ, Bế quan linh mạch.
-import { REALMS, EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, type El } from '../data/core';
+import { REALMS, EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, type El, splitName, RMAX } from '../data/core';
 import { SKILLS, TAMPHAP, HERBS, MATS, TECHS, WEAPON_N, type Weapon } from '../data/items';
 import { effRi, thapHidden, tamList, addItem } from './char';
 import { learnSkill } from './api';
 import { CRAFT_N, craftTitle, gainXp, xpNeed, type CraftK } from './craft';
 import { SECTS, SECT_TIER_INFO, SECT_TOP, RK, rankLabel, headTitle, isLaoTo, daoTitle, TITLE_RE } from '../data/world';
+import { winSectWar } from './sect';
 import { nameKey, uniquePersonalName } from '../core/names';
 import { s } from './state';
 import { cultRate, M } from './char';
@@ -143,6 +144,7 @@ export interface Elder {
   key: string; name: string; g: 'm' | 'f'; r: number; st: number; el: El; role: Role;
   seat: string; // "Kiếm Phong phong chủ", "Chấp pháp trưởng lão"...
   w?: Weapon; inner: boolean; top?: boolean; title?: string; trait: string; minRank: number; maxRank: number; age: number; d: string;
+  legacyRole?: string;
 }
 const WEAPONS: [string, Role, string, Weapon][] = [
   ['Kiếm Phong', 'vk', 'kiếm', 'kiem'], ['Đao Phong', 'vk', 'đao', 'dao'], ['Thương Phong', 'vk', 'thương', 'thuong'], ['Quyền Phong', 'the', 'quyền cước luyện thể', 'quyen'],
@@ -259,12 +261,24 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
   const w = s.world ?? 0;
   const seats = LEGACY_SCHOOL_ROSTER[sk];
   const usedNames = new Set<string>();
+  const usedGivens = new Set<string>();
   for (const item of seats) {
     usedNames.add(nameKey(item.canonName));
     usedNames.add(nameKey(`${item.sur} ${item.canonName}`));
     usedNames.add(nameKey(item.title));
+    usedGivens.add(nameKey(splitName(item.canonName).given));
   }
   const people: { alive?: boolean; world?: number; legacyRole?: string; name?: string }[] = s.flags.tienco?.people ?? [];
+  for (const item of seats) {
+    if (item.legacyRole) {
+      const holder = people.find((p) => p.alive && p.world === w && p.legacyRole === item.legacyRole);
+      if (holder?.name) {
+        usedNames.add(nameKey(holder.name));
+        usedGivens.add(nameKey(splitName(holder.name).given));
+      }
+    }
+  }
+  const curMaster = master();
   return seats.map((item, i) => {
     const r = w === 4
       ? (item.role === 'chu' ? 8 : item.role === 'thaithuong' ? 7 : item.inner ? 6 : 5)
@@ -275,12 +289,15 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
       name = item.canonName;
     } else {
       const holder = item.legacyRole ? people.find((p) => p.alive && p.world === w && p.legacyRole === item.legacyRole) : undefined;
-      if (holder?.name && !usedNames.has(nameKey(holder.name))) {
+      if (holder?.name) {
         name = holder.name;
+      } else if (curMaster && curMaster.sect === sct.id && item.title && curMaster.how?.includes(item.title.split(' – ')[0])) {
+        name = curMaster.name;
       } else {
-        name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`);
+        name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
       }
       usedNames.add(nameKey(name));
+      usedGivens.add(nameKey(splitName(name).given));
     }
     const shortTitle = item.title.split(' – ')[0];
     const d = w === 4 ? item.d : `Hậu nhân họ ${item.sur} kế thừa đạo hiệu ${shortTitle}. ${item.d}`;
@@ -302,6 +319,7 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
       maxRank: RK.THAITHUONG,
       age: Math.round(REALMS[r].life * (item.top ? 0.55 + rnd() * 0.3 : 0.3 + rnd() * 0.45)),
       d,
+      legacyRole: item.legacyRole,
     };
   });
 }
@@ -370,7 +388,14 @@ export function releaseAssigned(): string {
 const refused = (): Record<string, number> => ((s.flags.baiNo ||= {}) as Record<string, number>);
 /** Vị này có phải sư phụ hiện tại không. */
 const baseName = (n: string) => n.replace(TITLE_RE, '');
-export const isMyMaster = (e: Elder) => { const m = master(); return !!m && baseName(m.name) === baseName(e.name) && m.sect === s.sect?.id; };
+export const isMyMaster = (e: Elder) => {
+  const m = master();
+  if (!m || m.sect !== s.sect?.id) return false;
+  if (e.legacyRole && (s.flags.masterLegacyRole === e.legacyRole || m.how?.includes(e.legacyRole))) return true;
+  if (e.title && m.how?.includes(e.title.split(' – ')[0])) return true;
+  if (e.seat && m.how?.includes(e.seat)) return true;
+  return baseName(m.name) === baseName(e.name);
+};
 /** Con cháu của bậc lão tổ trong chính tông này: trưởng lão nào cũng phải nể mặt. */
 export function backer(): string | null {
   if (!s.sect || s.flags.holyScion !== s.sect.id) return null;
@@ -500,10 +525,20 @@ export function baiSu(e: Elder): Scene {
     extra = ` Tin truyền tới tai ${old.name}, người chỉ cười nhạt — từ nay tình thầy trò coi như đoạn.`;
   }
   const fullTitle = e.title ? (e.title.includes(e.seat) ? e.title : `${e.title} · ${e.seat}`) : e.seat;
-  const m = addNpc(mkNpc({ name: e.name, g: e.g, r: e.r, st: e.st, sect: s.sect!.id, tag: 'master', rel: 50, el: e.el, age: e.age, how: `${fullTitle} ${sc().n}, nhận ngươi làm đệ tử`, talent: e.top ? 1.2 : 0.8 }));
+  const npcData = mkNpc({ name: e.name, g: e.g, r: e.r, st: e.st, sect: s.sect!.id, tag: 'master', rel: 50, el: e.el, age: e.age, how: `${fullTitle} ${sc().n}, nhận ngươi làm đệ tử`, talent: e.top ? 1.2 : 0.8 });
+  const w = s.world ?? 0;
+  const p = e.legacyRole ? (s.flags.tienco?.people as any[])?.find((p) => p.alive && p.world === w && p.legacyRole === e.legacyRole) : undefined;
+  if (p) {
+    p.npc = npcData.id;
+    p.name = npcData.name;
+    if (p.beast) npcData.beast = p.beast;
+    if (p.race) npcData.race = p.race;
+  }
+  const m = addNpc(npcData);
   m.trait = e.trait;
   s.flags.masterRole = e.role;
   s.flags.masterPick = m.id;
+  if (e.legacyRole) s.flags.masterLegacyRole = e.legacyRole;
   if (e.w) s.flags.peakGift = e.key;
   delete refused()[e.key];
   mark(`Bái ${m.name} làm sư phụ`);
@@ -564,3 +599,42 @@ export function veinCultivate(): Scene {
 }
 
 export const myRankLabel = () => (s.sect ? rankLabel(s.sect.rank, sc(), s.g) : '');
+
+// ---------- Tông môn chiến ----------
+export function sectWarScene(): Scene {
+  const me = sc();
+  const foe = Object.values(SECTS).find((x) => x.id !== me.id && Math.abs(x.tier - me.tier) <= 1)
+    || Object.values(SECTS).find((x) => x.id !== me.id)!;
+  s.flags.lastSectWar = Math.floor(s.year);
+  passTime(0.5);
+
+  const lines: string[] = [];
+  lines.push(`Hộ sơn đại trận khởi động, chuông lệnh triệu tập đệ tử toàn môn. ${me.n} cùng ${foe.n} giao tranh quyết liệt tranh đoạt linh mạch và truyền thừa đại đạo!`);
+
+  // Trận 1: Tiên phong đệ tử địch
+  const r1 = fight({ name: `Đội tiên phong ${foe.n}`, r: Math.max(1, s.r), st: 1, kind: 'cultivator', mult: 0.95, el: foe.el[0] }, { lethal: false });
+  lines.push(`Tiên phong giao tranh: ${fightSummary(r1)}`);
+
+  if (!r1.win) {
+    s.hurt = Math.min(90, s.hurt + 20);
+    s.sect!.contrib += 40 * me.tier;
+    return { title: 'Tông môn chiến', text: `${lines.join('\n\n')}\n\nTrận đầu thất lợi, tông môn đành lui về củng cố phòng ngự. Ngươi nhận được ${40 * me.tier} cống hiến khích lệ.` };
+  }
+
+  // Trận 2: Trưởng lão / Chiến tướng địch
+  const r2 = fight({ name: `Trưởng lão hộ tông ${foe.n}`, r: Math.min(RMAX(), s.r + 1), st: 2, kind: 'boss', mult: 1.05, el: foe.el[0] }, { lethal: false });
+  lines.push(`Quyết chiến chủ lực: ${fightSummary(r2)}`);
+
+  if (!r2.win) {
+    s.hurt = Math.min(90, s.hurt + 25);
+    s.sect!.contrib += 100 * me.tier;
+    return { title: 'Tông môn chiến', text: `${lines.join('\n\n')}\n\nĐối phương quá mạnh, ngươi kiệt lực lui về. Tuy vậy chiến ý của ngươi đã cổ vũ toàn môn giữ vững trận nhãn. Nhận ${100 * me.tier} cống hiến.` };
+  }
+
+  // Chiến thắng toàn diện!
+  const winMsg = winSectWar(foe.id);
+  return {
+    title: 'Tông môn chiến đại thắng!',
+    text: `${lines.join('\n\n')}\n\n${winMsg}`,
+  };
+}

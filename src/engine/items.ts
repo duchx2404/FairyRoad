@@ -1,7 +1,7 @@
 import { worldDefinitions } from '../data/local-items';
 import { kmPlaceOne, kmRemove } from './kinhmach';
 import { kmFillNew } from './kinhmach';
-import { PHAPQUYET, pqGrade } from '../data/spirit';
+import { PHAPQUYET, CHANLINH, pqGrade } from '../data/spirit';
 // Dùng vật phẩm, trang bị, luyện hóa, học bí kíp.
 import { TAMPHAP, tamGrade, tamEffect, learnReq, skillGrade, PILLS, TECHS, SKILLS, SPECIALS, MATS, REFINE_Y, MAX_SKILLS, SLOTS, gearLabel, type Gear } from '../data/items';
 import { REALMS, ROOTS, BASIC_EL, STATS, hiddenRootKind, rootKindOf, type StatKey } from '../data/core';
@@ -87,6 +87,20 @@ export function useSpecial(key: string): string {
     case 'linhtuyen': return 'Linh tuyền mát lạnh chảy xuống đan điền. ' + addProg(50);
     case 'thanhoa': s.flags.flame = true; mark('Luyện hóa linh hỏa'); return 'Đốm lửa chui vào lòng bàn tay, từ nay luyện đan luyện khí đều có linh hỏa trợ lực.';
     case 'phatnganh': s.flags.bodhi = true; s.tamma = 0; s.stats.tam += 1; return 'Vị đắng chát lan khắp miệng rồi hóa ngọt. Tâm tĩnh như nước, đạo tâm +1. Lần đột phá tới sẽ dễ hơn.';
+    default: {
+      if (key.startsWith('trung_')) {
+        const beastId = key.slice(6);
+        const b = CHANLINH[beastId];
+        if (b) {
+          const old = s.flags.chanlinh ? s.flags.chanlinh.name : null;
+          s.flags.chanlinh = { id: beastId, name: b.n, bond: 40 };
+          mark(`Khế ước linh thú ${b.n}`);
+          return old
+            ? `Ngươi mở lồng linh thú, chia tay ${old} và ký kết khế ước mới cùng ${b.n}!`
+            : `Ngươi mở lồng linh thú, ${b.n} quấn quýt bên chân. Ký kết khế ước chân linh thành công!`;
+        }
+      }
+    }
   }
   return '';
 }
