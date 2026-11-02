@@ -372,12 +372,12 @@ input[type='text'], select { font-family: inherit; font-size: 15px; padding: 6px
 #fightbox .fa-result::before { content: ''; position: absolute; inset: 6px; border: 1px solid rgba(155, 42, 31, 0.2); pointer-events: none; }
 #fightbox .fa-result h2 { margin: 0 0 2px; font-size: 22px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
 #fightbox .fa-result h2 .seal { background: var(--seal); color: #fff; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 3px; flex: none; line-height: 0; }
-#fightbox .fa-result.win h2 .seal { background: var(--jade); }
-#fightbox .fa-result.draw h2 .seal, #fightbox .fa-result.fled h2 .seal { background: #6b7a8f; }
+#fightbox .fa-result.res-win h2 .seal { background: var(--jade); }
+#fightbox .fa-result.res-draw h2 .seal, #fightbox .fa-result.res-fled h2 .seal { background: #6b7a8f; }
 #fightbox .fa-result .fa-res-sub { color: var(--muted); font-size: 12.5px; margin: 6px 0 10px; }
 #fightbox .fa-result .fa-res-msg { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
-#fightbox .fa-result.win .fa-res-msg { color: var(--jade); }
-#fightbox .fa-result.lose .fa-res-msg { color: var(--seal); }
+#fightbox .fa-result.res-win .fa-res-msg { color: var(--jade); }
+#fightbox .fa-result.res-lose .fa-res-msg { color: var(--seal); }
 #fightbox .fa-result .fa-res-log { font-size: 12.5px; color: var(--muted); border-left: 2px solid var(--line); padding: 2px 8px; margin-bottom: 12px; }
 #fightbox .fa-result .fb-btns { justify-content: flex-end; }
 @keyframes fa-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -406,6 +406,35 @@ input[type='text'], select { font-family: inherit; font-size: 15px; padding: 6px
 #fightbox .fb-tag { font-size: 10px; color: #fff; padding: 0 4px; border-radius: 3px; vertical-align: middle; font-weight: 400; }
 #fightbox .fb-tag.up { background: var(--jade); }
 #fightbox .fb-tag.dn { background: var(--muted); }
+/* Điện thoại (vd. iPhone 16 Pro Max 440px): hai thẻ mỗi thẻ nửa màn hình, chân dung nhỏ cạnh tên,
+   thanh máu/linh lực trải hết bề ngang thẻ, con số nằm trên thanh — không tràn sang thẻ bên kia. */
+@media (max-width: 760px) {
+  /* left 50% + translate khiến khung chỉ rộng tối đa nửa màn hình rồi xuống dòng: căn giữa bằng left/right + margin auto */
+  #fightbox .fa-arena .fb-head, #fightbox .fa-arena .fb-turn, #fightbox .fa-arena .fb-turn.me, #fightbox .fa-arena .fb-turn.foe { left: 8px; right: 8px; width: fit-content; margin: 0 auto; transform: none; white-space: normal; text-align: center; }
+  #fightbox .fa-arena .fb-head { top: 6px; font-size: 15px; padding: 2px 12px; }
+  #fightbox .fa-arena .fb-turn, #fightbox .fa-arena .fb-turn.me, #fightbox .fa-arena .fb-turn.foe { top: 38px; font-size: 12px; padding: 2px 10px; }
+  #fightbox .fb-hint { display: none; }
+  #fightbox .fa-card { top: 66px; width: calc(50% - 12px); padding: 6px 8px; font-size: 12.5px; line-height: 1.35; }
+  #fightbox .fb-me.fa-card { left: 8px; } #fightbox .fb-foe.fa-card { right: 8px; }
+  #fightbox .fb-me, #fightbox .fb-foe { display: grid; grid-template-columns: 32px minmax(0, 1fr); column-gap: 6px; row-gap: 2px; align-items: center; }
+  #fightbox .fb-foe .fb-body { display: contents; }
+  #fightbox .fb-me .fb-por { grid-row: auto; }
+  #fightbox .fb-por { line-height: 0; }
+  #fightbox .fb-por svg { width: 32px; height: 32px; }
+  #fightbox .fb-me > :not(.fb-por):not(.fb-name), #fightbox .fb-foe .fb-body > :not(.fb-name) { grid-column: 1 / -1; }
+  #fightbox .fb-name { gap: 2px 6px; line-height: 1.3; }
+  #fightbox .fb-name b { font-size: 13.5px; }
+  #fightbox .fb-realm { margin-left: 0; font-size: 12px; }
+  #fightbox .fb-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'l v' 'b b'; gap: 0 6px; font-size: 12px; }
+  #fightbox .fb-row > :first-child { grid-area: l; }
+  #fightbox .fb-row > .bar { grid-area: b; margin-top: 1px; }
+  #fightbox .fb-row > :last-child { grid-area: v; text-align: right; white-space: nowrap; }
+  #fightbox .fb-intent { margin-top: 2px; font-size: 12px; line-height: 1.3; }
+  #fightbox .fb-moves { margin-top: 2px; }
+  #fightbox .fb-moves > .small { display: none; }
+  #fightbox .fb-mv { font-size: 11px; padding: 0 5px; }
+  #fightbox .fa-result { padding: 16px 16px 14px; }
+}
 
 /* bảng chọn nhiều */
 .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 8px; margin: 6px 0 10px; }

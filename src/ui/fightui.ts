@@ -83,7 +83,7 @@ function openFight(p: FightPending, done: (sc: Script) => void) {
     const arena = h('div', { class: 'fa-arena' },
       h('div', { class: 'fb-head' }, h('b', {}, 'Giao chiến'), ` · Hiệp ${b.round}${b.lethal ? ' · sinh tử' : ' · luận bàn'}`,
         b.uyDiff > 0 ? h('span', { class: 'fb-uy dn' }, ` · bị uy áp, công còn ${Math.round(b.uyMul() * 100)}%`) : b.uyDiff < 0 ? h('span', { class: 'fb-uy up' }, ' · áp chế đối phương') : null),
-      h('div', { class: 'fb-turn ' + (myT ? 'me' : 'foe') }, b.over ? 'Trận đấu kết thúc' : auto ? 'Đang tự động đánh…' : 'Lượt của ngươi · mỗi chiêu dùng một lần, đủ linh lực là xuất chiêu, xong bấm Kết thúc lượt (Space).'),
+      h('div', { class: 'fb-turn ' + (myT ? 'me' : 'foe') }, b.over ? 'Trận đấu kết thúc' : auto ? 'Đang tự động đánh…' : ['Lượt của ngươi', h('span', { class: 'fb-hint' }, ' · mỗi chiêu dùng một lần, đủ linh lực là xuất chiêu, xong bấm Kết thúc lượt (Space).')]),
       h('div', { class: 'fa-side me' }, ...slots('me', [me, ...b.allies], b.pttd && sc.giant ? sc : null)),
       h('div', { class: 'fa-side foe' }, ...slots('foe', [f, ...b.foes], null)),
       h('div', { class: 'fb-me fa-card' },
@@ -119,7 +119,7 @@ function openFight(p: FightPending, done: (sc: Script) => void) {
       const title = b.over === 'win' ? 'Thắng trận' : b.over === 'fled' ? 'Thoát thân' : b.over === 'draw' ? 'Bất phân thắng bại' : 'Bại trận';
       const msg = b.over === 'win' ? `${f.name} bại trận.` : b.over === 'fled' ? 'Ngươi đã thoát thân.' : b.over === 'draw' ? 'Hai bên giằng co, đành rút lui.' : 'Ngươi gục xuống…';
       root.append(h('div', { class: 'fa-veil' }),
-        h('div', { class: 'fa-result ' + b.over },
+        h('div', { class: 'fa-result res-' + b.over }, // tiền tố res-: tránh trùng class .win của cửa sổ game
           h('h2', {}, h('span', { class: 'seal', html: glyphSvg(b.over, 20) }), title),
           h('div', { class: 'fa-res-sub' }, `Hiệp ${b.round}${b.lethal ? ' · sinh tử' : ' · luận bàn'}`),
           h('div', { class: 'fa-res-msg' }, msg),
