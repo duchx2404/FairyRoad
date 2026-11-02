@@ -353,7 +353,10 @@ export const MATS: Record<string, Mat> = {
   yeudan: { id: 'yeudan', n: 'Yêu đan', tier: 2, d: 'Tinh hoa tu vi của yêu thú. Phẩm cấp theo yêu thú.' },
   longlan: { id: 'longlan', n: 'Giao long lân', tier: 4, d: 'Vảy giao long, cứng hơn huyền thiết.' },
   linhmoc: { id: 'linhmoc', n: 'Linh mộc tâm', tier: 4, d: 'Lõi cây ngàn năm, luyện linh bảo cực tốt.' },
-  hondonthach: { id: 'hondonthach', n: 'Hỗn Độn Thạch', tier: 6, d: 'Đá ngưng từ khí hỗn độn trước thuở khai thiên, chỉ có ở Hỗn Độn giới. Dùng để sửa Hỗn Độn Kiếm (Tàn khuyết).' },
+  hondonthach: { id: 'hondonthach', n: 'Hỗn Độn Thạch', tier: 9, d: 'Đá ngưng từ khí hỗn độn trước thuở khai thiên, chỉ có ở Hỗn Độn giới. Khi Hỗn Độn Kiếm (Tàn khuyết) đạt Hỗn Độn Linh Bảo cực phẩm, dùng đá này để thăng lên Hỗn Độn Chí Bảo hạ phẩm.' },
+  hondonkim: { id: 'hondonkim', n: 'Hỗn Độn Thần Kim', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, ngưng kết từ tinh hoa kim thiết thuở hồng mông. Dùng để rèn Hỗn Độn Kiếm lên Hỗn Độn Chí Bảo trung phẩm.' },
+  hondonngoc: { id: 'hondonngoc', n: 'Hỗn Độn Đạo Ngọc', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, ẩn chứa đạo vận tiên thiên. Dùng để rèn Hỗn Độn Kiếm lên Hỗn Độn Chí Bảo thượng phẩm.' },
+  hondonhoa: { id: 'hondonhoa', n: 'Hỗn Độn Nguyên Tinh', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, tinh hoa bản nguyên của Hỗn Độn giới. Dùng để rèn Hỗn Độn Kiếm lên Hỗn Độn Chí Bảo cực phẩm.' },
   hukhongthach: { id: 'hukhongthach', n: 'Hư không thạch', tier: 6, d: 'Đá sinh ra trong khe nứt không gian.' },
   huyenthiet: { id: 'huyenthiet', n: 'Huyền thiết', tier: 1, d: 'Sắt đen nặng gấp ba sắt thường.' },
   tinhkim: { id: 'tinhkim', n: 'Tinh kim', tier: 2, d: 'Kim loại tinh luyện, dẫn linh lực tốt.' },
@@ -495,7 +498,7 @@ export interface Gear {
   gm?: number; // tỷ lệ trưởng thành lúc tính chỉ số
 }
 export const gearLabel = (gr: Gear) => {
-  if (gr.grow) { const { g, q } = growTreasureGrade(/\(tàn khuyết\)/i.test(gr.n)); gr.g = g; gr.q = q; }
+  if (gr.grow) { const { g, q } = growTreasureGrade(/\(tàn khuyết\)/i.test(gr.n), undefined, undefined, undefined, gr.q); gr.g = g; gr.q = q; }
   return gradeLabel(gr.g, gr.q ?? 1);
 };
 export function mkGear(lv: number, g: number, slot?: number, el?: El | null, q?: number): Gear {

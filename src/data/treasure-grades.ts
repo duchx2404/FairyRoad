@@ -1,4 +1,4 @@
-import { WORLD } from './core';
+import { WORLD, WORLD_CAP } from './core';
 
 /** Quy ước của game theo dòng tiểu thuyết Hồng Hoang hiện đại, không phải một thang cổ điển thống nhất. */
 export const TREASURE_TIERS = [
@@ -20,31 +20,40 @@ export const localTreasureGrade = (g: number, w = WORLD.lv) => Math.max(0, Math.
 let _growState: () => { r: number; st: number; w: number } = () => ({ r: 0, st: 0, w: WORLD.lv });
 export function setGrowStateReader(fn: () => { r: number; st: number; w: number }) { _growState = fn; }
 
-/** Phẩm cấp công pháp/thuật pháp trưởng thành theo người dùng: bắt đầu từ Hoàng giai hạ phẩm (1, 0), tăng theo cảnh giới, bị chặn bởi trần giới hiện tại. */
-export function growArtGrade(w?: number, r?: number, st?: number): { tier: number; pq: number } {
-  const cur = _growState();
-  const ww = w ?? cur.w, rr = r ?? cur.r, ss = Math.max(0, Math.min(3, st ?? cur.st));
-  const cap = worldArtCap(ww);
-  const floor = ww > 0 ? worldArtCap(ww - 1) : 0;
-  let tier = Math.max(1, rr);
-  let pq = rr <= 0 ? 0 : ss;
-  if (tier < floor) { tier = floor; pq = 3; }
-  if (tier > cap) { tier = cap; pq = 3; }
-  return { tier, pq };
+/** Chia đều các bậc phẩm chất (hạ, trung, thượng, cực phẩm) theo số lượng cảnh giới của giới hiện tại. */
+function divideGrade(minT: number, maxT: number, ww: number, rr: number, ss: number): { t: number; q: number } {
+  const rMax = WORLD_CAP[Math.max(0, Math.min(WORLD_CAP.length - 1, ww))] || 9;
+  const tiers = Math.max(1, maxT - minT + 1);
+  const steps = tiers * 4;
+  if (rr <= 0) return { t: minT, q: 0 };
+  if (tiers === 1) {
+    const q = Math.max(0, Math.min(3, Math.floor(((rr - 1) * 4) / rMax)));
+    return { t: minT, q };
+  }
+  const cur = Math.max(0, Math.min(rMax * 4 - 1, (rr - 1) * 4 + ss));
+  const step = Math.max(0, Math.min(steps - 1, Math.floor((cur * steps) / (rMax * 4))));
+  return { t: minT + Math.floor(step / 4), q: step % 4 };
 }
 
-/** Phẩm cấp pháp bảo trưởng thành theo người dùng: bắt đầu từ Hoàng giai hạ phẩm (1, 0), tăng theo cảnh giới, bị chặn bởi trần giới hiện tại (bản tàn khuyết tối đa Hỗn Độn Linh Bảo cực phẩm 11, 3). */
-export function growTreasureGrade(broken: boolean, w?: number, r?: number, st?: number): { g: number; q: number } {
-  if (!broken) return { g: 12, q: 3 };
+/** Phẩm cấp công pháp/thuật pháp trưởng thành theo người dùng: bắt đầu từ Hoàng giai hạ phẩm (1, 0), tăng theo cảnh giới, 4 bậc hạ/trung/thượng/cực phẩm chia đều theo số lượng cảnh giới. */
+export function growArtGrade(w?: number, r?: number, st?: number): { tier: number; pq: number } {
   const cur = _growState();
-  const ww = w ?? cur.w, rr = r ?? cur.r, ss = Math.max(0, Math.min(3, st ?? cur.st));
-  const cap = Math.min(worldTreasureCap(ww), 11);
-  const floor = ww > 0 ? Math.min(worldTreasureCap(ww - 1), 11) : 0;
-  let g = Math.max(1, rr);
-  let q = rr <= 0 ? 0 : ss;
-  if (g < floor) { g = floor; q = 3; }
-  if (g > cap) { g = cap; q = 3; }
-  return { g, q };
+  const ww = Math.max(0, Math.min(5, w ?? cur.w)), rr = r ?? cur.r, ss = Math.max(0, Math.min(3, st ?? cur.st));
+  const maxT = worldArtCap(ww);
+  const minT = ww > 0 ? worldArtCap(ww - 1) + 1 : 1;
+  const { t, q } = divideGrade(minT, maxT, ww, rr, ss);
+  return { tier: t, pq: q };
+}
+
+/** Phẩm cấp pháp bảo trưởng thành theo người dùng: bắt đầu từ Hoàng giai hạ phẩm (1, 0), bản tàn khuyết tối đa Hỗn Độn Linh Bảo cực phẩm (11, 3); sau khi dùng Hỗn Độn Thạch lên Hỗn Độn Chí Bảo hạ phẩm (12, 0) và rèn bằng nguyên liệu Hỗn Độn lên cực phẩm (12, 3). */
+export function growTreasureGrade(broken: boolean, w?: number, r?: number, st?: number, curQ?: number): { g: number; q: number } {
+  if (!broken) return { g: 12, q: Math.max(0, Math.min(3, curQ ?? 0)) };
+  const cur = _growState();
+  const ww = Math.max(0, Math.min(5, w ?? cur.w)), rr = r ?? cur.r, ss = Math.max(0, Math.min(3, st ?? cur.st));
+  const maxT = Math.min(worldTreasureCap(ww), 11);
+  const minT = ww > 0 ? Math.min(worldTreasureCap(ww - 1), 11) + 1 : 1;
+  const { t, q } = divideGrade(minT, maxT, ww, rr, ss);
+  return { g: t, q };
 }
 
 export interface LegendaryTreasure {

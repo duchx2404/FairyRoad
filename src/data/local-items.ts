@@ -55,7 +55,7 @@ export function worldDefinitions<K extends Kind>(kind: K, w = WORLD.lv): Array<(
 
 /** Existing and scripted gear is normalized too, including stats; repeat calls are idempotent. */
 export function limitGear(g: Gear, w = WORLD.lv, cap: number = worldTreasureCap(w)) {
-  if (g.grow) { const gr = growTreasureGrade(/\(tàn khuyết\)/i.test(g.n), w); g.g = Math.min(cap, gr.g); g.q = gr.q; return g; } // Hỗn Độn Kiếm: bắt đầu từ phẩm thấp nhất, trưởng thành theo người dùng và trần giới
+  if (g.grow) { const gr = growTreasureGrade(/\(tàn khuyết\)/i.test(g.n), w, undefined, undefined, g.q); g.g = Math.min(cap, gr.g); g.q = gr.q; return g; } // Hỗn Độn Kiếm: bắt đầu từ phẩm thấp nhất, trưởng thành theo người dùng và trần giới
   if (g.g <= cap) return g;
   const ratio = (1 + cap * 0.45) / (1 + g.g * 0.45);
   for (const k of ['atk', 'def', 'hp', 'cult', 'cap', 'luck'] as const) g[k] = Math.floor(g[k] * ratio);

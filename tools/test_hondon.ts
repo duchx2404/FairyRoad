@@ -83,11 +83,27 @@ console.log(`=== ${N} lần thử (chọn "${process.env.FIGHT ? 'tự đánh' :
   console.log(`\n[Kiểm tra khởi đầu] Kiếm: ${sw.n} (${artGradeLabel(sw.g, sw.q)}) · Công pháp: ${TECHS[s.tech].n} (${artGradeLabel(TECHS[s.tech].tier, TECHS[s.tech].pq)}) · Kinh mạch: ${Object.keys(km.cells).length}/${km.P.length} mảnh đã xếp (${km.used} huyệt), nghịch=${khacCount}`);
   if (sw.g !== 1 || sw.q !== 0) throw new Error(`Kiếm không bắt đầu ở Hoàng giai hạ phẩm: g=${sw.g}, q=${sw.q}`);
   if (TECHS[s.tech].tier !== 1 || TECHS[s.tech].pq !== 0) throw new Error(`Hỗn Nguyên Kinh không bắt đầu ở Hoàng giai hạ phẩm: tier=${TECHS[s.tech].tier}, pq=${TECHS[s.tech].pq}`);
+  const { WORLD_CAP } = await import('../src/data/core');
+  const { CHAOS_FORGE_MATS } = await import('../src/engine/items');
   const expectedSwordGrades = [4, 5, 6, 9, 10, 11];
   const expectedArtTiers = [4, 5, 6, 7, 8, 9];
   for (let w = 0; w <= LAST_WORLD; w++) {
-    if (w > 0) life.ascend();
-    s.r = 9 + w * 2; s.st = 3; // tu tới đỉnh giới hiện tại để chạm trần phẩm của giới
+    if (w > 0) {
+      life.ascend();
+      const g0 = s.gear[0]!;
+      const t0 = TECHS[s.tech];
+      gearLabel(g0);
+      if (w === LAST_WORLD) {
+        if (t0.tier !== 9 || t0.pq !== 0) throw new Error(`Lên Hỗn Độn Giới Hỗn Nguyên Kinh phải là Hỗn Độn phẩm hạ phẩm (9,0), nhận: ${t0.tier},${t0.pq}`);
+        if (g0.g !== 11 || g0.q !== 0) throw new Error(`Lên Hỗn Độn Giới Hỗn Độn Kiếm (Tàn khuyết) phải là Hỗn Độn Linh Bảo hạ phẩm (11,0), nhận: ${g0.g},${g0.q}`);
+        // Khi chưa đạt Hỗn Độn Linh Bảo cực phẩm thì chưa dùng được Hỗn Độn Thạch
+        char.addItem('m:hondonthach', 1);
+        const earlyMsg = repairChaosSword(g0.uid);
+        if (!earlyMsg.includes('Hỗn Độn Linh Bảo cực phẩm') || !isChaosBroken(g0)) throw new Error(`Sửa kiếm sớm không bị chặn: ${earlyMsg}`);
+        char.removeItem('m:hondonthach', 1);
+      }
+    }
+    s.r = WORLD_CAP[w]; s.st = 3; // tu tới đỉnh giới hiện tại để chạm trần phẩm của giới
     const g = s.gear[0]!;
     const t = TECHS[s.tech];
     console.log(`  Giới ${w} (${worldName(w)}): ${g.n} [${gearLabel(g)} · ${gearLine(g)}] | ${t.n} [${artGradeLabel(t.tier, t.pq)}] | Chiêu: ${SKILLS.honnguyenkhaithien.n} [${artGradeLabel(SKILLS.honnguyenkhaithien.tier, SKILLS.honnguyenkhaithien.pq)} · ${skillEffect(SKILLS.honnguyenkhaithien)}]`);
@@ -96,6 +112,17 @@ console.log(`=== ${N} lần thử (chọn "${process.env.FIGHT ? 'tự đánh' :
     for (const id of ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong']) {
       if (SKILLS[id].tier !== expectedArtTiers[w] || SKILLS[id].pq !== 3) throw new Error(`Phẩm chiêu ${id} sai ở giới ${w}`);
     }
+  }
+  // Kiểm tra dùng Hỗn Độn Thạch → Hỗn Độn Chí Bảo hạ phẩm (12,0) → dùng 3 nguyên liệu Hỗn Độn lên cực phẩm (12,3)
+  char.addItem('m:hondonthach', 1);
+  repairChaosSword(sw.uid);
+  if (sw.n !== 'Hỗn Độn Kiếm' || sw.g !== 12 || sw.q !== 0) throw new Error(`Sau Hỗn Độn Thạch phải là Hỗn Độn Chí Bảo hạ phẩm (12,0), nhận: ${sw.n} (${sw.g},${sw.q})`);
+  console.log(`  Sau Hỗn Độn Thạch: ${sw.n} [${gearLabel(sw)} · ${gearLine(sw)}]`);
+  for (let i = 0; i < CHAOS_FORGE_MATS.length; i++) {
+    char.addItem('m:' + CHAOS_FORGE_MATS[i], 1);
+    repairChaosSword(sw.uid);
+    if (sw.g !== 12 || sw.q !== i + 1) throw new Error(`Sau nguyên liệu ${CHAOS_FORGE_MATS[i]} phải là (12,${i + 1}), nhận: (${sw.g},${sw.q})`);
+    console.log(`  Sau ${CHAOS_FORGE_MATS[i]}: ${sw.n} [${gearLabel(sw)} · ${gearLine(sw)}]`);
   }
   // Kiểm tra AoE đánh toàn bộ kẻ địch
   const b = new Battle({ name: 'Địch 1', r: s.r, mult: 100 }, { group: [{ name: 'Địch 2', r: s.r, mult: 100 }, { name: 'Địch 3', r: s.r, mult: 100 }] }, 42);

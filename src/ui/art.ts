@@ -110,6 +110,10 @@ const MAT_ART: Record<string, () => string> = {
   longlan: () => `${[[11, 12], [21, 12], [16, 18], [11, 24], [21, 24]].map(([x, y]) => `<path d="M${x - 5} ${y - 3}a5 5 0 0010 0c0 4-2 7-5 8-3-1-5-4-5-8z" fill="#3f8a9c" stroke="#1f4a5a" stroke-width=".8"/><path d="M${x - 2} ${y}l2 3 2-3" stroke="#9fe0f0" stroke-width=".7" fill="none"/>`).join('')}`,
   linhmoc: () => woodHeart('#6fbf5a'),
   hukhongthach: () => `<path d="M7 22l2-11 8-5 8 5 1 10-8 6z" fill="#2c2438" stroke="#120e18"/><path d="M14 10l3 6-4 4 5 5M17 16l5-3" stroke="#b48cff" stroke-width="1.4" fill="none"/><circle cx="23" cy="8" r="1" fill="#e8d8ff"/><circle cx="7" cy="9" r=".8" fill="#e8d8ff"/>`,
+  hondonthach: () => `<path d="M7 22l2-11 8-5 8 5 1 10-8 6z" fill="#3b2754" stroke="#180f24"/><path d="M14 10l3 6-4 4 5 5M17 16l5-3" stroke="#e2b857" stroke-width="1.4" fill="none"/><circle cx="23" cy="8" r="1.2" fill="#f5d97e"/>`,
+  hondonkim: () => ingot('#a886d8'),
+  hondonngoc: () => `<path d="M16 4l9 7-3 13H10L7 11z" fill="#a886d8" stroke="#5e3fa0" stroke-width="1"/><path d="M16 4l-3 7 3 13M16 4l3 7-3 13M7 11h18" stroke="#f0e6ff" stroke-width=".8" fill="none" opacity=".85"/>`,
+  hondonhoa: () => `<circle cx="16" cy="16" r="10" fill="#a886d8" opacity=".25"/><circle cx="16" cy="16" r="7" fill="#8b57b8" stroke="#4a2a6a"/><circle cx="16" cy="16" r="3.5" fill="#f2d06b"/><path d="M16 3v4M16 25v4M3 16h4M25 16h4" stroke="#f2d06b" stroke-width="1.3"/>`,
   huyenthiet: () => ingot('#4a4550'),
   tinhkim: () => ingot('#d9b44a'),
   hanngoc: () => `<path d="M16 4l9 7-3 13H10L7 11z" fill="#8fd0e0" stroke="#3f8a9c" stroke-width="1"/><path d="M16 4l-3 7 3 13M16 4l3 7-3 13M7 11h18" stroke="#e8fbff" stroke-width=".8" fill="none" opacity=".8"/>`,
@@ -250,7 +254,7 @@ export function itemArtSvg(id: string, size = 32, g = 1, dim = false): string | 
   let inner = '';
   let border = '#c9b994';
   if (k === 'h' && HERBS[key]) { inner = (HERB_ART[key] || (() => grass('#5a8a50', '#e8ffd8')))(); border = TIER_C[Math.min(6, HERBS[key].tier)]; }
-  else if (k === 'm' && MATS[key]) { inner = (MAT_ART[key] || MAT_ART.huyenthiet)(); border = TIER_C[Math.min(6, MATS[key].tier)]; }
+  else if (k === 'm' && MATS[key]) { inner = (MAT_ART[key] || MAT_ART.huyenthiet)(); border = TIER_C[Math.min(TIER_C.length - 1, MATS[key].tier)]; }
   else if (k === 'p' && PILLS[key]) { inner = pillArt(key); border = TIER_C[pillGiai(PILLS[key])]; if (g >= 3) inner += '<circle cx="26" cy="6" r="2.2" fill="#f2d06b" stroke="#9a7a2e" stroke-width=".6"/>'; }
   else if (k === 't' && TALIS[key]) { inner = talisArt(key); border = TIER_C[TALIS[key].tier]; }
   else if (k === 'cp' && TECHS[key]) { const t = TECHS[key]; inner = bookArt(t.el[0] || null, !!t.evil, t.el[0] || 'book'); border = TIER_C[t.tier]; }

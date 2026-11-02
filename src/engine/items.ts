@@ -3,7 +3,7 @@ import { kmPlaceOne, kmRemove } from './kinhmach';
 import { kmFillNew } from './kinhmach';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
 // Dùng vật phẩm, trang bị, luyện hóa, học bí kíp.
-import { TAMPHAP, tamGrade, tamEffect, learnReq, skillGrade, PILLS, TECHS, SKILLS, SPECIALS, REFINE_Y, MAX_SKILLS, SLOTS, gearLabel, type Gear } from '../data/items';
+import { TAMPHAP, tamGrade, tamEffect, learnReq, skillGrade, PILLS, TECHS, SKILLS, SPECIALS, MATS, REFINE_Y, MAX_SKILLS, SLOTS, gearLabel, type Gear } from '../data/items';
 import { REALMS, ROOTS, BASIC_EL, STATS, hiddenRootKind, rootKindOf, type StatKey } from '../data/core';
 import { s, codexAdd } from './state';
 import { effRi, tamList, tamActive, tamSlots, pqList, myLinh, removeItem, pillMult, techAff, bagFree, itemName, count, addItem, skEff, regrowGear } from './char';
@@ -205,7 +205,46 @@ export function unequip(slot: number): string {
 /** Hỗn Độn Kiếm (Tàn khuyết) chưa sửa ("Tàn khuyết" là trạng thái, không phải tên). */
 export const isChaosBroken = (g: Gear | null | undefined) => !!g?.grow && /\(tàn khuyết\)/i.test(g.n);
 /** Sửa Hỗn Độn Kiếm (Tàn khuyết) bằng Hỗn Độn Thạch: trở thành Hỗn Độn Chí Bảo, tăng tỷ lệ trưởng thành và chỉ số. */
+/** Nguyên liệu luyện khí cấp bậc Hỗn Độn để tăng Hỗn Độn Kiếm từ Chí Bảo hạ phẩm → trung → thượng → cực phẩm. */
+export const CHAOS_FORGE_MATS = ['hondonkim', 'hondonngoc', 'hondonhoa'] as const;
+/** Kiểm tra Hỗn Độn Kiếm còn có thể sửa (bằng Hỗn Độn Thạch) hoặc rèn tăng phẩm (bằng nguyên liệu Hỗn Độn) hay không. */
+export const canUpgradeChaosSword = (g: Gear | null | undefined) => !!g?.grow && (isChaosBroken(g) || (g.g === 12 && (g.q ?? 0) < 3));
 export function repairChaosSword(uid: string): string {
+  const g = [...s.gear, ...s.gearBag].find((x) => x?.uid === uid);
+  if (!g || !g.grow) return '';
+  regrowGear();
+  if (isChaosBroken(g)) {
+    if (g.g < 11 || (g.q ?? 0) < 3) return 'Hỗn Độn Kiếm (Tàn khuyết) cần trưởng thành tới Hỗn Độn Linh Bảo cực phẩm mới có thể dung hợp Hỗn Độn Thạch.';
+    if (!count('m:hondonthach')) return 'Cần một khối Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới.';
+    removeItem('m:hondonthach', 1);
+    const old = g.growMul ?? 1;
+    g.n = 'Hỗn Độn Kiếm'; g.g = 12; g.q = 0;
+    g.growMul = 1.5;
+    g.luck = Math.max(g.luck, 3);
+    g.cult = Math.max(g.cult, 6);
+    regrowGear();
+    addLog('Hỗn Độn Thạch dung vào thân kiếm: Hỗn Độn Kiếm trở thành Hỗn Độn Chí Bảo hạ phẩm.', 'good');
+    return `Khối Hỗn Độn Thạch tan vào vết nứt trên thân kiếm. Kiếm rung lên một tiếng dài, những vết khuyết liền lại. Hỗn Độn Kiếm đã khôi phục bản nguyên, trở thành Hỗn Độn Chí Bảo hạ phẩm: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×1.5, có thêm thủ, khí vận +3, tu luyện +6%. Cần tìm thêm nguyên liệu luyện khí cấp bậc Hỗn Độn để rèn lên cực phẩm.`;
+  }
+  if (g.g === 12 && (g.q ?? 0) < 3) {
+    const q = g.q ?? 0;
+    const matKey = CHAOS_FORGE_MATS[q];
+    const matName = MATS[matKey]?.n || matKey;
+    if (!count('m:' + matKey)) return `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn) để rèn Hỗn Độn Kiếm lên bậc kế tiếp.`;
+    removeItem('m:' + matKey, 1);
+    const old = g.growMul ?? 1.5;
+    g.q = q + 1;
+    g.growMul = Number((1.5 + g.q * 0.1).toFixed(1));
+    g.luck = Math.max(g.luck, 3 + g.q);
+    g.cult = Math.max(g.cult, 6 + g.q * 2);
+    regrowGear();
+    const label = gearLabel(g);
+    addLog(`Rèn Hỗn Độn Kiếm bằng ${matName}: thăng lên ${label}.`, 'good');
+    return `${matName} tan chảy trong kiếm ý Hỗn Độn, dung nhập vào thân kiếm. Hỗn Độn Kiếm thăng lên ${label}: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×${g.growMul.toFixed(1)}, khí vận +${g.luck}, tu luyện +${g.cult}%.`;
+  }
+  return '';
+}
+function _unusedOldRepair(uid: string): string {
   const g = [...s.gear, ...s.gearBag].find((x) => x?.uid === uid);
   if (!g || !isChaosBroken(g)) return '';
   if (!count('m:hondonthach')) return 'Cần một khối Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới.';

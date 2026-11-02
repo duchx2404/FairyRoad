@@ -8,7 +8,7 @@ import { RMAX, effRi,
 } from '../engine/api';
 import { HERBS, TALIS, MATS } from '../data/items';
 import { BREAK_PILL, WORLD, LAST_WORLD, REALMS } from '../data/core';
-import { isChaosBroken } from '../engine/items';
+import { isChaosBroken, CHAOS_FORGE_MATS } from '../engine/items';
 
 // ======================= Helper nội bộ =======================
 
@@ -1868,6 +1868,15 @@ register([
 /** Hỗn Độn Thú canh đá: luôn Hợp Đạo sơ kỳ, không theo cấp nơi đứng. */
 const chaosGuard = (mult: number): FoeSpec => ({ ...yeuThu(LV(), mult), name: 'Hỗn Độn Thú', r: REALMS.findIndex((x) => x.n === 'Hợp Đạo'), st: 0 });
 const chaosSwordBroken = () => [...s.gear, ...s.gearBag].some((g) => isChaosBroken(g));
+const chaosSwordRefined = () => [...s.gear, ...s.gearBag].find((g) => g?.grow && !isChaosBroken(g));
+const nextChaosMat = () => {
+  const sw = chaosSwordRefined();
+  if (sw && sw.g === 12 && (sw.q ?? 0) < 3) {
+    const k = CHAOS_FORGE_MATS[sw.q ?? 0];
+    if (!hasItem('m:' + k)) return k;
+  }
+  return CHAOS_FORGE_MATS.find((k) => !hasItem('m:' + k)) ?? pick([...CHAOS_FORGE_MATS]);
+};
 register([
   {
     id: 'wild_hondonthach',
@@ -1893,6 +1902,38 @@ register([
         });
       }
       out.push({ t: 'Bỏ qua', fn: () => 'Khí hỗn độn quá dày, ngươi không dám nán lại.' });
+      return out;
+    },
+  },
+  {
+    id: 'wild_hondon_nguyenlieu',
+    where: ['wild'],
+    w: 3,
+    cd: 5,
+    cond: () => WORLD.lv === LAST_WORLD,
+    title: 'Nguyên liệu Hỗn Độn',
+    text: () => {
+      const m = MATS[nextChaosMat()];
+      return `Sâu trong vết nứt hồng mông hiện ra một luồng đạo quang cổ xưa — đó là ${m.n}, nguyên liệu luyện khí cấp bậc Hỗn Độn cực kỳ hiếm thấy. Một đầu Hỗn Độn Thú đang nằm hấp thu bản nguyên quanh bảo vật.${chaosSwordRefined() || chaosSwordBroken() ? ' Thanh kiếm bên hông ngươi ngân vang, kiếm ý cộng hưởng với nguồn nguyên liệu.' : ''}`;
+    },
+    ch: () => {
+      const matKey = nextChaosMat();
+      const m = MATS[matKey];
+      const f = chaosGuard(1.2);
+      const out: Choice[] = [
+        { t: `Đánh Hỗn Độn Thú, đoạt ${m.n}`, cls: 'danger', hint: nguy(f), fn: () => duel(f, { win: () => `Con thú gầm lên rồi tan vào khí hỗn độn. Ngươi thu lấy ${m.n} còn ấm nóng đạo vận.` + gain('m:' + matKey) }) },
+      ];
+      if (chaosSwordRefined() || chaosSwordBroken()) {
+        const g = chaosGuard(1.0);
+        out.push({
+          t: `Dùng kiếm ý Hỗn Độn áp chế và thu lấy ${m.n}`,
+          cls: 'prime',
+          hint: nguy(g) + ' · kiếm ý Hỗn Độn áp chế thú canh giữ',
+          fn: () => duel(g, { win: () => `Kiếm ý Hỗn Độn bùng lên trấn áp huyết mạch con thú khiến nó khựng lại. Đánh bại nó xong, ${m.n} tự bay về phía mũi kiếm của ngươi.` + gain('m:' + matKey) }),
+        });
+      }
+      out.push({ t: 'Bỏ qua', fn: () => 'Khí hỗn độn cuộn trào dữ dội, ngươi lùi lại.' });
+
       return out;
     },
   },

@@ -18,7 +18,7 @@ import { daoluTitle, isPrimaryDaolu } from '../engine/relationships';
 import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO, ORIGINS, originName, CLANS, BODIES, ROOTS, ALL_EL, VARIANT_EL, khacOf, hiddenRootKind } from '../data/core';
 import { CHAU, whereOf, ownerTxt, LOC_TYPE, EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, VUC, LOCS, LOC_LIST, SECTS, BEASTS, beastRoot, REGIONS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, rankLabel } from '../data/world';
 import { courtTitle } from '../engine/court';
-import { TECHS, SKILLS, skHue, hueBg, SLOTS, GEAR_GRADE_C, TIER_N, TIER_C, gearLabel, techGrade, skillGrade, techSpeed, PILLS, HERBS, MATS, TALIS, SPECIALS, REFINE_Y, TECH_SPEED, MAX_SKILLS } from '../data/items';
+import { TECHS, SKILLS, skHue, hueBg, SLOTS, GEAR_GRADE_C, TIER_N, TIER_C, gearLabel, techGrade, skillGrade, techSpeed, PILLS, HERBS, MATS, TALIS, SPECIALS, REFINE_Y, TECH_SPEED, MAX_SKILLS, type Gear } from '../data/items';
 import { stat, age, maxLife, rootLabel, techAff, atkOf, defOf, maxHp, powerScore, cultRate, body, bagCap, bagUsed, itemName, itemDesc, sortBag, stageName, daoCoInfo, phams, phamSum } from '../engine/char';
 import { phamProbs } from '../engine/core';
 import { laws, daos, daoOf, daoPow, R_CHUANTHANH } from '../engine/dao';
@@ -29,7 +29,7 @@ import { bioDesc } from '../engine/bride';
 import { npcPow } from '../engine/char';
 import { myLinh as linhOf } from '../engine/char';
 import { npcAge, npcRealm, relLabel, MERIDIANS, merMax, openMeridian, dateStr } from '../engine/core';
-import { toggleTam, releaseLinh, toggleLinhRide, usePill, useSpecial, readScroll, toggleSkill, stowSkill, knownByGrade, isChaosBroken, repairChaosSword, startRefine, equip, unequip, gearLine, discard, discardGear } from '../engine/items';
+import { toggleTam, releaseLinh, toggleLinhRide, usePill, useSpecial, readScroll, toggleSkill, stowSkill, knownByGrade, isChaosBroken, canUpgradeChaosSword, CHAOS_FORGE_MATS, repairChaosSword, startRefine, equip, unequip, gearLine, discard, discardGear } from '../engine/items';
 import { npcActions, songTuWith } from '../engine/actions';
 import { ACH } from '../engine/life';
 import { icon } from './menus';
@@ -312,7 +312,7 @@ function bagPanel(): HTMLElement[] {
       const g = s.gear[i];
       out.push(h('div', { class: 'slot' }, g ? h('div', { class: 'ic ic-svg', html: gearArtSvg(g, 30) }) : h('div', { class: 'ic', html: glyphSvg(SLOT_GLYPH[i], 18) }),
         h('div', { class: 'nm', style: { flex: '1' } }, g ? [h('b', {}, g.n), h('div', { class: 'small muted' }, `${gearLabel(g)} · ${REALMS[g.lv].n}${g.el ? ' · ' + EL[g.el].n : ''} · ${gearLine(g)}`)] : h('span', { class: 'muted' }, SLOTS[i] + ': trống')),
-        g && isChaosBroken(g) ? repairBtn(g.uid, act) : null,
+        g && canUpgradeChaosSword(g) ? repairBtn(g, act) : null,
         g ? btn('Tháo', () => act(unequip(i)), 'small') : null));
     }
     out.push(mountSlot(act));
@@ -326,7 +326,7 @@ function bagPanel(): HTMLElement[] {
       out.push(h('div', { class: 'item' }, h('div', { class: 'ic ic-svg', html: gearArtSvg(g, 30) }),
         h('div', { class: 'nm' }, g.n, h('small', {}, `${SLOTS[g.slot]} · ${gearLabel(g)} · ${REALMS[g.lv].n}${g.el ? ' · ' + EL[g.el].n : ''} · ${gearLine(g)}${g.refined ? '' : ' · chưa luyện hóa'}`)),
         h('div', { class: 'acts' },
-          isChaosBroken(g) ? repairBtn(g.uid, act) : null,
+          canUpgradeChaosSword(g) ? repairBtn(g, act) : null,
           g.refined ? btn('Mang', () => act(equip(g.uid)), 'small') : btn('Luyện hóa', () => act(startRefine(g.uid)), 'small', { dis: !!s.refining, title: `Mất ${yearsTxt(REFINE_Y[g.g])}` }),
           btn('Vứt', () => askConfirm(`Vứt ${g.n}?`, () => act(discardGear(g.uid)), { title: 'Vứt pháp bảo', ok: 'Vứt', danger: true }), 'small ghost'))));
     }
@@ -371,9 +371,24 @@ function bagPanel(): HTMLElement[] {
   return out;
 }
 /** Nút sửa Hỗn Độn Kiếm (Tàn khuyết): cần Hỗn Độn Thạch trong túi. */
-function repairBtn(uid: string, act: (m: string) => void) {
-  const ok = count('m:hondonthach') > 0;
-  return btn('Sửa', () => act(repairChaosSword(uid)), 'small prime', { dis: !ok, title: ok ? 'Dùng một Hỗn Độn Thạch để sửa kiếm' : 'Cần Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới' });
+function repairBtn(g: Gear, act: (m: string) => void) {
+  if (isChaosBroken(g)) {
+    const atCap = g.g >= 11 && (g.q ?? 0) >= 3;
+    const hasStone = count('m:hondonthach') > 0;
+    const ok = atCap && hasStone;
+    const title = !atCap
+      ? 'Cần trưởng thành tới Hỗn Độn Linh Bảo cực phẩm mới có thể dùng Hỗn Độn Thạch'
+      : hasStone ? 'Dùng một Hỗn Độn Thạch để thăng lên Hỗn Độn Chí Bảo hạ phẩm' : 'Cần Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới';
+    return btn('Sửa', () => act(repairChaosSword(g.uid)), 'small prime', { dis: !ok, title });
+  }
+  const q = g.q ?? 0;
+  const matKey = CHAOS_FORGE_MATS[q];
+  const matName = MATS[matKey]?.n || matKey;
+  const ok = count('m:' + matKey) > 0;
+  return btn('Rèn', () => act(repairChaosSword(g.uid)), 'small prime', {
+    dis: !ok,
+    title: ok ? `Dùng ${matName} để rèn Hỗn Độn Kiếm lên phẩm kế tiếp` : `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn ở Hỗn Độn giới)`,
+  });
 }
 /** Dòng phẩm chất các cảnh giới đã đột phá: "Cực phẩm Trúc Cơ · Trung phẩm Kết Đan · … (khí huyết +x%, công phạt +y%)". */
 function phamLine(): HTMLElement | null {
