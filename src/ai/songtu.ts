@@ -1,3 +1,4 @@
+import { localServicesAvailable } from './service-access';
 import type { SongTuContext } from '../engine/songtu';
 import { writeCustomNarration } from './ollama';
 
@@ -31,6 +32,7 @@ export function fillSongTuTemplate(template: string, context: SongTuContext): st
 export async function loadDefaultSongTu(context: SongTuContext, signal?: AbortSignal): Promise<string> {
   let response: Response;
   try {
+    if (!localServicesAvailable()) throw new Error('Dùng prompt được phục vụ cùng game.');
     const timeout = AbortSignal.timeout(3000);
     response = await fetch(SONGTU_SERVER + '/default-story', { cache: 'no-store', signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
     if (!response.ok) throw new Error('Không đọc được lời kể mặc định từ server.');
@@ -46,6 +48,7 @@ export async function loadDefaultSongTu(context: SongTuContext, signal?: AbortSi
 export async function loadSongTuPrompt(signal?: AbortSignal): Promise<SongTuPrompt> {
   let r: Response;
   try {
+    if (!localServicesAvailable()) throw new Error('Dùng prompt được phục vụ cùng game.');
     const timeout = AbortSignal.timeout(3000);
     r = await fetch(SONGTU_SERVER + '/prompt', { cache: 'no-store', signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
   } catch (e) {
@@ -75,6 +78,7 @@ export function writeSongTu(p: SongTuPrompt, context: SongTuContext) {
   ].join('\n\n'));
 }
 export async function requestSongTuMedia(context: SongTuContext, narrative: string, kind: 'image' | 'video', signal: AbortSignal, progress: (job: SongTuJob) => void): Promise<SongTuJob> {
+  if (!localServicesAvailable()) throw new Error('Bản web chưa kết nối máy tạo ảnh/video trực tuyến.');
   const send = await fetch(SONGTU_SERVER + '/jobs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ context, narrative, kind }), signal });
   const queued = await send.json();
   if (!send.ok) throw new Error(queued.error ?? `HTTP ${send.status}`);

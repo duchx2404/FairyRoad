@@ -111,6 +111,10 @@ export function renderHud() {
   const el = $('#hud');
   if (!s) { el.hidden = true; return; }
   el.hidden = false;
+  if (!el.dataset.initialized) {
+    el.classList.toggle('mini', matchMedia('(max-width: 720px)').matches);
+    el.dataset.initialized = 'true';
+  }
   const mini = el.classList.contains('mini');
   const life = maxLife();
   const a = age();
@@ -118,7 +122,7 @@ export function renderHud() {
   const l = LOCS[s.loc];
   el.innerHTML = '';
   el.append(
-    h('button', { class: 'hud-min', title: 'Thu gọn', onclick: () => { el.classList.toggle('mini'); } }, mini ? '▾' : '▴'),
+    h('button', { class: 'hud-min', title: mini ? 'Mở thông tin' : 'Thu gọn', 'aria-label': mini ? 'Mở thông tin nhân vật' : 'Thu gọn thông tin nhân vật', 'aria-expanded': String(!mini), onclick: () => { el.classList.toggle('mini'); renderHud(); } }, mini ? '▾' : '▴'),
     h('div', { class: 'hud-top' },
       h('div', { class: 'avatar click', title: 'Xem tranh toàn thân', onclick: () => openPortrait(s.name, playerPortrait(s.g, age()), s.g, stageName(), weaponKind()), html: avatarSvg(s.g, s.r, s.root.els[0] || null, 54, playerPortrait(s.g, age())) }),
       h('div', {},

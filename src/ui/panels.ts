@@ -15,7 +15,7 @@ import { askConfirm } from './dialog';
 import { h, $, btn, bar } from './dom';
 import { s, meta } from '../engine/state';
 import { daoluTitle, isPrimaryDaolu } from '../engine/relationships';
-import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO, ORIGINS, originName, CLANS, BODIES, ROOTS, ALL_EL, VARIANT_EL, khacOf } from '../data/core';
+import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO, ORIGINS, originName, CLANS, BODIES, ROOTS, ALL_EL, VARIANT_EL, khacOf, hiddenRootKind } from '../data/core';
 import { CHAU, whereOf, ownerTxt, LOC_TYPE, EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, VUC, LOCS, LOC_LIST, SECTS, BEASTS, beastRoot, REGIONS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, rankLabel } from '../data/world';
 import { courtTitle } from '../engine/court';
 import { TECHS, SKILLS, skHue, hueBg, SLOTS, GEAR_GRADE_C, TIER_N, TIER_C, gearLabel, techGrade, skillGrade, techSpeed, PILLS, HERBS, MATS, TALIS, SPECIALS, REFINE_Y, TECH_SPEED, MAX_SKILLS } from '../data/items';
@@ -75,6 +75,7 @@ let zTop = 10;
 
 export function renderNav() {
   const nav = $('#nav');
+  const scroll = nav.scrollLeft;
   nav.innerHTML = '';
   for (const [id, n] of NAV) {
     const b = h('button', { class: open.has(id) ? 'on' : '', onclick: () => toggle(id), 'aria-label': n }, h('span', { class: 'nav-ic', html: navIcon(id) }), h('span', { class: 'tip' }, n));
@@ -205,7 +206,7 @@ function charPanel(): HTMLElement[] {
   if (laws().length || daos().length || s.r >= R_CHUANTHANH) out.push(kv('Pháp tắc · Đại đạo', [...laws().filter((e) => !daos().includes(e)).map((e) => daoOf(e).n), ...daos().map((e) => daoOf(e).dao)].join(' · ') || 'chưa ngộ', `Công phạt ×${daoPow().toFixed(2)}. Thánh Nhân cần ≥1 pháp tắc, Hợp Đạo cần ≥1 đại đạo, Đạo chủ cần ≥3 đại đạo.`));
   // ---- tư chất ----
   out.push(sec('Tư chất'));
-  out.push(kv('Linh căn', h('span', {}, s.root.els.length ? elTags(s.root.els) : '', ' ', rootLabel().split(' (')[0]), ROOTS[s.root.k].d + (s.root.k === 11 ? (s.flags.thapKnown ? ' Thiên hạ đã biết.' : ' Hiện người đời vẫn tưởng ngươi là phế linh căn.') : '')));
+  out.push(kv('Linh căn', h('span', {}, s.root.els.length ? elTags(s.root.els) : '', ' ', rootLabel().split(' (')[0]), ROOTS[s.root.k].d + (hiddenRootKind(s.root.k) ? (s.flags.thapKnown ? ' Thiên hạ đã biết.' : ' Hiện người đời vẫn tưởng ngươi là phế linh căn.') : '')));
   for (const k of STAT_KEYS) out.push(kv(STATS[k].n, String(stat(k)), STATS[k].d));
   const perks = s.perks.map((p) => PERKS.find((x) => x.id === p)).filter(Boolean);
   if (perks.length) out.push(h('div', { class: 'cp-chips' }, ...perks.map((p) => h('span', { class: 'cp-chip' + (p!.bad ? ' bad' : ''), title: p!.d }, p!.n))));

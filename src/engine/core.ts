@@ -1,5 +1,5 @@
 import { phams, phamSum, perfectBody } from './char';
-import { BREAK_PILL, PHAM_N, PHAM_T, holySur, GIVEN_F, GIVEN_M } from '../data/core';
+import { BREAK_PILL, PHAM_N, PHAM_T, holySur, GIVEN_F, GIVEN_M, hiddenRootKind } from '../data/core';
 import { slots } from './slots';
 import { ensureWorldNames } from './names';
 import { doctrineAccepts } from './sect-doctrine';
@@ -209,7 +209,7 @@ export function passTime(y: number) {
     }
   }
   // hôn ước nguội dần dưới sức ép lời đồn "phế vật" nếu không vun đắp
-  if (s.flags.betrothed && !s.flags.engageBroken && s.root.k === 11 && !s.flags.thapKnown) {
+  if (s.flags.betrothed && !s.flags.engageBroken && hiddenRootKind(s.root.k) && !s.flags.thapKnown) {
     const fz = s.npcs.find((n) => n.id === s.flags.betrothed && n.alive);
     if (fz && fz.tag !== 'daolu') fz.rel = clamp(fz.rel - 2.5 * y, -100, 100);
   }

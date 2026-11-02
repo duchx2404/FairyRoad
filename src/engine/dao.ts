@@ -3,7 +3,7 @@
 // Tầng bậc: Hỗn Độn > Thời gian > Không gian > các loại khác (10 hệ pháp thuật, vũ khí: kiếm, đao, thương, cung, quyền, chưởng, kích, quạt, cầm, âm, côn).
 // Hỗn Độn chỉ người mang Hỗn Độn Đạo Thai mới cảm nhận được (bẩm sinh thân cận).
 import { s } from './state';
-import { EL, REALMS, khacOf, BATQUAI, type El } from '../data/core';
+import { EL, REALMS, khacOf, BATQUAI, HON_DON_ROOT, type El } from '../data/core';
 import { TECHS, type Weapon } from '../data/items';
 import { stat } from './char';
 import { slots } from './slots';
@@ -131,11 +131,13 @@ function myWeapon(): string | null {
   const n = s.gear[0]?.n || '';
   return weaponKey(n);
 }
+/** Linh căn hợp nhất được Âm Dương: Bát quái, hoặc Hỗn Độn (đã gồm cả Âm lẫn Dương). */
+const yinYangRoot = () => s.root.k === BATQUAI || s.root.k === HON_DON_ROOT;
 /** Có duyên: hệ linh căn / công pháp, vũ khí đang cầm; Hỗn Độn Đạo Thai thân cận ba tầng trên. */
 function affinity(d: DaoDef): number {
   if (d.tier === 'hondon') return perfectBody() ? 0.25 : -1; // không phải Đạo Thai thì không thể
-  if (d.tier === 'batquai') return s.root.k === BATQUAI ? 0.2 : -1; // chỉ Bát quái linh căn
-  if (d.tier === 'amduong') return (s.root.els.includes(d.el!) ? 0.2 : 0) + (s.root.k === BATQUAI ? 0.1 : 0) + (perfectBody() ? 0.1 : 0);
+  if (d.tier === 'batquai') return yinYangRoot() ? 0.2 : -1; // chỉ Bát quái / Hỗn Độn linh căn
+  if (d.tier === 'amduong') return (s.root.els.includes(d.el!) ? 0.2 : 0) + (yinYangRoot() ? 0.1 : 0) + (perfectBody() ? 0.1 : 0);
   if (d.tier !== 'thuong') return perfectBody() ? 0.15 : 0;
   if (d.el) return s.root.els.includes(d.el) || !!(s.tech && TECHS[s.tech].el.includes(d.el)) ? 0.2 : 0;
   if (d.weapon) return myWeapon() === d.weapon ? 0.2 : 0;
@@ -168,8 +170,8 @@ export function daoOptions(): { kind: 'law' | 'dao'; id: string; n: string; p: n
   }
   return out.sort((a, b) => TIER_RANK[b.tier] - TIER_RANK[a.tier] || b.p - a.p);
 }
-/** Hợp nhất Âm + Dương → Bát quái: cần Bát quái linh căn và đã có cả hai (pháp tắc hoặc đại đạo tương ứng). */
-export const canFuse = (kind: 'law' | 'dao') => s.root.k === BATQUAI && (kind === 'law' ? laws().includes('yin') && laws().includes('yang') : daos().includes('yin') && daos().includes('yang'));
+/** Hợp nhất Âm + Dương → Bát quái: cần Bát quái / Hỗn Độn linh căn và đã có cả hai (pháp tắc hoặc đại đạo tương ứng). */
+export const canFuse = (kind: 'law' | 'dao') => yinYangRoot() && (kind === 'law' ? laws().includes('yin') && laws().includes('yang') : daos().includes('yin') && daos().includes('yang'));
 /** Nhãn hệ / vũ khí của một pháp tắc. */
 const WEAPON_LABEL: Record<string, string> = { kiem: 'Kiếm', dao: 'Đao', thuong: 'Thương', con: 'Côn', kich: 'Kích', phu: 'Phủ', chuy: 'Chùy', tien: 'Tiên', cung: 'Cung nỏ', amkhi: 'Ám khí', quyen: 'Quyền', chuong: 'Chưởng chỉ', cuoc: 'Cước', phien: 'Quạt', cam: 'Cầm', am: 'Âm', cau: 'Câu', truong: 'Trượng' };
 export const daoKindLabel = (d: DaoDef) => (d.tier !== 'thuong' ? TIER_N[d.tier] : d.el ? `${EL[d.el].n} hệ` : d.weapon ? WEAPON_LABEL[d.weapon] ?? d.weapon : '');

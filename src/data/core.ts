@@ -177,13 +177,22 @@ export const ROOTS: RootKind[] = [
   { n: 'Cửu linh căn', m: 0.22, q: 1, w: 0, d: 'Chỉ thiếu một hành là viên mãn — và cũng chính vì thiếu một hành mà mọi thứ sụp đổ.' },
   { n: 'Thập linh căn', m: 2, q: 7, w: 0.3, d: 'Mười hành tề tựu, tương sinh tương khắc thành một vòng tròn khép kín. Vạn năm khó gặp. Mười hệ cân bằng tuyệt đối nên đá trắc linh không phản ứng — người đời sẽ coi ngươi là phế linh căn, chỉ mình ngươi biết sự thật.' },
   { n: 'Bát quái linh căn', m: 1.9, q: 7, w: 0.2, d: 'Âm Dương song sinh trong một thân, giao nhau mà thành tám quẻ. Hiếm ngang Thập linh căn. Chỉ người này mới hợp nhất Âm Dương pháp tắc thành Bát quái.' },
+  { n: 'Hỗn Độn linh căn', m: 3, q: 8, w: 0, d: 'Đủ mười hai hệ, gồm mười hành cùng Âm và Dương, hợp nhất thành Hỗn Độn. Linh căn mạnh nhất, các hệ cân bằng tuyệt đối nên đá trắc linh không phản ứng; người đời nhầm là phế linh căn.' },
+  { n: 'Thập nhất linh căn', m: 0.2, q: 1, w: 0, d: 'Mười một hệ chưa đủ cân bằng; còn thiếu một hệ để hợp nhất thành Hỗn Độn.' },
 ];
 export const THAP = 11;
 /** Bát quái linh căn: Âm + Dương hợp nhất. */
 export const BATQUAI = 12;
+/** Hỗn Độn linh căn: đủ 12 hệ (mười hành + Âm + Dương). Mạnh nhất. */
+export const HON_DON_ROOT = 13;
+/** Linh căn mà đá trắc linh không phản ứng (người đời tưởng là phế linh căn): Thập và Hỗn Độn. */
+export const hiddenRootKind = (k: number) => k === THAP || k === HON_DON_ROOT;
 /** Xác định loại linh căn theo các hệ đã có. */
 export function rootKindOf(els: El[]): number {
+  els = [...new Set(els)];
   const n = els.length;
+  if (EVERY_EL.every(e => els.includes(e))) return HON_DON_ROOT;
+  if (n === 11) return 14;
   if (n === 0) return 0;
   if (n === 2 && els.includes('yin') && els.includes('yang')) return BATQUAI;
   if (n === 1) return VARIANT_EL.includes(els[0]) || YINYANG_EL.includes(els[0]) ? 6 : 5;

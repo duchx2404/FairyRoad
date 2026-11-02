@@ -1,3 +1,4 @@
+import { serviceAvailable } from './service-access';
 // AI kể chuyện chạy local qua Ollama (tùy chọn). Không có AI thì game vẫn chạy với văn bản soạn sẵn.
 import { meta, saveMeta, s } from '../engine/state';
 import type { LifeRec } from '../engine/state';
@@ -5,7 +6,7 @@ import type { LifeRec } from '../engine/state';
 // Giữ num_ctx cố định: Ollama nạp lại model mỗi khi num_ctx đổi giữa các lần gọi.
 const NUM_CTX = 8192;
 
-export const aiOn = () => meta.settings.ai;
+export const aiOn = () => meta.settings.ai && serviceAvailable(meta.settings.url);
 
 export async function listModels(): Promise<string[]> {
   const r = await fetch(`${meta.settings.url}/api/tags`, { signal: AbortSignal.timeout(4000) });

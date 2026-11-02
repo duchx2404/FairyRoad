@@ -576,3 +576,33 @@ input[type='text'], select { font-family: inherit; font-size: 15px; padding: 6px
 .por-rename-row b { font-family: var(--fh); font-size: 18px; }
 .por-rename-in { font: inherit; font-family: var(--fh); font-size: 17px; width: 9em; padding: 3px 8px; border: 1px solid var(--line); border-radius: 3px; background: #fffaf0; color: inherit; }
 .por-rename-err { color: #9b2a1f; font-size: 12px; min-height: 1em; }
+
+
+/* Compact phone HUD and labeled bottom navigation. */
+html { -webkit-text-size-adjust: 100%; }
+@media (max-width: 720px) {
+  #nav { top: auto; bottom: 0; left: 0; right: 0; max-width: none; flex-wrap: nowrap; justify-content: flex-start; gap: 2px; overflow-x: auto; overflow-y: hidden; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); background: var(--sheet); border-top: 1px solid var(--line); scrollbar-width: none; }
+  #nav::-webkit-scrollbar { display: none; }
+  #nav button { flex: 0 0 66px; width: 66px; height: 54px; border: 0; border-radius: 8px; box-shadow: none; flex-direction: column; gap: 4px; }
+  #nav button .tip { position: static; transform: none; opacity: 1; background: none; color: inherit; font-family: var(--f); font-size: 10px; padding: 0; line-height: 1.2; }
+  #hud { top: max(10px, env(safe-area-inset-top)); left: 10px; width: calc(100vw - 20px); padding: 10px 44px 10px 12px; max-height: 48dvh; overflow-y: auto; }
+  #hud .avatar { width: 40px; height: 40px; }
+  #hud .avatar svg { width: 40px; height: 40px; }
+  .hud-name { font-size: 15px; }
+  .hud-realm { font-size: 12px; }
+  .hud-sub { font-size: 11px; }
+  .hud-top > div:last-child { min-width: 0; }
+  .hud-min { width: 40px; height: 44px; top: 5px; right: 3px; font-size: 20px; }
+  .win, .win.wide { position: fixed; top: max(8px, env(safe-area-inset-top)) !important; bottom: calc(72px + env(safe-area-inset-bottom)); left: 8px !important; width: calc(100vw - 16px) !important; max-height: none; }
+  .win-h { flex: none; min-height: 44px; }
+  .win-b { min-height: 0; overscroll-behavior: contain; }
+  #modal { top: max(8px, env(safe-area-inset-top)); left: 8px; transform: none; width: calc(100vw - 16px); max-height: calc(100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom)); padding: 16px; overscroll-behavior: contain; font-size: 14px; }
+  #modal h2 { font-size: 19px; line-height: 1.4; }
+  #modal .story { font-size: 14px; line-height: 1.7; }
+  #modal .btn { min-height: 44px; }
+  #actions { bottom: calc(74px + env(safe-area-inset-bottom)); width: max-content; max-width: calc(100vw - 20px); max-height: 25dvh; overflow-y: auto; padding: 8px; gap: 5px; font-size: 12px; }
+  #actions .btn { min-height: 40px; }
+  #zoom { top: auto; right: 10px; bottom: calc(190px + env(safe-area-inset-bottom)); }
+  #zoom button { width: 36px; height: 36px; }
+  input, select, textarea { font-size: 16px; }
+}

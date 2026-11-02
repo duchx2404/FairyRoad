@@ -4,7 +4,7 @@ import { kmFillNew } from './kinhmach';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
 // Dùng vật phẩm, trang bị, luyện hóa, học bí kíp.
 import { TAMPHAP, tamGrade, tamEffect, learnReq, skillGrade, PILLS, TECHS, SKILLS, SPECIALS, REFINE_Y, MAX_SKILLS, SLOTS, gearLabel, type Gear } from '../data/items';
-import { REALMS, ROOTS, BASIC_EL, STATS, THAP, rootKindOf, type StatKey } from '../data/core';
+import { REALMS, ROOTS, BASIC_EL, STATS, hiddenRootKind, rootKindOf, type StatKey } from '../data/core';
 import { s, codexAdd } from './state';
 import { effRi, tamList, tamActive, tamSlots, pqList, myLinh, removeItem, pillMult, techAff, bagFree, itemName, count, addItem, skEff, regrowGear } from './char';
 import { addProg, addLog, mark } from './core';
@@ -47,13 +47,13 @@ export function usePill(id: string, g = 1): string {
       return `Nuốt ${p.n}, ${STATS[k].n} +1.`;
     }
     case 'root': {
-      if (s.root.k === THAP) return 'Dược lực chạy khắp mười hệ rồi tan đi. Không có gì để tẩy — linh căn của ngươi vốn đã viên mãn.';
+      if (hiddenRootKind(s.root.k)) return 'Dược lực chạy khắp các hệ rồi tan đi. Không có gì để tẩy — linh căn của ngươi vốn đã viên mãn.';
       if (s.root.k === 0) {
         s.root = { k: 1, els: [...BASIC_EL] };
         mark('Uống Tẩy Tủy Đan, khai mở ngũ linh căn');
         return 'Dược lực như lửa đốt khắp xương tủy. Ngươi lăn lộn ba ngày ba đêm, khi tỉnh lại, linh khí đã chui được vào người. Phế linh căn hóa thành Ngũ linh căn!';
       }
-      if (s.root.els.length >= 2 && s.root.k !== THAP && ch(0.6 * m)) {
+      if (s.root.els.length >= 2 && !hiddenRootKind(s.root.k) && ch(0.6 * m)) {
         const drop = pick(s.root.els);
         s.root.els = s.root.els.filter((e) => e !== drop);
         s.root.k = rootKindOf(s.root.els);
@@ -245,12 +245,12 @@ export function discardGear(uid: string) {
   return '';
 }
 
-/** Thiên hạ biết ngươi là Thập linh căn. */
+/** Thiên hạ biết ngươi là Thập / Hỗn Độn linh căn. */
 export function revealThap(): void {
-  if (s.root.k !== THAP || s.flags.thapKnown) return;
+  if (!hiddenRootKind(s.root.k) || s.flags.thapKnown) return;
   s.flags.thapKnown = true;
   s.fame += 100;
-  mark('Thân phận Thập linh căn bị thiên hạ biết tới');
+  mark('Thân phận ' + ROOTS[s.root.k].n + ' bị thiên hạ biết tới');
 }
 
 export function toggleTam(id: string): string {

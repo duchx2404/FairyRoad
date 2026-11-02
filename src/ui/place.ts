@@ -19,7 +19,7 @@ import { EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, courtReq, empireAt } f
 import { myCourt, audience, canTakePost, takePost, resignPost, courtTask } from '../engine/court';
 import { missionPool, promoInfo, canJoin, joinSect, sectWares, isExclusiveTech, markVaultSold } from '../engine/sect';
 import { HERBS, MATS, TALIS } from '../data/items';
-import { moneyScale, effRi, addGear, myLinh } from '../engine/char';
+import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows } from '../engine/char';
 import { TAMPHAP, tamGrade, tamEffect, learnReq, realmForGiai, TIER_N, TECHS, SKILLS, PILLS, TIER_C, techSpeed, techGrade, skillGrade, pillGrade, skHue, SK_KIND, skillEffect, type Skill, type Tech } from '../data/items';
 import { techAff, count, addItem, itemName, tamList, pqList } from '../engine/char';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
@@ -607,8 +607,9 @@ export function scionHome(id: string) {
           if (Math.random() < 0.12 + s.r * 0.04) {
             s.flags.thapKnown = true;
             s.fame += 100;
-            mark('Trắc linh lại trong thánh địa — lộ ra Thập linh căn');
-            return 'Đá trắc linh vẫn tối. Nhưng lần này có một vị Thái thượng trưởng lão đi ngang, dừng lại nhìn rất lâu, rồi đặt tay lên vai ngươi. Linh lực của ông chạy một vòng — rồi khựng lại. "Mười hệ... cân bằng tới mức đá cũng mù." Cả điện im phăng phắc.';
+            mark('Trắc linh lại trong thánh địa — lộ ra ' + hiddenRootName());
+            const f = hiddenFlows();
+            return `Đá trắc linh vẫn tối. Nhưng lần này có một vị Thái thượng trưởng lão đi ngang, dừng lại nhìn rất lâu, rồi đặt tay lên vai ngươi. Linh lực của ông chạy một vòng — rồi khựng lại. "${f[0].toUpperCase() + f.slice(1)} hệ... cân bằng tới mức đá cũng mù." Cả điện im phăng phắc.`;
           }
           s.tamma = Math.min(100, s.tamma + 6);
           return 'Đá trắc linh không sáng một tia. Chấp sự giám sát nhếch mép: "Công tử, đá không biết nói dối." Tiếng cười khúc khích sau lưng theo ngươi về tận phủ.';

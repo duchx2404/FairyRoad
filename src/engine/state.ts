@@ -1,4 +1,5 @@
 // Trạng thái một kiếp (s) và dữ liệu xuyên kiếp (meta). Lưu localStorage.
+import { EVERY_EL, HON_DON_ROOT } from '../data/core';
 import type { El, StatKey } from '../data/core';
 import type { Gear } from '../data/items';
 
@@ -161,6 +162,7 @@ const META_KEY = 'tienlo.meta.v1';
 export let s: State = null as unknown as State;
 export const setState = (n: State) => {
   s = n;
+  if (EVERY_EL.every(e => s.root.els.includes(e))) s.root.k = HON_DON_ROOT;
   if (!s.bag.some((item) => item.id === 'x:ngocboidoi')) s.bag.push({ id: 'x:ngocboidoi', n: 1 });
 };
 
@@ -221,6 +223,7 @@ export function load(): boolean {
       st.sect.rank = st.flags.thanhtu === st.sect.id ? 8 : [0, 1, 2, 5, 7][old] ?? old;
     }
     st.flags.rankV2 = true;
+    if (EVERY_EL.every(e => st.root.els.includes(e))) st.root.k = HON_DON_ROOT;
     s = st;
     return true;
   } catch {

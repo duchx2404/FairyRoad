@@ -1,5 +1,5 @@
 // Công tử thánh địa "phế linh căn" (thật ra là Thập linh căn).
-import { RMAX, effRi, register, s, M, money, cult, hurt, statUp, fame, good, evil, tamma, giveGear, gain, battle, ch, mark, flag, setFlag, learnTech, years, SECTS, REALMS, thapHidden, type NPC } from '../engine/api';
+import { RMAX, effRi, register, s, M, money, cult, hurt, statUp, fame, good, evil, tamma, giveGear, gain, battle, ch, mark, flag, setFlag, learnTech, years, SECTS, REALMS, thapHidden, hiddenRootName, hiddenFlows, type NPC } from '../engine/api';
 import { joinSect, leaveSect } from '../engine/sect';
 import { revealThap } from '../engine/items';
 
@@ -55,7 +55,7 @@ register([
     title: 'Người duy nhất tin ngươi',
     text: () => { const p = parent()!; return `${p.name} gọi ngươi vào động phủ. Người nhìn ngươi rất lâu, rồi chỉ hỏi: "Dạo này có ngủ được không?" Rồi thả vào tay ngươi một túi gấm.`; },
     ch: () => [
-      { t: 'Kể thật bí mật mười hệ linh căn', fn: () => { const p = parent()!; p.rel = 100; setFlag('parentKnows'); return `${p.name} im lặng rất lâu, rồi bật cười — tiếng cười của người đã giữ một nỗi lo suốt nhiều năm. "Giấu đi. Giấu tới khi không ai động được vào ngươi nữa." Người truyền cho ngươi một bộ công pháp từ kho riêng.` + learnTech(effRi() >= 2 ? 'nguhanhquyet' : 'ngunguyenquyet') + gain('p:' + (effRi() >= 2 ? 'trucco' : 'khaimach')); } },
+      { t: `Kể thật bí mật ${hiddenFlows()} hệ linh căn`, fn: () => { const p = parent()!; p.rel = 100; setFlag('parentKnows'); return `${p.name} im lặng rất lâu, rồi bật cười — tiếng cười của người đã giữ một nỗi lo suốt nhiều năm. "Giấu đi. Giấu tới khi không ai động được vào ngươi nữa." Người truyền cho ngươi một bộ công pháp từ kho riêng.` + learnTech(effRi() >= 2 ? 'nguhanhquyet' : 'ngunguyenquyet') + gain('p:' + (effRi() >= 2 ? 'trucco' : 'khaimach')); } },
       { t: 'Nhận túi gấm, giữ im lặng', fn: () => 'Trong túi có linh thạch và một viên đan. Ngươi cúi đầu cảm tạ.' + money(M(60)) + gain('p:' + (effRi() >= 2 ? 'ngungnguyen' : 'tukhi'), 2) },
     ],
   },
@@ -66,7 +66,7 @@ register([
     once: true,
     cond: () => !!scion() && !!s.flags.thapKnown && !s.flags.thanhtu,
     title: 'Thánh địa cầu phục vị',
-    text: () => { const sc = scion()!; return `Tin ${s.name} mang Thập linh căn chấn động ${sc.n}. Thánh chủ đích thân triệu kiến, trước mặt các trưởng lão: "Năm ấy đá trắc linh không thấy được, là thánh địa mắt mù. Danh vị Thánh ${s.g === 'm' ? 'tử' : 'nữ'}, nay trả lại cho ngươi."`; },
+    text: () => { const sc = scion()!; return `Tin ${s.name} mang ${hiddenRootName()} chấn động ${sc.n}. Thánh chủ đích thân triệu kiến, trước mặt các trưởng lão: "Năm ấy đá trắc linh không thấy được, là thánh địa mắt mù. Danh vị Thánh ${s.g === 'm' ? 'tử' : 'nữ'}, nay trả lại cho ngươi."`; },
     ch: () => {
       const sc = scion()!;
       const r = rival();

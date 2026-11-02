@@ -4,7 +4,7 @@ import { PHAM_BONUS } from '../data/core';
 import { slots } from './slots';
 import { PHAPQUYET, CHANLINH, pqGrade, pqPrice } from '../data/spirit';
 // Chỉ số dẫn xuất của nhân vật và quản lý túi đồ.
-import { WORLD, RMAX, worldMult, worldLife, TANG_T, DAO_CO, BODIES, REALMS, ROOTS, THAP, BATQUAI, EL, SINH, type El, type StatKey, STAGES } from '../data/core';
+import { WORLD, RMAX, worldMult, worldLife, TANG_T, DAO_CO, BODIES, REALMS, ROOTS, HON_DON_ROOT, hiddenRootKind, BATQUAI, EL, SINH, type El, type StatKey, STAGES } from '../data/core';
 import { LOCS, SECTS } from '../data/world';
 import {
   TAMPHAP, tamGrade, tamEffect, tamPrice, TECHS, techSpeed, techPow, pillGrade, talisGrade, techGrade, skillGrade, HERBS, PILLS, MATS, TALIS, SKILLS, SPECIALS, PILL_GRADE, GRADE_MULT, BAG_CAP,
@@ -55,10 +55,14 @@ export function realmAt(k: 'pow' | 'life' | 'speed' | 'turn', x: number): number
 }
 /** Thời gian một lượt bế quan. */
 export const turnLen = () => (thienDo() ? REALMS[effRi()].turn * 4 / (TANG_T[effRi() + 1] - TANG_T[effRi()] || 40) : REALMS[s.r].turn);
-/** Thập linh căn mà thiên hạ chưa biết: mười hệ cân bằng nên đá trắc linh không phản ứng. */
-export const thapHidden = () => s.root.k === THAP && !s.flags.thapKnown;
+/** Thập / Hỗn Độn linh căn mà thiên hạ chưa biết: các hệ cân bằng nên đá trắc linh không phản ứng. */
+export const thapHidden = () => hiddenRootKind(s.root.k) && !s.flags.thapKnown;
 /** Linh căn trong mắt người đời (tông môn, tiên sư, đá trắc linh). */
 export const seenRoot = () => (thapHidden() ? ROOTS[0] : ROOTS[s.root.k]);
+/** Tên linh căn ẩn (cho lời thoại khi bí mật bị lộ): Thập linh căn hoặc Hỗn Độn linh căn. */
+export const hiddenRootName = () => (s.root.k === HON_DON_ROOT ? 'Hỗn Độn linh căn' : 'Thập linh căn');
+/** Số hệ của linh căn ẩn, viết bằng chữ: "mười" hoặc "mười hai". */
+export const hiddenFlows = () => (s.root.k === HON_DON_ROOT ? 'mười hai' : 'mười');
 export const age = () => s.year - s.born;
 /** Tuổi linh hồn: tính từ lần sinh đầu tiên, không bao giờ đặt lại (thân thể thì về một tuổi mỗi lần phi thăng). */
 export const soulAge = () => s.year - (s.flags.soulBorn ?? s.born);
@@ -104,7 +108,7 @@ export const lifeLeft = () => maxLife() - age();
 export function rootLabel(): string {
   const r = root();
   if (s.root.k === 0) return r.n;
-  if (s.root.k === THAP) return 'Thập linh căn';
+  if (hiddenRootKind(s.root.k)) return r.n;
   return `${r.n} (${s.root.els.map((e) => EL[e].n).join(' · ')})`;
 }
 
@@ -114,7 +118,8 @@ export function techAff(techId = s.tech): number {
   const t = TECHS[techId];
   if (t.blood === 'diep_hondon') return s.flags.hondonBlood ? 2 : 0.2; // Cửu Chuyển Huyền Công: chỉ dòng chính Hỗn Độn
   if (t.blood) return t.blood === 'diep' && s.flags.diepBlood ? (s.flags.hondonBlood ? 1.5 : 1.3) : 0.2; // công pháp huyết mạch (dòng chính Hỗn Độn hợp hơn)
-  if (s.root.k === THAP) return 1.25; // mười hệ: công pháp nào cũng hợp
+  if (s.root.k === HON_DON_ROOT) return 1.5;
+  if (hiddenRootKind(s.root.k)) return 1.25; // mười hệ: công pháp nào cũng hợp
   if (s.root.k === BATQUAI) return 1.15; // âm dương sinh vạn vật: hợp khá rộng
   if (!t.el.length) return s.root.k === 1 ? 1 : 0.85;
   const els = s.root.els;

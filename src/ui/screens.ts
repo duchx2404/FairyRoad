@@ -3,7 +3,7 @@ import { askConfirm, notice } from './dialog';
 import { glyphSvg } from './glyph';
 import { h, $, btn } from './dom';
 import { s, meta, saveMeta, load } from '../engine/state';
-import { setSurname, ORIGINS, originName, RACE_GROUPS, RACE_INFO, originRace, PERKS, ROOTS, BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, THAP, rootKindOf, type El } from '../data/core';
+import { setSurname, ORIGINS, originName, RACE_GROUPS, RACE_INFO, originRace, PERKS, ROOTS, BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, hiddenRootKind, rootKindOf, type El } from '../data/core';
 import { LOCS } from '../data/world';
 import { rollFate, fitRoot, newLife, rerolls, freeMode, UPGRADES, upLv, buyUpgrade, originUnlocked, unlockOrigin, scoreParts, lastLife, perkAllowed, type Fate } from '../engine/life';
 import { mkName } from '../engine/core';
@@ -84,12 +84,12 @@ export function creation() {
     };
     const setAll = (els: El[]) => { fate.root = { k: rootKindOf(els), els: [...els] }; baseRoot = { ...fate.root }; draw(); };
     const rk = ROOTS[fate.root.k];
-    const verdict = h('div', { class: 'card verdict' + (fate.root.k === THAP ? ' thap' : '') },
+    const verdict = h('div', { class: 'card verdict' + (hiddenRootKind(fate.root.k) ? ' thap' : '') },
       h('div', { class: 'small muted' }, 'Đánh giá linh căn'),
       h('div', { class: 'v-name' }, rk.n, fate.root.els.length ? h('span', { class: 'v-els' }, ...fate.root.els.map((e) => h('span', { class: 'el', style: { background: EL[e].c } }, EL[e].n))) : null),
       h('div', { class: 'small' }, `Tốc độ tu ×${rk.m} · phẩm chất ${rk.q}`),
       h('div', { class: 'small muted' }, rk.d),
-      fate.root.k === THAP ? h('div', { class: 'small', style: { color: 'var(--seal)', marginTop: '4px' } }, 'Ngươi tu luyện được ngay, nhanh hơn bất kỳ ai. Nhưng mười hệ cân bằng khiến đá trắc linh không sáng: thiên hạ coi ngươi là phế linh căn — tiên sư không thu, tông môn không nhận, người đời khinh rẻ — cho tới khi bí mật bị lộ.') : null,
+      hiddenRootKind(fate.root.k) ? h('div', { class: 'small', style: { color: 'var(--seal)', marginTop: '4px' } }, 'Ngươi tu luyện được ngay, với tư chất vượt trội. Nhưng các hệ cân bằng khiến đá trắc linh không sáng: thiên hạ coi ngươi là phế linh căn — tiên sư không thu, tông môn không nhận, người đời khinh rẻ — cho tới khi bí mật bị lộ.') : null,
     );
     const bodyFx = (b: (typeof BODIES)[number]) => {
       const f: string[] = [];
@@ -111,7 +111,7 @@ export function creation() {
     return h('div', { class: 'free-pick' },
       h('h4', {}, 'Linh căn — chọn tùy ý các hệ (bỏ trống = phế linh căn)'),
       h('div', { class: 'opts el-opts' }, ...ALL_EL.map(elBtn), ...YINYANG_EL.map(elBtn)),
-      h('div', { style: { margin: '6px 0' } }, btn('Bỏ chọn hết', () => setAll([]), 'small'), ' ', btn('Ngũ hành', () => setAll(BASIC_EL), 'small'), ' ', btn('Đủ mười hệ', () => setAll(ALL_EL), 'small')),
+      h('div', { style: { margin: '6px 0' } }, btn('Bỏ chọn hết', () => setAll([]), 'small'), ' ', btn('Ngũ hành', () => setAll(BASIC_EL), 'small'), ' ', btn('Đủ mười hệ', () => setAll(ALL_EL), 'small'), ' ', btn('Hỗn Độn · 12 hệ', () => setAll(EVERY_EL), 'small')),
       verdict,
       h('h4', {}, 'Thể chất'),
       h('div', { class: 'opts' }, ...BODIES.filter((b) => !b.g || b.g === g).map((b) => h('button', { class: 'opt' + (fate.body === b.id ? ' on' : ''), onclick: () => { fate.body = b.id; draw(); } },

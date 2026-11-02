@@ -3,7 +3,7 @@
 // trước 16 tuổi: gia nhập tông môn / đại hoàng triều thì các vị hôn thê gửi thư chúc mừng (cùng tông thì gặp mặt),
 // 16 tuổi: các hôn ước được quyết — giữ hay từ hôn tùy vào quá trình phát triển của nhân vật.
 import { s, ch, years, statUp, fame, tamma, relChange, mark, addLog, findNpc, setLoc, effRi, LOCS, REALMS, type NPC, type Outcome } from '../engine/api';
-import { age, has } from '../engine/char';
+import { age, has, hiddenFlows } from '../engine/char';
 import { REGIONS, VUC, SECTS, EMPIRES, COURT_RANKS, type Vuc } from '../data/world';
 import type { Scene } from '../engine/actions';
 import { activeAllies, exiles } from '../engine/ally';
@@ -129,7 +129,7 @@ function awakenScene(): Scene {
   return {
     title: 'Thức tỉnh linh căn · 6 tuổi',
     kind: 'event',
-    text: 'Sáu tuổi. Trước toàn tộc, ngươi đặt tay lên đá trắc linh. Đá không sáng — một tia cũng không. Có người thì thầm hai chữ "phế linh căn". Trưởng lão hội họp ba ngày ba đêm: người kế thừa gia chủ không thể là phế vật. Dưỡng phụ cắn răng tuyên bố: ngươi bị giáng làm đệ tử ngoại môn, đưa ra một vực bên ngoài lo gia nghiệp của Diệp gia.\n\nĐêm ấy, ngồi một mình trong phòng, ngươi cảm thấy mười dòng linh khí lặng lẽ xoay quanh đan điền — đá trắc linh không đo được, vì nó chưa từng thấy linh căn nào như thế.',
+    text: `Sáu tuổi. Trước toàn tộc, ngươi đặt tay lên đá trắc linh. Đá không sáng — một tia cũng không. Có người thì thầm hai chữ "phế linh căn". Trưởng lão hội họp ba ngày ba đêm: người kế thừa gia chủ không thể là phế vật. Dưỡng phụ cắn răng tuyên bố: ngươi bị giáng làm đệ tử ngoại môn, đưa ra một vực bên ngoài lo gia nghiệp của Diệp gia.\n\nĐêm ấy, ngồi một mình trong phòng, ngươi cảm thấy ${hiddenFlows()} dòng linh khí lặng lẽ xoay quanh đan điền — đá trắc linh không đo được, vì nó chưa từng thấy linh căn nào như thế.`,
     choices: OUTER.map(([v, n]) => ({
       t: `Tới ${VUC[v].n || n}`,
       hint: 'Lo gia nghiệp của Diệp gia ở đó',

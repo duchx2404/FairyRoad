@@ -1,6 +1,6 @@
 // Sự kiện cốt lõi: phế linh căn tìm đường, tâm ma, kẻ thù diệt môn, động phủ tiền kiếp.
 import { effRi,
-  thapHidden, register, s, M, gain, money, cult, hurt, heal, statUp, tamma, fame, good, evil, learnTech, learnSkill, giveGear,
+  thapHidden, hiddenRootName, hiddenFlows, register, s, M, gain, money, cult, hurt, heal, statUp, tamma, fame, good, evil, learnTech, learnSkill, giveGear,
   battle, cultivator, beast, mortal, meet, he, ch, ri, pick, fmt, root, age, realmN, here, findNpc, mark, addLog, setFlag, flag,
   canPay, hasItem, lose, relChange, LOCS, REALMS,
 } from '../engine/api';
@@ -25,7 +25,7 @@ register([
         t: 'Quỳ xuống xin lão chỉ đường',
         cls: 'prime',
         fn: () => {
-          if (thapHidden()) return 'Lão đạo sĩ đặt hai ngón tay lên đỉnh đầu ngươi, rồi giật bắn tay lại như chạm phải lửa. Lão nhìn ngươi rất lâu, hạ giọng: "Không phải phế... là mười hệ cân bằng tới mức đá trắc linh cũng mù. Thập linh căn." Lão ấn vào tay ngươi một quyển sách cũ. "Đừng để ai biết, trước khi ngươi đủ sức tự bảo vệ."' + learnTech('ngunguyenquyet') + statUp('tam', 1);
+          if (thapHidden()) return `Lão đạo sĩ đặt hai ngón tay lên đỉnh đầu ngươi, rồi giật bắn tay lại như chạm phải lửa. Lão nhìn ngươi rất lâu, hạ giọng: "Không phải phế... là ${hiddenFlows()} hệ cân bằng tới mức đá trắc linh cũng mù. ${hiddenRootName()}." Lão ấn vào tay ngươi một quyển sách cũ. "Đừng để ai biết, trước khi ngươi đủ sức tự bảo vệ."` + learnTech('ngunguyenquyet') + statUp('tam', 1);
           if (ch(0.3 + s.stats.tam * 0.03 + s.stats.van * 0.02)) {
             const k = ch(0.3) ? 3 : 2; // Tam hoặc Tứ linh căn
             s.root = { k, els: [...BASIC_EL].sort(() => Math.random() - 0.5).slice(0, k === 3 ? 3 : 4) };
@@ -70,7 +70,7 @@ register([
     maxR: 2,
     cond: () => thapHidden(),
     title: 'Phế vật',
-    text: () => `Đám đệ tử tông môn đi ngang, một tên chỉ vào ngươi: "Kia chẳng phải đứa phế linh căn đặt tay lên đá trắc linh mà đá không sáng nổi sao? Thế mà cũng đeo kiếm đi đường." Cả bọn cười rộ.${effRi() >= 1 ? ' Chúng không biết ngươi đã là tu sĩ — mười hệ cân bằng tới mức khí tức cũng không lộ.' : ''}`,
+    text: () => `Đám đệ tử tông môn đi ngang, một tên chỉ vào ngươi: "Kia chẳng phải đứa phế linh căn đặt tay lên đá trắc linh mà đá không sáng nổi sao? Thế mà cũng đeo kiếm đi đường." Cả bọn cười rộ.${effRi() >= 1 ? ` Chúng không biết ngươi đã là tu sĩ — ${hiddenFlows()} hệ cân bằng tới mức khí tức cũng không lộ.` : ''}`,
     ch: () => [
       { t: 'Im lặng bỏ đi', fn: () => 'Ngươi không cãi. Để chúng cười. Ngày nào đó, chính chúng sẽ phải ngẩng đầu nhìn ngươi.' + statUp('tam', 1) },
       {
@@ -89,12 +89,15 @@ register([
     once: true,
     minR: 2,
     cond: () => thapHidden(),
-    title: 'Mười sắc linh quang',
-    text: () => 'Trong lúc vận công, ngươi lơ đễnh để khí tức thoát ra một khắc. Mười sắc linh quang bùng lên rồi tắt. Một lão giả đứng gần đó trợn mắt nhìn ngươi, miệng lẩm bẩm: "Kim Mộc Thủy Hỏa Thổ... Băng Lôi Phong... Ám... Quang? Không thể nào..."',
+    title: 'Linh quang muôn sắc',
+    text: () => {
+      const hd = hiddenFlows() === 'mười hai';
+      return `Trong lúc vận công, ngươi lơ đễnh để khí tức thoát ra một khắc. ${hd ? 'Mười hai' : 'Mười'} sắc linh quang bùng lên rồi tắt. Một lão giả đứng gần đó trợn mắt nhìn ngươi, miệng lẩm bẩm: "Kim Mộc Thủy Hỏa Thổ... Băng Lôi Phong... Ám... Quang${hd ? '... cả Âm lẫn Dương' : ''}? Không thể nào..."`;
+    },
     ch: () => [
-      { t: 'Thừa nhận — đã tới lúc thiên hạ biết', cls: 'prime', fn: () => { revealThap(); return 'Tin tức lan khắp Thương Lan như lửa gặp gió: "Phế linh căn" năm xưa hóa ra là Thập linh căn vạn năm khó gặp. Tông môn lớn bắt đầu gửi thiếp mời. Kẻ ghen ghét cũng vậy.'; } },
+      { t: 'Thừa nhận — đã tới lúc thiên hạ biết', cls: 'prime', fn: () => { const n = hiddenRootName(); revealThap(); return `Tin tức lan khắp Thương Lan như lửa gặp gió: "Phế linh căn" năm xưa hóa ra là ${n} vạn năm khó gặp. Tông môn lớn bắt đầu gửi thiếp mời. Kẻ ghen ghét cũng vậy.`; } },
       { t: 'Nài lão giả giữ kín (biếu hậu lễ)', dis: !canPay(M(40)), fn: () => { s.money -= M(40); return 'Lão giả cất linh thạch, gật đầu: "Lão già này hôm nay hoa mắt." Bí mật vẫn là bí mật — ít nhất là lúc này.'; } },
-      { t: 'Bỏ đi thật nhanh', fn: () => (ch(0.5) ? (revealThap(), 'Ngươi rời đi, nhưng lão giả đã kịp kể cho người khác. Mấy tháng sau, cả phường thị đều bàn về "Thập linh căn".') : 'Ngươi lẩn vào đám đông. Lão giả dụi mắt, tưởng mình nhìn nhầm.') },
+      { t: 'Bỏ đi thật nhanh', fn: () => (ch(0.5) ? (revealThap(), `Ngươi rời đi, nhưng lão giả đã kịp kể cho người khác. Mấy tháng sau, cả phường thị đều bàn về "${hiddenRootName()}".`) : 'Ngươi lẩn vào đám đông. Lão giả dụi mắt, tưởng mình nhìn nhầm.') },
     ],
   },
 

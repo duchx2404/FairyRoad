@@ -62,3 +62,9 @@ Biến {{me}} được thay bằng đúng tên nhân vật chính, ví dụ: {{m
 Trong đoạn lặp, {{name}} là tên từng đạo lữ, {{index}} là số thứ tự từ 1. Nội dung trong đoạn được lặp một lần cho mỗi người, áp dụng cả prompt AI và lời kể mặc định.
 
 Khối cảnh Song Tu: {{#withPartner}}...{{/withPartner}} và {{#withNextPartner}}...{{/withNextPartner}} mỗi khối lấy người tiếp theo theo thứ tự chọn, không quay lại người đã dùng trong các khối cảnh. {{name}} giữ nguyên tên trong khối. Có thể dùng {{name1}}, {{name2}}, … trong cùng khối để lấy nhiều người khác nhau chưa dùng. Nếu không đủ người, bỏ nguyên khối. Không lồng khối; phải đóng đúng tên. {{partnerNames}} và vòng lặp {{#partners}} vẫn hiển thị toàn bộ danh sách, không làm thay đổi thứ tự phân người cho các khối cảnh. Các khối hoạt động trong cả prompt AI và lời kể mặc định.
+
+## Chơi trên Safari qua Internet
+
+Bản web là site tĩnh: chạy npm run build, rồi powershell -ExecutionPolicy Bypass -File tools/publish-web.ps1 để đưa riêng thư mục dist lên nhánh gh-pages. Bật GitHub Pages với nhánh gh-pages và thư mục /. Không đưa save trong trình duyệt lên mạng. Mục tiêu build Safari 16.4 trở lên; cần kiểm tra trên thiết bị thật trước khi khẳng định mọi tính năng tương thích.
+
+Khi mở từ Internet, game không gọi dịch vụ 127.0.0.1 của máy tính: dùng lời kể soạn sẵn; AI cần địa chỉ HTTPS có thể truy cập, còn tạo ảnh/video hiện chỉ hỗ trợ máy cục bộ. Save nằm trong trình duyệt của từng thiết bị, chưa đồng bộ tài khoản; dùng Cài đặt → Xuất/Nhập dữ liệu để chuyển save.

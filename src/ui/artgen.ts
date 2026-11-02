@@ -1,3 +1,4 @@
+import { localServicesAvailable } from '../ai/service-access';
 // Nút "Vẽ chân dung" / "Vẽ toàn thân": gọi máy vẽ cục bộ (tools/art_server.py, cổng 8787) vẽ ĐÚNG MỘT ảnh của người đang xem.
 // Máy vẽ xếp hàng và vẽ lần lượt, không bao giờ vẽ đồng loạt cả bộ (tránh sập ComfyUI).
 import { h, btn } from './dom';
@@ -12,6 +13,7 @@ let keys: Set<string> | null = null;
 let keysAt = 0;
 /** Danh sách khoá máy vẽ biết vẽ; null nếu máy vẽ chưa bật (thử lại sau 10 s). */
 export async function artKeys(): Promise<Set<string> | null> {
+  if (!localServicesAvailable()) return null;
   if (keys) return keys;
   if (Date.now() - keysAt < 10_000) return null;
   keysAt = Date.now();
@@ -54,6 +56,7 @@ async function poll() {
 }
 /** Gửi yêu cầu vẽ một khoá; cb được gọi mỗi lần trạng thái đổi cho tới khi xong / lỗi. */
 export async function requestDraw(key: string, cb: Cb) {
+  if (!localServicesAvailable()) { cb({ state: 'error', err: 'Bản web chưa kết nối máy vẽ trực tuyến.' }); return; }
   const had = inflight.get(key);
   if (had) { had.add(cb); cb({ state: 'queued' }); return; }
   inflight.set(key, new Set([cb]));

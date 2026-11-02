@@ -10,14 +10,14 @@ import { s, type NPC } from './state';
 import { RMAX, REALMS, STAGES, type El, type StatKey, STATS } from '../data/core';
 import { LOCS, SECTS } from '../data/world';
 import { TECHS, SKILLS, mkGear, type Gear, MAX_SKILLS } from '../data/items';
-import { addItem, removeItem, count, itemName, M, has, stat, seenRoot as root, root as trueRoot, thapHidden, age, maxLife, addGear, bagFree, lifeLeft, effRi } from './char';
+import { addItem, removeItem, count, itemName, M, has, stat, seenRoot as root, root as trueRoot, thapHidden, hiddenRootName, hiddenFlows, age, maxLife, addGear, bagFree, lifeLeft, effRi } from './char';
 import { addLog, mark, passTime, addProg, mkNpc, addNpc, relChange, findNpc, friends, enemies, daolu, master, killPlayer, setLoc, npcRealm } from './core';
 import { fight, fightSummary, mkFoe, beastFoe, dangerLabel, compare, type FoeSpec, type FightOpts, type FightResult } from './combat';
 import { register, type GameEvent, type Choice, type Outcome } from './events';
 import { ch, ri, rf, pick, clamp, fmt } from '../core/util';
 import { codexAdd } from './state';
 
-export { s, register, M, has, stat, root, trueRoot, thapHidden, age, maxLife, lifeLeft, count, itemName, addLog, mark, passTime, addProg, mkNpc, addNpc, relChange, findNpc, friends, enemies, daolu, master, killPlayer, setLoc, npcRealm, effRi, RMAX };
+export { s, register, M, has, stat, root, trueRoot, thapHidden, hiddenRootName, hiddenFlows, age, maxLife, lifeLeft, count, itemName, addLog, mark, passTime, addProg, mkNpc, addNpc, relChange, findNpc, friends, enemies, daolu, master, killPlayer, setLoc, npcRealm, effRi, RMAX };
 export { fight, fightSummary, mkFoe, beastFoe, dangerLabel, compare, ch, ri, rf, pick, clamp, fmt, REALMS, STAGES, LOCS, SECTS, TECHS, SKILLS, STATS };
 export type { GameEvent, Choice, Outcome, FoeSpec, FightOpts, FightResult, NPC, El, StatKey, Gear };
 

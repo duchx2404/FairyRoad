@@ -1,6 +1,6 @@
 // Hôn ước từ bé của Thánh tử/nữ Thập linh căn (trong cùng thánh địa), từ hôn, hẹn đấu,
 // và mối duyên với Thánh tử/nữ thánh địa khác gặp ở bí cảnh hoặc đại hội các thánh địa.
-import { effRi, register, s, M, money, cult, hurt, statUp, fame, good, tamma, gain, battle, ch, pick, mark, findNpc, relChange, meet, SECTS, REALMS, thapHidden, here, years, type NPC, type Choice } from '../engine/api';
+import { effRi, register, s, M, money, cult, hurt, statUp, fame, good, tamma, gain, battle, ch, pick, mark, findNpc, relChange, meet, SECTS, REALMS, thapHidden, hiddenRootName, hiddenFlows, here, years, type NPC, type Choice } from '../engine/api';
 import { holyNpcName } from '../engine/core';
 import { revealThap } from '../engine/items';
 import { wedDaolu } from '../engine/relationships';
@@ -49,7 +49,7 @@ register([
         { t: 'Lạnh nhạt cho qua', fn: () => { relChange(n, -10); return `Ngươi gật đầu chào rồi đi. Sau lưng, ${n.name} đứng rất lâu.`; } },
       ];
       if (thapHidden() && n.rel >= 60 && !s.flags.fzKnows) out.splice(1, 0, {
-        t: 'Kể cho người ấy bí mật mười hệ linh căn',
+        t: `Kể cho người ấy bí mật ${hiddenFlows()} hệ linh căn`,
         fn: () => {
           s.flags.fzKnows = true;
           relChange(n, 18);
@@ -150,7 +150,7 @@ register([
     once: true,
     cond: () => !!fz() && broken() && !thapHidden() && fz()!.rel > -60,
     title: 'Người cũ quay lại',
-    text: () => { const n = fz()!; return `Tin Thập linh căn lan ra. Ngày hôm sau, ${n.g === 'f' ? 'phụ thân' : 'mẫu thân'} của ${n.name} mang ngọc bội cũ tới phủ, giọng khác hẳn năm xưa: "Năm đó là lão phu hồ đồ. Hôn ước... có thể nối lại chăng?" ${n.name} đứng ở cửa, không dám bước vào.`; },
+    text: () => { const n = fz()!; return `Tin ${hiddenRootName()} lan ra. Ngày hôm sau, ${n.g === 'f' ? 'phụ thân' : 'mẫu thân'} của ${n.name} mang ngọc bội cũ tới phủ, giọng khác hẳn năm xưa: "Năm đó là lão phu hồ đồ. Hôn ước... có thể nối lại chăng?" ${n.name} đứng ở cửa, không dám bước vào.`; },
     ch: () => {
       const n = fz()!;
       return [

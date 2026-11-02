@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import { localServicesAvailable, serviceAvailable } from '../src/ai/service-access';
+Object.defineProperty(globalThis, 'location', { configurable: true, value: { hostname: 'duchx2404.github.io', protocol: 'https:', href: 'https://duchx2404.github.io/FairyRoad/' } });
+assert.equal(localServicesAvailable(), false);
+assert.equal(serviceAvailable('http://127.0.0.1:11434'), false);
+assert.equal(serviceAvailable('http://192.168.1.10:11434'), false);
+assert.equal(serviceAvailable('https://ai.example.org'), true);
+Object.defineProperty(globalThis, 'location', { configurable: true, value: { hostname: 'localhost', protocol: 'http:', href: 'http://localhost:5180/' } });
+assert.equal(localServicesAvailable(), true);
+assert.equal(serviceAvailable('http://127.0.0.1:11434'), true);
+Reflect.deleteProperty(globalThis, 'location');
+console.log('PASS: online clients avoid desktop loopback and mixed-content services; desktop remains supported.');

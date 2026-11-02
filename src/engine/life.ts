@@ -1,7 +1,7 @@
 import { worldDefinitions } from '../data/local-items';
 // Đầu thai, cái chết, điểm số, luân hồi và thành tựu.
 import { kmSyncSkills } from './kinhmach';
-import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, ORIGINS, PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, REALMS, STAGES, type El, type StatKey } from '../data/core';
+import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, ORIGINS, PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, HON_DON_ROOT, hiddenRootKind, REALMS, STAGES, type El, type StatKey } from '../data/core';
 import { BEASTS, LOCS, LOC_LIST, SECTS, RK, REGIONS, applyWorld, beastRoot } from '../data/world';
 import { mkGear } from '../data/items';
 import { lineTop } from './combat';
@@ -321,7 +321,7 @@ export function newLife(o: NewLifeOpts) {
       s.flags.childhood = true; // 1–6 tuổi: chưa tu luyện
       s.flags.dhHeir = true;
       s.flags.dhStipend = true;
-      s.root = { k: THAP, els: ALL_EL.slice() }; // Thập linh căn — đá trắc linh không đo được
+      if (s.root.k !== HON_DON_ROOT) s.root = { k: THAP, els: ALL_EL.slice() }; // Thập linh căn — đá trắc linh không đo được
       // hôn ước với các thánh nữ: ba thánh địa + thánh nữ Khương thị (thế gia đồng minh)
       // hôn ước: ít nhất 3 thánh địa, có thể nhiều hơn; thế gia Trung Vực ngẫu nhiên;
       // có tỉ lệ "đại hôn ước" với tất cả thánh địa và mọi thế gia Trung Vực
@@ -410,7 +410,7 @@ export function newLife(o: NewLifeOpts) {
     const foe = addNpc(mkNpc({ r: 2, st: 1, tag: 'enemy', rel: -100, how: 'Kẻ đã diệt cả nhà ngươi', age: ri(40, 70), talent: 0.9 }));
     s.flags.nemesis = foe.id;
   }
-  if (org.sect && s.root.k === THAP) {
+  if (org.sect && hiddenRootKind(s.root.k)) {
     // Sinh ra trời hiện dị tượng, được chọn làm Thánh tử; sáu tuổi trắc linh: "phế linh căn".
     // Là con cháu Thái thượng trưởng lão nên không ai dám đuổi — chỉ thành công tử ăn chơi của thánh địa.
     const sc = SECTS[org.sect];
@@ -436,7 +436,7 @@ export function newLife(o: NewLifeOpts) {
     fz.name = elder.split(' ').slice(0, -1).join(' ') + ' ' + mkName(g2).split(' ').slice(-1)[0];
     fz.how = `${g2 === 'f' ? 'Hôn thê' : 'Hôn phu'} từ bé — ${g2 === 'f' ? 'con gái' : 'con trai'} Trưởng lão nội môn ${elder} của ${sc.n}. Hai nhà định thân ngay ngày ngươi ra đời giữa dị tượng`;
     s.flags.betrothed = fz.id;
-    addLog(`Thánh địa không đuổi con cháu Thái thượng trưởng lão. Ngươi vẫn sống trong ${sc.n}, áo gấm ngựa quý, được người ta gọi là "công tử" — sau lưng thì gọi là phế vật. Không ai biết đêm nào ngươi cũng ngồi thiền, mười dòng linh khí lặng lẽ xoay vòng.`);
+    addLog(`Thánh địa không đuổi con cháu Thái thượng trưởng lão. Ngươi vẫn sống trong ${sc.n}, áo gấm ngựa quý, được người ta gọi là "công tử" — sau lưng thì gọi là phế vật. Không ai biết đêm nào ngươi cũng ngồi thiền, ${s.root.k === HON_DON_ROOT ? 'mười hai' : 'mười'} dòng linh khí lặng lẽ xoay vòng.`);
   } else if (org.sect) {
     joinSect(org.sect, RK.THANHTU);
     s.flags.thanhtu = org.sect;
@@ -467,7 +467,7 @@ export function newLife(o: NewLifeOpts) {
   s.flags.soulBorn = s.born; // tuổi linh hồn tính từ lần sinh đầu tiên
   mark(`Sinh ra tại ${startLoc.n}, ${((x) => x[0].toLowerCase() + x.slice(1))(originName(org, s.g))}${beast ? `, yêu thú loài ${beast}` : ''}`);
   if (org.id === 'diep_hondon') addLog('Một tuổi. Ngươi lớn lên ở Diệp gia Tổ Địa, là con nuôi của gia chủ và người kế thừa đã được chỉ định. Các vị thánh nữ có hôn ước với ngươi đều sinh cùng năm.');
-  else if (o.fate.root.k === THAP) addLog('Mười tuổi. Thầy bói đặt tay ngươi lên đá trắc linh: không một tia sáng. "Phế linh căn." Cả làng thở dài. Chỉ mình ngươi cảm thấy, trong người có mười dòng chảy nhỏ đang lặng lẽ xoay vòng.');
+  else if (hiddenRootKind(o.fate.root.k)) addLog('Mười tuổi. Thầy bói đặt tay ngươi lên đá trắc linh: không một tia sáng. "Phế linh căn." Cả làng thở dài. Chỉ mình ngươi cảm thấy, trong người có những dòng chảy nhỏ đang lặng lẽ xoay vòng.');
   else addLog(`Mười tuổi. ${root().n}. ${o.fate.root.k === 0 ? 'Thầy bói trong làng lắc đầu: "Đứa nhỏ này không có tiên duyên."' : 'Người trong làng nói ngươi có tướng lạ.'}`);
   save();
 }
