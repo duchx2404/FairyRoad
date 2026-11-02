@@ -140,6 +140,8 @@ h4:first-child { margin-top: 0; }
 .item .nm { flex: 1; min-width: 0; }
 .item .nm small { display: block; color: var(--muted); font-size: 12px; line-height: 1.35; }
 .item .acts { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+.item .acts.acts-2col { display: grid; grid-template-columns: repeat(2, auto); gap: 4px; align-items: center; justify-content: end; flex: none; }
+.item .acts.acts-2col .btn { text-align: center; padding: 3px 7px; white-space: nowrap; }
 .muted { color: var(--muted); }
 .small { font-size: 12.5px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }

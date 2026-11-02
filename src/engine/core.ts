@@ -13,6 +13,7 @@ import { moneyScale, effRi, tamSum, pqSum, myLinh, cultRate, atBottleneck, stat,
 import { hooks } from './bus';
 import { ch, clamp, pick, ri, rf, uid, yearsTxt } from '../core/util';
 import { CHANLINH, MOUNT_SPEED, MOUNT_BLINK } from '../data/spirit';
+import { tickLinh } from './beast-companion';
 
 // ---------- Nhật ký ----------
 export function addLog(t: string, k?: 'mark' | 'bad' | 'good' | 'ai') {
@@ -179,8 +180,7 @@ export function passTime(y: number) {
   // NPC
   for (const n of s.npcs) slots.npcTick(n, y); // xem npctick.ts
   slots.tiencoTick(y); // người trên các bảng Thiên Cơ Lâu cũng tu luyện, phi thăng, chết già
-  const cl = myLinh();
-  if (cl) cl.bond = Math.min(100, cl.bond + y * 3);
+  tickLinh(y);
   slots.courtPay();
   // tông môn bổng lộc
   if (s.sect) {

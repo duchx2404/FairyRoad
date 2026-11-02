@@ -8,6 +8,7 @@ import { REALMS, ROOTS, BASIC_EL, STATS, hiddenRootKind, rootKindOf, type StatKe
 import { s, codexAdd } from './state';
 import { effRi, tamList, tamActive, tamSlots, pqList, myLinh, removeItem, pillMult, techAff, bagFree, itemName, count, addItem, skEff, regrowGear } from './char';
 import { addProg, addLog, mark } from './core';
+import { mkChanLinh } from './beast-companion';
 import { clamp, pick, ch, fmt } from '../core/util';
 
 export function usePill(id: string, g = 1): string {
@@ -82,8 +83,9 @@ export function useSpecial(key: string): string {
       s.stats.ngo += 1;
       return 'Ngọc giản ghi chép tâm đắc của một tu sĩ vô danh. Đọc xong, ngộ tính +1.';
     }
-    case 'linhthach_trung': s.money += 100; return 'Đổi được 100 linh thạch.';
-    case 'linhthach_thuong': s.money += 10000; return 'Đổi được 10.000 linh thạch.';
+    case 'linhthach_trung': s.money += 10; return 'Đổi được 10 Hạ phẩm linh thạch (1 Trung phẩm = 10 Hạ phẩm).';
+    case 'linhthach_thuong': s.money += 100; return 'Đổi được 100 Hạ phẩm linh thạch (1 Thượng phẩm = 100 Hạ phẩm).';
+    case 'linhthach_cuc': s.money += 1000; return 'Đổi được 1.000 Hạ phẩm linh thạch (1 Cực phẩm = 1.000 Hạ phẩm).';
     case 'linhtuyen': return 'Linh tuyền mát lạnh chảy xuống đan điền. ' + addProg(50);
     case 'thanhoa': s.flags.flame = true; mark('Luyện hóa linh hỏa'); return 'Đốm lửa chui vào lòng bàn tay, từ nay luyện đan luyện khí đều có linh hỏa trợ lực.';
     case 'phatnganh': s.flags.bodhi = true; s.tamma = 0; s.stats.tam += 1; return 'Vị đắng chát lan khắp miệng rồi hóa ngọt. Tâm tĩnh như nước, đạo tâm +1. Lần đột phá tới sẽ dễ hơn.';
@@ -93,11 +95,11 @@ export function useSpecial(key: string): string {
         const b = CHANLINH[beastId];
         if (b) {
           const old = s.flags.chanlinh ? s.flags.chanlinh.name : null;
-          s.flags.chanlinh = { id: beastId, name: b.n, bond: 40 };
+          mkChanLinh(beastId, b.n, true);
           mark(`Khế ước linh thú ${b.n}`);
           return old
-            ? `Ngươi mở lồng linh thú, chia tay ${old} và ký kết khế ước mới cùng ${b.n}!`
-            : `Ngươi mở lồng linh thú, ${b.n} quấn quýt bên chân. Ký kết khế ước chân linh thành công!`;
+            ? `Ngươi mở lồng linh thú, chia tay ${old} và ký kết khế ước mới cùng ${b.n} (Ấu niên)!`
+            : `Ngươi mở lồng linh thú, ${b.n} (Ấu niên) quấn quýt bên chân. Ký kết khế ước chân linh thành công!`;
         }
       }
     }

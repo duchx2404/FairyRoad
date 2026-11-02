@@ -13,10 +13,12 @@ const hondonNpc = (n: NPC) => n.bio?.body === 'Hỗn Độn Đạo Thai';
 
 export function npcTick(n: NPC, y: number) {
   if (!n.alive) return;
+  const isBeast = !!(n.beast || n.race === 'yeu');
+  const speedMul = isBeast ? 0.25 : 1; // Thực lực yêu tộc tăng chậm hơn nhân tộc 4 lần
   if (n.r > 0 || n.talent > 0) {
     let left = y;
     while (left > 0) {
-      const per = (REALMS[n.r].turn * 12) / (Math.max(0.2, n.talent) * compCultMul(n));
+      const per = ((REALMS[n.r].turn * 12) / (Math.max(0.2, n.talent) * compCultMul(n))) / speedMul;
       const step = Math.min(left, per);
       left -= step;
       (n as any).p = ((n as any).p || 0) + step / per;
@@ -26,7 +28,7 @@ export function npcTick(n: NPC, y: number) {
         else if (n.r < 8 && (hondonNpc(n) || ch(Math.min(0.95, (BREAK_BASE[n.r + 1] || 0.05) + 0.12 + (n.luck ?? 0) * 0.01)))) { // Hỗn Độn Đạo Thai: luôn thành công
           n.r++;
           n.st = 0;
-          n.life = Math.max(n.life, Math.round(REALMS[n.r].life * rf(0.9, 1.15)));
+          n.life = Math.max(n.life, Math.round(REALMS[n.r].life * rf(0.9, 1.15) * (isBeast ? 4 : 1)));
           if (Math.abs(n.rel) >= 40 || n.tag === 'daolu' || n.tag === 'master') addLog(`${n.name} đột phá ${REALMS[n.r].n}.`);
           if (inParty(n.id)) outfit(n, 'lên cảnh giới');
           allyRealmUp(n); // người theo ngươi vào thế lực: chức vụ theo cảnh giới

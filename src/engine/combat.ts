@@ -14,6 +14,7 @@ import { SKILLS, TALIS, PILLS, TECHS, GRADE_MULT, MATS, mkGear, type Skill } fro
 import { s, codexAdd } from './state';
 import { atkOf, defOf, maxHp, has, stat, npcPow, count, removeItem, addItem, addGear, itemName, root, pqSum, clSum, myLinh, age, maxLife, effRi, stageName } from './char';
 import { CHANLINH } from '../data/spirit';
+import { STAGE_NAMES, type BeastStage } from './beast-companion';
 import { activeNpcs, compMul, kitSum, kitSkills } from './party';
 import { findNpc } from './core';
 import { laws, daos, daoMult, DAOS, R_CHUANTHANH, R_THANHNHAN, weaponKey } from './dao';
@@ -858,8 +859,27 @@ function allyFighters(p: Fighter, rng: Rng): Fighter[] {
   const cl = myLinh();
   if (cl && CHANLINH[cl.id] && !cl.ride) { // chỉ để cưỡi thì không vào trận
     const d = CHANLINH[cl.id];
-    const hp = Math.round(p.maxHp * 0.35);
-    out.push({ id: 'cl', name: cl.name, r: p.r, st: 0, el: d.el, hp, maxHp: hp, atk: Math.round(p.atk * (0.25 + cl.bond / 400)), def: Math.round(p.def * 0.5), skills: [], shield: 0, dot: [], kind: 'beast' });
+    const clState = cl as any;
+    const beastR = clState.r ?? p.r;
+    const beastSt = clState.st ?? 0;
+    const stage = clState.stage || 'truongthanh';
+    const stageMul = stage === 'truongthanh' ? 1.3 : stage === 'aunen' ? 0.9 : 0.7;
+    const hp = Math.round(p.maxHp * 0.35 * stageMul);
+    out.push({
+      id: 'cl',
+      name: `${cl.name} (${STAGE_NAMES[stage as BeastStage] || 'Linh thú'})`,
+      r: beastR,
+      st: beastSt,
+      el: d.el,
+      hp,
+      maxHp: hp,
+      atk: Math.round(p.atk * (0.25 + cl.bond / 400) * stageMul),
+      def: Math.round(p.def * 0.5 * stageMul),
+      skills: [],
+      shield: 0,
+      dot: [],
+      kind: 'beast',
+    });
   }
   for (const n of activeNpcs()) {
     const f = mkFoe({ name: n.name, r: n.r, st: n.st, el: n.el, kind: 'cultivator', mult: compMul(n) }, rng);

@@ -6,12 +6,12 @@ import { skCost } from '../engine/combat';
 import { h, btn } from './dom';
 import { openModal, closeModal, run, refresh, showScene, toast as toastMsg } from './modal';
 import { s } from '../engine/state';
-import { RMAX, REALMS, EL } from '../data/core';
+import { RMAX, REALMS, EL, STAGES } from '../data/core';
 import { LOCS, LOC_TYPE, REGIONS, VUC, SECTS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, type Loc } from '../data/world';
 import { EVENTS, eligible } from '../engine/events';
 import { eventScene } from '../engine/actions';
 import { CLANS } from '../data/core';
-import { realmOpen, nextOpen, passTime, mark } from '../engine/core';
+import { realmOpen, nextOpen, passTime, mark, relLabel, npcRealm, npcAge, mkNpc, addNpc } from '../engine/core';
 import { shjAt } from '../data/world';
 import { wander, work, explore, gatherScene, travelInfo, travelTo, formationInfo, travelFormation, waitYear, teahouse, teaPrice, bounties, doBounty, doMission, sectRecruitmentScene, sectRecruitmentUsed } from '../engine/actions';
 import { whereOf, ownerTxt } from '../data/world';
@@ -19,14 +19,14 @@ import { EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, courtReq, empireAt } f
 import { myCourt, audience, canTakePost, takePost, resignPost, courtTask } from '../engine/court';
 import { missionPool, promoInfo, canJoin, joinSect, sectWares, isExclusiveTech, markVaultSold, donateItemToVault, donateGearToVault } from '../engine/sect';
 import { HERBS, MATS, TALIS } from '../data/items';
-import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows, itemPrice } from '../engine/char';
+import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows, itemPrice, stageName, age } from '../engine/char';
 import { TAMPHAP, tamGrade, tamEffect, learnReq, realmForGiai, TIER_N, TECHS, SKILLS, PILLS, TIER_C, techSpeed, techGrade, skillGrade, pillGrade, skHue, SK_KIND, skillEffect, type Skill, type Tech } from '../data/items';
 import { techAff, count, addItem, itemName, tamList, pqList } from '../engine/char';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
 import { itemArtSvg, gearArtSvg } from './art';
 import { skillIconSvg, techIconSvg, pillIconSvg, tamIconSvg, pqIconSvg, scrollIconSvg, gearIconSvg, matIconSvg } from './icons';
 import { CRAFT_N } from '../engine/craft';
-import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, schoolKeyOfSect, SCHOOL_HEAD_TITLE, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate, sectWarScene } from '../engine/sectx';
+import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, discipleRoster, type SectDisciple, getOrCreateDiscipleNpc, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, schoolKeyOfSect, SCHOOL_HEAD_TITLE, type Elder, getOrCreateElderNpc, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate, sectWarScene } from '../engine/sectx';
 import { master } from '../engine/core';
 import { rankLabel, headTitle } from '../data/world';
 import { auctionHeld, nextAuction, stock, buy, wareCat, SHOP_CATS, isBigTown } from '../engine/trade';
@@ -38,6 +38,11 @@ import { centerOn } from './map';
 import { openCelestial } from './celestial';
 import { CELESTIAL } from '../data/celestial';
 import { fmt, yearsTxt } from '../core/util';
+import { avatarSvg, npcPic, npcPicWanted, playerPortrait } from './portrait';
+import { openPortrait } from './hud';
+import { weaponKind } from './arena';
+import { meetNpc, npcTagName } from './panels';
+import { isSameSect } from '../data/declining-schools';
 
 // ---------- Tranh minh họa ----------
 function regionTint(l: Loc) {
@@ -236,6 +241,7 @@ export function openPlace(id = s.loc) {
       cards.push({ t: 'Nhiệm Vụ Đường', sub: `Đang nhận ${jobs.length}/${MAX_JOBS} việc${ready ? ` · ${ready} việc đã xong, giao nộp!` : ' · luyện đan, khí, phù và việc khác · giao nộp lấy cống hiến'}`, hl: ready > 0, fn: () => jobHall() });
       cards.push({ t: 'Tàng Kinh Các', sub: 'Công pháp, võ công, kinh thư', fn: () => openLibrary('book') });
       cards.push({ t: 'Bảo khố tông môn', sub: 'Đổi cống hiến lấy đan dược', fn: () => openLibrary('vault') });
+      cards.push({ t: 'Thành viên tông môn', sub: 'Tông chủ, các vị trưởng lão, đồng môn & đệ tử', hl: true, fn: () => openSectRoster(sc.id) });
       cards.push({ t: 'Bái sư', sub: m ? `Sư phụ: ${m.name} · xem các trưởng lão` : 'Chọn một vị trưởng lão để cầu bái', fn: () => masterHall() });
       cards.push({ t: 'Tông môn tỉ thí', sub: sparDone() ? 'Năm nay đã tham gia' : 'Ba vòng lôi đài với đồng môn, thua không tổn tính mệnh', dis: sparDone(), fn: after(() => run(tiThi)) });
       cards.push({ t: daiBiOpen() ? 'Tông môn đại bỉ · đang mở' : 'Tông môn đại bỉ', sub: daiBiOpen() ? (daiBiDone() ? 'Năm nay đã tham gia' : 'Mười năm một lần, năm vòng lôi đài, thưởng lớn') : `Năm ${daiBiNext()} (còn ${daiBiNext() - Math.floor(s.year)} năm)`, hl: daiBiOpen() && !daiBiDone(), dis: !daiBiOpen() || daiBiDone(), fn: after(() => run(daiBi)) });
@@ -267,10 +273,12 @@ export function openPlace(id = s.loc) {
         hl: !used && admission.ok,
         fn: after(() => run(() => sectRecruitmentScene(sc.id))),
       });
+      cards.push({ t: 'Nhân vật danh vọng', sub: 'Tông chủ, các vị trưởng lão & thiên kiêu xuất chúng', hl: true, fn: () => openSectRoster(sc.id) });
       cards.push({ t: 'Dạo quanh sơn môn', sub: `${yearsTxt(Math.max(1 / 12, T() * 0.25))} · làm khách`, fn: after(() => run(wander)) });
     } else {
       const c = canJoin(sc.id);
       cards.push({ t: 'Bái sơn', sub: c.ok ? 'Xin khảo hạch nhập môn' : undefined, dis: !c.ok && !s.bag.some((b) => b.id === 'x:kiemlenh'), why: s.sect ? `Ngươi đã thuộc ${SECTS[s.sect.id].n}` : c.why, hl: c.ok, fn: after(() => applySect(sc.id)) });
+      cards.push({ t: 'Nhân vật danh vọng', sub: 'Tông chủ, các vị trưởng lão & thiên kiêu xuất chúng', hl: true, fn: () => openSectRoster(sc.id) });
       cards.push({ t: 'Dạo quanh sơn môn', sub: `${yearsTxt(Math.max(1 / 12, T() * 0.25))} · làm khách`, fn: after(() => run(wander)) });
     }
   } else {
@@ -315,6 +323,14 @@ export function openRemote(id: string) {
       setTimeout(() => { if (s.loc === id && document.getElementById('modal')!.hidden && !s.dead) openPlace(id); }, 30);
     },
   });
+  if (l.type === 'sect' && l.sect) {
+    cards.push({
+      t: 'Nhân vật danh vọng',
+      sub: 'Tông chủ, các vị trưởng lão & thiên kiêu xuất chúng',
+      hl: true,
+      fn: () => openSectRoster(l.sect!),
+    });
+  }
   cards.push({ t: 'Thôi', fn: () => closeModal() });
   const body: HTMLElement[] = [
     ...placeHeader(l),
@@ -327,6 +343,293 @@ export function openRemote(id: string) {
   if (dl) body.push(dl);
   body.push(grid(cards));
   openModal(l.n, body, { wide: true, sub: `${whereOf(l)} · ${LOC_TYPE[l.type].n}${ownerTxt(l) ? ' · ' + ownerTxt(l) : ''}`, noClose: true, xBtn: true });
+}
+
+// ---------- Thành viên tông môn / Nhân vật danh vọng ----------
+export function openSectRoster(sectId: string) {
+  const sct = SECTS[sectId];
+  if (!sct) return;
+  const isMine = s.sect?.id === sectId;
+
+  const elders = elderRoster(sct);
+  const leaders = elders.filter((e) => e.top);
+  const innerElders = elders.filter((e) => e.inner && !e.top);
+  const outerElders = elders.filter((e) => !e.inner && !e.top);
+
+  // Danh sách đệ tử đại diện của tông
+  const disciples = discipleRoster(sct);
+  const coreDisciples = disciples.filter((d) => d.rankKey === 'thantruyen');
+  const innerDisciples = disciples.filter((d) => d.rankKey === 'noimon');
+  const outerDisciples = disciples.filter((d) => d.rankKey === 'ngoaimon');
+  const discipleNames = new Set(disciples.map((d) => d.name));
+
+  // Thiên kiêu & đệ tử danh tiếng thuộc tông trên bảng Thiên Cơ Lâu
+  const w = s.world ?? 0;
+  const people: any[] = s.flags.tienco?.people ?? [];
+  const curM = master();
+  const elderNames = new Set(elders.map((e) => e.name));
+  const elderLegacyRoles = new Set(elders.map((e) => e.legacyRole).filter(Boolean));
+
+  const geniuses = people.filter((p) => {
+    if (!p.alive || p.world !== w) return false;
+    if (!isSameSect(p.sect, sct.id) && !p.from?.includes(sct.n)) return false;
+    // Exclude legacy role elders (like Thông Thiên Giáo Chủ, Vân Tiêu Tiên Tử, etc.)
+    if (p.legacyRole || elderLegacyRoles.has(p.legacyRole)) return false;
+    // Exclude if already in elders list, disciple list or is current master
+    if (elderNames.has(p.name) || discipleNames.has(p.name) || (curM && curM.name === p.name)) return false;
+    // Must satisfy genius age (human <= 100, beast <= 400) OR have disciple/holy scion title
+    const pAge = s.year - (p.born ?? s.year);
+    const maxGeniusAge = p.beast ? 400 : 100;
+    const isDisciple = p.from?.includes('Đệ tử') || p.from?.includes('Thánh');
+    return isDisciple || pAge <= maxGeniusAge;
+  });
+
+  // Đồng môn trong nhân mạch
+  const knownNpcs = s.npcs.filter((n) =>
+    n.alive &&
+    isSameSect(n.sect, sectId) &&
+    n.tag !== 'master' &&
+    !elderNames.has(n.name) &&
+    !discipleNames.has(n.name) &&
+    !elders.some((e) => isMyMaster(e) || (e.legacyRole && n.how?.includes(e.legacyRole))) &&
+    !geniuses.some((g) => g.name === n.name)
+  );
+
+  const body: HTMLElement[] = [];
+
+  body.push(h('p', { class: 'pl-desc' }, isMine
+    ? `Danh sách các vị tiền bối, trưởng lão, thiên kiêu và đồng môn trong ${sct.n}. Ngươi hiện giữ thân phận ${rankLabel(s.sect!.rank, sct, s.g)}.`
+    : `Những nhân vật có danh vọng và thực lực đứng đầu ${sct.n} — bao gồm Tông chủ, Thái thượng trưởng lão, các vị phong chủ và thiên kiêu xuất chúng.`
+  ));
+
+  const list = h('div', { class: 'list' });
+
+  // 1. Thân phận của ngươi (nếu là tông mình)
+  if (isMine) {
+    list.append(h('h4', { class: 'cx-h' }, 'Thân phận của ngươi'));
+    const pic = playerPortrait(s.g, age());
+    list.append(h('div', { class: 'item mine' },
+      h('div', { class: 'ic ic-svg rel-av click', title: 'Xem tranh', onclick: () => openPortrait(s.name, pic, s.g, stageName(), weaponKind()), html: avatarSvg(s.g, s.r, null, 34, pic) }),
+      h('div', { class: 'nm' },
+        h('b', {}, s.name), ' ',
+        h('span', { class: 'pill' }, 'Ngươi'), ' ',
+        h('span', { class: 'pill' }, rankLabel(s.sect!.rank, sct, s.g)),
+        h('small', {}, `${REALMS[s.r].n} ${STAGES[s.st]} · ${Math.floor(age())} tuổi · Cống hiến: ${s.sect!.contrib}`),
+        h('small', { class: 'muted' }, `${rankLabel(s.sect!.rank, sct, s.g)} của ${sct.n}`)
+      )
+    ));
+  }
+
+  // Helper render elder row
+  const renderElder = (e: Elder) => {
+    const isMaster = isMyMaster(e);
+    const existingNpc = isMaster
+      ? curM
+      : s.npcs.find((n) => n.alive && isSameSect(n.sect, sct.id) && (n.name === e.name || (e.legacyRole && n.how?.includes(e.legacyRole))));
+    const rel = existingNpc ? existingNpc.rel : (isMine ? 20 : 0);
+    const relC = rel >= 40 ? '#4f7a55' : rel <= -40 ? '#9b2a1f' : '#6e6253';
+    const roleTitle = e.top ? (e.role === 'chu' ? headTitle(sct) : 'Thái thượng trưởng lão') : (e.inner ? 'Trưởng lão nội môn' : 'Trưởng lão ngoại môn');
+
+    return h('div', { class: 'item' },
+      h('div', {
+        class: 'ic ic-svg rel-av click',
+        style: { borderColor: relC, color: relC },
+        title: 'Xem tranh',
+        onclick: () => {
+          const n = getOrCreateElderNpc(e, sct.id);
+          openPortrait(n.name, npcPic(n), n.g, npcRealm(n), 'quyen', npcPicWanted(n), n.id, npcAge(n));
+        },
+        html: avatarSvg(e.g, e.r, e.el, 34),
+      }),
+      h('div', { class: 'nm' },
+        h('b', {}, e.name), ' ',
+        h('span', { class: 'pill', style: { color: relC } }, isMaster ? 'Sư phụ' : roleTitle),
+        e.title && e.title !== e.name ? h('span', { class: 'pill muted' }, e.title.split(' – ')[0]) : null,
+        h('small', {}, `${REALMS[e.r].n} ${STAGES[e.st]} · ${e.age} tuổi · ${EL[e.el].n} hệ · ${e.trait}`),
+        h('small', { class: 'muted' }, `${e.seat}. ${e.d}`)
+      ),
+      h('div', { class: 'acts' }, btn('Gặp', () => {
+        const n = getOrCreateElderNpc(e, sct.id);
+        closeModal();
+        meetNpc(n.id);
+      }, 'small prime'))
+    );
+  };
+
+  // Helper render genius row
+  const renderGenius = (g: any) => {
+    const existingNpc = g.npc ? s.npcs.find((n: any) => n.id === g.npc) : s.npcs.find((n: any) => n.name === g.name);
+    const rel = existingNpc ? existingNpc.rel : (isMine ? 15 : 0);
+    const relC = rel >= 40 ? '#4f7a55' : rel <= -40 ? '#9b2a1f' : '#6e6253';
+    const roleName = g.from ? (g.from.split(' — ')[0].split(', ')[0].trim()) : 'Thân truyền đệ tử';
+
+    return h('div', { class: 'item' },
+      h('div', {
+        class: 'ic ic-svg rel-av click',
+        style: { borderColor: relC, color: relC },
+        title: 'Xem tranh',
+        onclick: () => {
+          let n = existingNpc;
+          if (!n) {
+            n = mkNpc({
+              name: g.name,
+              g: g.g,
+              r: g.r,
+              st: g.st,
+              sect: sct.id,
+              tag: isMine ? 'peer' : 'acq',
+              rel: isMine ? 15 : 0,
+              el: g.el,
+              age: Math.floor(s.year - g.born),
+              how: g.from || `Đệ tử ${sct.n}`,
+              talent: g.talent,
+            });
+            addNpc(n);
+            g.npc = n.id;
+          }
+          openPortrait(n.name, npcPic(n), n.g, npcRealm(n), 'quyen', npcPicWanted(n), n.id, npcAge(n));
+        },
+        html: avatarSvg(g.g, g.r, g.el, 34),
+      }),
+      h('div', { class: 'nm' },
+        h('b', {}, g.name), ' ',
+        h('span', { class: 'pill', style: { color: relC } }, 'Thiên kiêu'),
+        g.beast ? h('span', { class: 'pill' }, 'Yêu tu') : null,
+        h('small', {}, `${REALMS[g.r].n} ${STAGES[g.st]} · ${Math.floor(s.year - g.born)} tuổi · ${roleName}`),
+        h('small', { class: 'muted' }, g.from || `Đệ tử ${sct.n}`)
+      ),
+      h('div', { class: 'acts' }, btn('Gặp', () => {
+        let n = existingNpc;
+        if (!n) {
+          n = mkNpc({
+            name: g.name,
+            g: g.g,
+            r: g.r,
+            st: g.st,
+            sect: sct.id,
+            tag: isMine ? 'peer' : 'acq',
+            rel: isMine ? 15 : 0,
+            el: g.el,
+            age: Math.floor(s.year - g.born),
+            how: g.from || `Đệ tử ${sct.n}`,
+            talent: g.talent,
+          });
+          addNpc(n);
+          g.npc = n.id;
+        }
+        closeModal();
+        meetNpc(n.id);
+      }, 'small prime'))
+    );
+  };
+
+  // Helper render disciple row
+  const renderDisciple = (d: SectDisciple) => {
+    const existingNpc = s.npcs.find((n) => n.alive && isSameSect(n.sect, sct.id) && n.name === d.name);
+    const rel = existingNpc ? existingNpc.rel : (isMine ? 20 : 0);
+    const relC = rel >= 40 ? '#4f7a55' : rel <= -40 ? '#9b2a1f' : '#6e6253';
+
+    return h('div', { class: 'item' },
+      h('div', {
+        class: 'ic ic-svg rel-av click',
+        style: { borderColor: relC, color: relC },
+        title: 'Xem tranh',
+        onclick: () => {
+          const n = getOrCreateDiscipleNpc(d, sct.id);
+          openPortrait(n.name, npcPic(n), n.g, npcRealm(n), 'quyen', npcPicWanted(n), n.id, npcAge(n));
+        },
+        html: avatarSvg(d.g, d.r, d.el, 34),
+      }),
+      h('div', { class: 'nm' },
+        h('b', {}, d.name), ' ',
+        h('span', { class: 'pill', style: { color: relC } }, d.rankName),
+        d.title && d.title !== d.name ? h('span', { class: 'pill muted' }, d.title.split(' – ')[0]) : null,
+        d.beast ? h('span', { class: 'pill' }, 'Yêu tu') : null,
+        h('small', {}, `${REALMS[d.r].n} ${STAGES[d.st]} · ${d.age} tuổi · ${EL[d.el].n} hệ · ${d.trait}`),
+        h('small', { class: 'muted' }, d.seatTitle ? `${d.seatTitle}. ${d.d}` : d.d)
+      ),
+      h('div', { class: 'acts' }, btn('Gặp', () => {
+        const n = getOrCreateDiscipleNpc(d, sct.id);
+        closeModal();
+        meetNpc(n.id);
+      }, 'small prime'))
+    );
+  };
+
+  // 2. Tông chủ & Thái thượng trưởng lão
+  const titleLeaders = isMine ? `${headTitle(sct)} & Thái thượng trưởng lão (${leaders.length})` : `Tông chủ & Thái thượng trưởng lão (${leaders.length})`;
+  list.append(h('h4', { class: 'cx-h' }, titleLeaders));
+  for (const e of leaders) list.append(renderElder(e));
+
+  // 3. Trưởng lão nội môn / Các Phong chủ
+  const shownInner = isMine ? innerElders : innerElders.slice(0, 5);
+  list.append(h('h4', { class: 'cx-h' }, isMine ? `Trưởng lão nội môn & Phong chủ (${shownInner.length})` : `Trưởng lão chủ chốt (${shownInner.length})`));
+  for (const e of shownInner) list.append(renderElder(e));
+
+  // 4. Trưởng lão ngoại môn (ở tông mình)
+  if (isMine && outerElders.length) {
+    list.append(h('h4', { class: 'cx-h' }, `Trưởng lão ngoại môn (${outerElders.length})`));
+    for (const e of outerElders) list.append(renderElder(e));
+  }
+
+  // 5. Thiên kiêu & Thân truyền đệ tử
+  const shownGeniuses = isMine ? geniuses : geniuses.slice(0, 3);
+  const shownCore = isMine ? coreDisciples : coreDisciples.slice(0, 3);
+  const totalCore = shownGeniuses.length + shownCore.length;
+  if (totalCore) {
+    list.append(h('h4', { class: 'cx-h' }, isMine ? `Thiên kiêu & Thân truyền đệ tử (${totalCore})` : `Thiên kiêu & Thân truyền xuất chúng (${totalCore})`));
+    for (const g of shownGeniuses) list.append(renderGenius(g));
+    for (const d of shownCore) list.append(renderDisciple(d));
+  }
+
+  // 6. Nội môn đệ tử
+  const shownInnerDisciples = isMine ? innerDisciples : innerDisciples.slice(0, 3);
+  if (shownInnerDisciples.length) {
+    list.append(h('h4', { class: 'cx-h' }, `Nội môn đệ tử (${shownInnerDisciples.length})`));
+    for (const d of shownInnerDisciples) list.append(renderDisciple(d));
+  }
+
+  // 7. Ngoại môn đệ tử (ở tông mình)
+  if (isMine && outerDisciples.length) {
+    list.append(h('h4', { class: 'cx-h' }, `Ngoại môn đệ tử (${outerDisciples.length})`));
+    for (const d of outerDisciples) list.append(renderDisciple(d));
+  }
+
+  // 8. Đồng môn trong nhân mạch (nếu là tông mình và có quen biết)
+  if (isMine && knownNpcs.length) {
+    list.append(h('h4', { class: 'cx-h' }, `Đồng môn quen biết trong môn (${knownNpcs.length})`));
+    for (const n of knownNpcs) {
+      const relC = n.rel >= 40 ? '#4f7a55' : n.rel <= -40 ? '#9b2a1f' : '#6e6253';
+      list.append(h('div', { class: 'item' },
+        h('div', { class: 'ic ic-svg rel-av click', style: { borderColor: relC, color: relC }, title: 'Xem tranh', onclick: () => openPortrait(n.name, npcPic(n), n.g, npcRealm(n), 'quyen', npcPicWanted(n), n.id, npcAge(n)), html: avatarSvg(n.g, n.r, n.el, 34, npcPic(n)) }),
+        h('div', { class: 'nm' },
+          h('b', {}, n.name), ' ',
+          h('span', { class: 'pill', style: { color: relC } }, npcTagName(n)),
+          h('small', {}, `${npcRealm(n)} · ${npcAge(n)} tuổi · ${relLabel(n.rel)} (${Math.round(n.rel)}) · ${n.trait}`),
+          h('small', { class: 'muted' }, n.how || `Đồng môn ${sct.n}`)
+        ),
+        h('div', { class: 'acts' }, btn('Gặp', () => { closeModal(); meetNpc(n.id); }, 'small prime'))
+      ));
+    }
+  }
+
+  body.push(list);
+
+  body.push(grid([
+    {
+      t: 'Trở lại',
+      fn: () => {
+        if (s.loc === (sct.loc || sectId)) openPlace();
+        else openRemote(sct.loc || sectId);
+      },
+    },
+  ]));
+
+  openModal(
+    isMine ? `Thành viên tông môn · ${sct.n}` : `Nhân vật danh vọng · ${sct.n}`,
+    body,
+    { wide: true, noClose: true, xBtn: true, sub: `${sct.n} · ${whereOf(LOCS[sct.loc || sectId] || { n: sct.n })}` }
+  );
 }
 
 // ---------- Bảng nhiệm vụ ----------

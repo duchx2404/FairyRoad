@@ -45,6 +45,8 @@ import { fengshenData, FENGSHEN_TOTAL } from '../events/fengshen';
 import { skCost } from '../engine/combat';
 import { TAMPHAP, tamGrade, tamEffect } from '../data/items';
 import { turnLen, tamList, tamActive, tamSlots, pqList, myLinh } from '../engine/char';
+import { getLinh, feedLinh, STAGE_NAMES } from '../engine/beast-companion';
+import { formatStonesDetail, formatStonesShort } from '../engine/stones';
 import { showScene, toast, refresh, openModal, closeModal } from './modal';
 import { listModels, setAi } from '../ai/ollama';
 import { fmt, yearsTxt, esc } from '../core/util';
@@ -68,7 +70,7 @@ const NAV_GLYPH: Record<string, string> = {
   char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower',
   log: 'navLog', hist: 'navHist', ach: 'navAch', set: 'navSet', help: 'navHelp',
 };
-const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : TAG_N[n.tag];
+export const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : TAG_N[n.tag];
 const navIcon = (id: string) => glyphSvg(NAV_GLYPH[id] || 'none', 22, 1.7);
 const open = new Map<string, { el: HTMLElement; tab: number }>();
 let zTop = 10;
@@ -175,6 +177,136 @@ function build(id: string): HTMLElement[] {
 const kv = (k: string, v: string | HTMLElement, tip?: string) => h('div', { class: 'cp-kv', title: tip || '' }, h('span', {}, k), h('span', {}, v));
 const sec = (n: string) => h('div', { class: 'cp-sec' }, n);
 const elTags = (els: string[]) => h('span', { class: 'cp-els' }, ...els.map((e) => h('span', { class: 'cp-el', style: { background: EL[e as keyof typeof EL].c } }, EL[e as keyof typeof EL].n)));
+export function openFeedModal() {
+  const cl = getLinh();
+  if (!cl) { toast('Chưa có linh thú đồng hành.'); return; }
+
+  const modalBox = h('div', { class: 'feed-modal' });
+
+  const render = () => {
+    modalBox.innerHTML = '';
+    const freshCl = getLinh();
+    if (!freshCl) { closeModal(); return; }
+
+    const d = CHANLINH[freshCl.id];
+    const stageStr = STAGE_NAMES[freshCl.stage] || 'Trưởng thành';
+    const realmStr = `${REALMS[freshCl.r].n} ${STAGES[freshCl.st]}`;
+
+    const infoCard = h('div', { class: 'card', style: { marginBottom: '14px', padding: '10px' } },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '6px' } },
+        h('b', {}, `${freshCl.name} (${stageStr})`),
+        h('span', { style: { color: '#e6c374', fontWeight: 'bold' } }, realmStr),
+      ),
+      h('div', { class: 'small muted', style: { marginBottom: '6px' } },
+        `Tuổi thọ: ${Math.round(freshCl.age)} / ${freshCl.maxLife} năm · Gắn bó: ${Math.round(freshCl.bond)}/100`,
+      ),
+      h('div', { style: { background: '#2e261f', borderRadius: '4px', overflow: 'hidden', height: '14px', position: 'relative' } },
+        h('div', { style: { background: '#8fae72', width: `${Math.min(100, Math.round(freshCl.p))}%`, height: '100%', transition: 'width 0.2s' } }),
+        h('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, textAlign: 'center', fontSize: '10px', lineHeight: '14px', color: '#fff', textShadow: '0 1px 2px #000' } }, `Tu vi: ${Math.round(freshCl.p)}%`),
+      ),
+    );
+
+    const descP = h('p', { class: 'pl-desc', style: { marginBottom: '10px' } },
+      'Cho linh thú dùng thiên tài địa bảo, linh thảo, linh quả, yêu đan hoặc tinh huyết thượng cổ để tăng nhanh tu vi và đẩy nhanh quá trình trưởng thành hoặc kéo dài tuổi thọ.',
+    );
+
+    const eligible: { id: string; name: string; qty: number; desc: string; icon: string }[] = [];
+    for (const it of s.bag) {
+      const [k, key] = it.id.split(':');
+      if (k === 'h') {
+        const herb = HERBS[key];
+        if (herb) {
+          const estGain = Math.round(10 * Math.pow(1.8, herb.tier - 1) * (freshCl.stage === 'aunen' ? 1.35 : 1));
+          eligible.push({
+            id: it.id,
+            name: herb.n,
+            qty: it.n,
+            desc: `+${estGain}% tu vi${herb.tier >= 4 ? ' · Kích thích huyết mạch trưởng thành' : ''}`,
+            icon: itemArtSvg(it.id, 28) || '',
+          });
+        }
+      } else if (k === 'm') {
+        if (key === 'yeudan') {
+          const estGain = Math.round(22 * (freshCl.stage === 'aunen' ? 1.35 : 1));
+          eligible.push({
+            id: 'm:yeudan',
+            name: MATS.yeudan?.n || 'Yêu đan',
+            qty: it.n,
+            desc: `+${estGain}% tu vi · Kích thích huyết mạch trưởng thành`,
+            icon: itemArtSvg('m:yeudan', 28) || '',
+          });
+        } else if (key === 'thityeu') {
+          const estGain = Math.round(6 * (freshCl.stage === 'aunen' ? 1.35 : 1));
+          eligible.push({
+            id: 'm:thityeu',
+            name: MATS.thityeu?.n || 'Thịt yêu thú',
+            qty: it.n,
+            desc: `+${estGain}% tu vi, bổ sung thể lực`,
+            icon: itemArtSvg('m:thityeu', 28) || '',
+          });
+        } else if (key === 'tuduehuyet') {
+          const estGain = Math.round(45 * (freshCl.stage === 'aunen' ? 1.35 : 1));
+          eligible.push({
+            id: 'm:tuduehuyet',
+            name: MATS.tuduehuyet?.n || 'Tổ thú tinh huyết',
+            qty: it.n,
+            desc: `+${estGain}% tu vi · Tinh huyết cổ đại, kích thích tiến hóa mạnh`,
+            icon: itemArtSvg('m:tuduehuyet', 28) || '',
+          });
+        } else if (key === 'cotuhuyet') {
+          const estGain = Math.round(80 * (freshCl.stage === 'aunen' ? 1.35 : 1));
+          eligible.push({
+            id: 'm:cotuhuyet',
+            name: MATS.cotuhuyet?.n || 'Cổ thú tinh huyết',
+            qty: it.n,
+            desc: `+${estGain}% tu vi · Huyết mạch tổ thú tối thượng`,
+            icon: itemArtSvg('m:cotuhuyet', 28) || '',
+          });
+        }
+      }
+    }
+
+    const listDiv = h('div', { class: 'list', style: { maxHeight: '300px', overflowY: 'auto' } });
+    if (!eligible.length) {
+      listDiv.append(h('div', { class: 'empty' }, 'Túi đồ hiện không có linh thảo, linh quả, yêu đan hay tinh huyết yêu thú nào để cho ăn.'));
+    } else {
+      for (const item of eligible) {
+        listDiv.append(
+          h('div', { class: 'item', style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 8px' } },
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+              item.icon ? h('div', { html: item.icon }) : null,
+              h('div', {},
+                h('b', {}, `${item.name} `),
+                h('span', { class: 'muted' }, `(còn ${item.qty})`),
+                h('div', { class: 'small', style: { color: '#8fae72' } }, item.desc),
+              ),
+            ),
+            btn('Cho ăn', () => {
+              const res = feedLinh(item.id);
+              if (res.ok) {
+                toast(res.msg);
+                render();
+                refresh();
+              } else {
+                toast(res.msg);
+              }
+            }, 'small prime'),
+          ),
+        );
+      }
+    }
+
+    const foot = h('div', { style: { textAlign: 'right', marginTop: '12px' } },
+      btn('Đóng', () => closeModal(), 'ghost'),
+    );
+
+    modalBox.append(infoCard, descP, listDiv, foot);
+  };
+
+  render();
+  openModal(`Nuôi Dưỡng · ${cl.name}`, modalBox, { wide: true, seal: 'paw' });
+}
+
 function charPanel(): HTMLElement[] {
   const b = body();
   const org = ORIGINS.find((o) => o.id === s.origin);
@@ -198,7 +330,7 @@ function charPanel(): HTMLElement[] {
   out.push(kv('Khí huyết', `${fmt(Math.round(maxHp() * (1 - s.hurt / 100)))} / ${fmt(maxHp())}`));
   out.push(kv('Chiến lực', fmt(powerScore()), `Công ${fmt(atkOf())} · Thủ ${fmt(defOf())}`));
   out.push(kv('Công / Thủ', `${fmt(atkOf())} / ${fmt(defOf())}`));
-  out.push(kv('Linh thạch', fmt(s.money)));
+  out.push(kv('Linh thạch', `${fmt(s.money)} (${formatStonesDetail(s.money)})`));
   out.push(kv('Thương thế', `${Math.round(s.hurt)}%`));
   out.push(kv('Tâm ma', `${Math.round(s.tamma)} / 100`));
   out.push(kv('Danh vọng', fmt(s.fame), `Thiện ${s.good} · Ác ${s.evil}`));
@@ -270,9 +402,20 @@ function charPanel(): HTMLElement[] {
   if (!cl) out.push(h('div', { class: 'empty' }, 'Chưa có. Gặp chân linh ở hoang dã hay di tích để thuần phục hoặc đoạt tinh huyết.'));
   else {
     const d = CHANLINH[cl.id];
-    out.push(h('div', { class: 'cp-row' }, h('div', { class: 'cp-ic', html: linhIconSvg(d.ic, d.el, 36, 'cl_' + cl.id) }),
-      h('div', { class: 'cp-rt' }, h('b', {}, cl.name), h('small', {}, `${EL[d.el].n} hệ · ${d.d} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}`)),
-      btn('Thả đi', () => askConfirm(`Thả ${cl.name} về rừng? Chân linh đã đi sẽ không quay lại.`, () => act(releaseLinh()), { title: 'Thả chân linh', ok: 'Thả đi' }), 'small ghost')));
+    const stageStr = STAGE_NAMES[cl.stage] || 'Trưởng thành';
+    const realmStr = `${REALMS[cl.r].n} ${STAGES[cl.st]} (${Math.round(cl.p)}%)`;
+    const lifeStr = `Thọ nguyên: ${Math.round(cl.age)}/${cl.maxLife} năm`;
+    out.push(h('div', { class: 'cp-row' },
+      h('div', { class: 'cp-ic', html: linhIconSvg(d.ic, d.el, 36, 'cl_' + cl.id) }),
+      h('div', { class: 'cp-rt' },
+        h('b', {}, `${cl.name} [${stageStr}]`),
+        h('small', {}, `${realmStr} · ${EL[d.el].n} hệ · ${lifeStr} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}`),
+      ),
+      h('div', { class: 'acts', style: { display: 'flex', gap: '4px' } },
+        btn('Nuôi dưỡng', openFeedModal, 'small prime', { title: 'Cho ăn linh thảo, yêu đan, tinh huyết để tăng tu vi và trưởng thành' }),
+        btn('Thả đi', () => askConfirm(`Thả ${cl.name} về rừng? Chân linh đã đi sẽ không quay lại.`, () => act(releaseLinh()), { title: 'Thả chân linh', ok: 'Thả đi' }), 'small ghost'),
+      ),
+    ));
   }
   // ---- kỹ nghệ ----
   out.push(sec('Kỹ nghệ'));
@@ -438,7 +581,7 @@ function confirmTech(key: string) {
 }
 
 // ---------- Nhân mạch ----------
-const TAG_N: Record<string, string> = { friend: 'Bằng hữu', enemy: 'Kẻ thù', master: 'Sư phụ', disciple: 'Đồ đệ', daolu: 'Đạo lữ', rival: 'Đối thủ', kin: 'Người thân', acq: 'Quen biết', senior: 'Đồng môn', peer: 'Đồng đạo' };
+export const TAG_N: Record<string, string> = { friend: 'Bằng hữu', enemy: 'Kẻ thù', master: 'Sư phụ', disciple: 'Đồ đệ', daolu: 'Đạo lữ', rival: 'Đối thủ', kin: 'Người thân', acq: 'Quen biết', senior: 'Đồng môn', peer: 'Đồng đạo' };
 function relPanel(): HTMLElement[] {
   const out: HTMLElement[] = [tabsEl('rel', ['Còn sống', 'Đã mất'])];
   const tab = open.get('rel')!.tab;
@@ -459,7 +602,9 @@ function companionPanel(): HTMLElement[] {
 }
 function chooseSongTu() {
   const selected = new Set<string>();
-  const body = h('div', {}, h('p', {}, 'Chọn một hoặc nhiều đạo lữ cùng tu luyện.'));
+  const body = h('div', {});
+  const inputs: { id: string; input: HTMLInputElement; disabled: boolean }[] = [];
+
   const start = btn('Song tu (0)', () => {
     const ids = [...selected];
     closeModal();
@@ -468,17 +613,67 @@ function chooseSongTu() {
       { t: 'Thôi', fn: () => 'Ngươi quyết định để dịp khác.' },
     ] });
   }, 'prime', { dis: true });
+
+  const toggleSelectAll = () => {
+    const available = inputs.filter(x => !x.disabled);
+    if (available.length === 0) return;
+    const allSelected = available.every(x => selected.has(x.id));
+    if (allSelected) {
+      for (const x of available) {
+        x.input.checked = false;
+        selected.delete(x.id);
+      }
+    } else {
+      for (const x of available) {
+        x.input.checked = true;
+        selected.add(x.id);
+      }
+    }
+    updateState();
+  };
+
+  const selectAllTop = btn('Chọn hết', toggleSelectAll, 'small');
+  const selectAllBottom = btn('Chọn hết', toggleSelectAll, 'small');
+
+  const updateState = () => {
+    start.disabled = selected.size === 0;
+    start.textContent = `Song tu (${selected.size})`;
+    const available = inputs.filter(x => !x.disabled);
+    const text = (available.length > 0 && available.every(x => selected.has(x.id))) ? 'Bỏ chọn' : 'Chọn hết';
+    const dis = available.length === 0;
+    selectAllTop.textContent = text;
+    selectAllTop.disabled = dis;
+    selectAllBottom.textContent = text;
+    selectAllBottom.disabled = dis;
+  };
+
+  const topRow = h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' } },
+    h('p', { style: { margin: 0 } }, 'Chọn một hoặc nhiều đạo lữ cùng tu luyện.'),
+    selectAllTop,
+  );
+  body.append(topRow);
+
+  const listDiv = h('div', { class: 'list', style: { maxHeight: '360px', overflowY: 'auto', marginBottom: '12px' } });
+
   for (const n of s.npcs.filter(n => n.alive && n.tag === 'daolu')) {
     const eligible = npcActions(n.id).find(c => c.t === 'Song tu');
     const disabled = !eligible || !!eligible.dis;
     const input = h('input', { type: 'checkbox', disabled, onchange: () => {
       if (input.checked) selected.add(n.id); else selected.delete(n.id);
-      start.disabled = selected.size === 0;
-      start.textContent = `Song tu (${selected.size})`;
+      updateState();
     } });
-    body.append(h('label', { class: 'item' }, input, h('span', {}, n.name + ' · ' + daoluTitle(n) + (disabled ? ' · Chưa đủ điều kiện hoặc cần chờ sang năm' : ''))));
+    inputs.push({ id: n.id, input, disabled });
+    listDiv.append(h('label', { class: 'item' }, input, h('span', {}, n.name + ' · ' + daoluTitle(n) + (disabled ? ' · Chưa đủ điều kiện hoặc cần chờ sang năm' : ''))));
   }
-  body.append(start);
+  body.append(listDiv);
+
+  const foot = h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' } },
+    start,
+    selectAllBottom,
+  );
+  body.append(foot);
+
+  updateState();
   openModal('Chọn đạo lữ song tu', body);
 }
 /** Đạo lữ chia theo vai vế; người đã mất được giữ riêng để tưởng nhớ. */
@@ -537,19 +732,32 @@ function partyPanel(): HTMLElement[] {
   const cl = linhOf();
   out.push(h('h4', {}, `Xuất trận (${activeCount()}/${MAX_ACTIVE})`));
   const fights = !!cl && !cl.ride;
-  const clRow = () => h('div', { class: 'item' }, h('div', { class: 'ic rel-av linh-av', html: glyphSvg('paw', 20) }),
-    h('div', { class: 'nm' }, h('b', {}, cl!.name), h('small', {}, `Tọa kỵ ${MOUNT_GRADE[CHANLINH[cl!.id]?.mount ?? 1]} · ${fights ? 'xuất chiến' : 'chỉ để cưỡi'} · gắn bó ${Math.round(cl!.bond)}`)),
-    h('div', { class: 'acts' }, btn(fights ? 'Chỉ cưỡi' : 'Xuất chiến', () => act(toggleLinhRide(MAX_ACTIVE, activeCount())), 'small' + (fights ? '' : ' prime'), { dis: !fights && activeCount() >= MAX_ACTIVE })));
+  const clRow = () => {
+    const stageStr = cl?.stage ? ` [${STAGE_NAMES[cl.stage]}]` : '';
+    const realmStr = cl ? ` · ${REALMS[cl.r].n} ${STAGES[cl.st]} (${Math.round(cl.p)}%)` : '';
+    const lifeStr = cl ? ` · thọ ${Math.round(cl.age)}/${cl.maxLife} năm` : '';
+    return h('div', { class: 'item' },
+      h('div', { class: 'ic rel-av linh-av', html: glyphSvg('paw', 20) }),
+      h('div', { class: 'nm' },
+        h('b', {}, `${cl!.name}${stageStr}`),
+        h('small', {}, `Tọa kỵ ${MOUNT_GRADE[CHANLINH[cl!.id]?.mount ?? 1]}${realmStr}${lifeStr} · ${fights ? 'xuất chiến' : 'chỉ để cưỡi'} · gắn bó ${Math.round(cl!.bond)}`),
+      ),
+      h('div', { class: 'acts', style: { display: 'flex', gap: '4px' } },
+        btn('Nuôi', openFeedModal, 'small', { title: 'Cho ăn thiên tài địa bảo' }),
+        btn(fights ? 'Chỉ cưỡi' : 'Xuất chiến', () => act(toggleLinhRide(MAX_ACTIVE, activeCount())), 'small' + (fights ? '' : ' prime'), { dis: !fights && activeCount() >= MAX_ACTIVE }),
+      ),
+    );
+  };
   if (fights) list.append(clRow());
-  for (const n of activeNpcs()) list.append(npcRow(n, [btn('Chi tiết', () => openCompanion(n.id), 'small prime'), btn('Dự bị', () => act(setActive(n.id, false)), 'small'), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')]));
+  for (const n of activeNpcs()) list.append(npcRow(n, [btn('Gặp', () => meetNpc(n.id), 'small'), btn('Chi tiết', () => openCompanion(n.id), 'small prime'), btn('Dự bị', () => act(setActive(n.id, false)), 'small'), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')]));
   const hurt = party().active.map((id) => s.npcs.find((x) => x.id === id)).filter((n) => n && n.alive && n.injuredUntil && s.year < n.injuredUntil) as NPC[];
-  for (const n of hurt) list.append(npcRow(n, [btn('Chi tiết', () => openCompanion(n.id), 'small prime'), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')], `Trọng thương, nghỉ tới ${Math.ceil(n.injuredUntil! - s.born)} tuổi (tặng đan hồi phục để lành ngay)`));
+  for (const n of hurt) list.append(npcRow(n, [btn('Gặp', () => meetNpc(n.id), 'small'), btn('Chi tiết', () => openCompanion(n.id), 'small prime'), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')], `Trọng thương, nghỉ tới ${Math.ceil(n.injuredUntil! - s.born)} tuổi (tặng đan hồi phục để lành ngay)`));
   if (!fights && !activeNpcs().length && !hurt.length) list.append(h('div', { class: 'empty' }, 'Chưa ai xuất trận.'));
   out.push(list);
   out.push(h('h4', {}, `Dự bị (${reserveNpcs().length})`));
   const res = h('div', { class: 'list' });
   if (cl && !fights) res.append(clRow()); // tọa kỵ chỉ để cưỡi: nằm ở dự bị, bấm Xuất chiến để vào đội
-  for (const n of reserveNpcs()) res.append(npcRow(n, [btn('Chi tiết', () => openCompanion(n.id), 'small'), btn('Xuất trận', () => act(setActive(n.id, true)), 'small prime', { dis: activeCount() >= MAX_ACTIVE }), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')]));
+  for (const n of reserveNpcs()) res.append(npcRow(n, [btn('Gặp', () => meetNpc(n.id), 'small'), btn('Chi tiết', () => openCompanion(n.id), 'small'), btn('Xuất trận', () => act(setActive(n.id, true)), 'small prime', { dis: activeCount() >= MAX_ACTIVE }), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')]));
   if (!reserveNpcs().length) res.append(h('div', { class: 'empty' }, 'Chưa có. Mời ở Nhân mạch hoặc Đạo lữ: đạo lữ, đệ tử, hôn thê luôn nhận lời; người khác cần thiện cảm từ 60.'));
   out.push(res);
   return out;
@@ -571,7 +779,12 @@ function openCompanion(id: string) {
     const tech = K.tech ? TECHS[K.tech] : null;
     const body: HTMLElement[] = [
       h('div', { class: 'cp-head' }, h('div', { class: 'cp-av click', title: 'Xem tranh toàn thân', onclick: () => openPortrait(n.name, npcPic(n), n.g, npcRealm(n), 'quyen', npcPicWanted(n), n.id), html: avatarSvg(n.g, n.r, n.el, 58, npcPic(n)) }),
-        h('div', {}, h('div', { class: 'cp-name' }, n.name), h('div', { class: 'cp-realm' }, `${npcRealm(n)} · ${EL[n.el].n} hệ · ${npcAge(n)} tuổi · ${npcTagName(n)} · ${relLabel(n.rel)} (${Math.round(n.rel)})`),
+        h('div', { style: { flex: '1' } },
+          h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+            h('div', { class: 'cp-name' }, n.name),
+            btn('Gặp mặt', () => { closeModal(); meetNpc(n.id); }, 'small prime'),
+          ),
+          h('div', { class: 'cp-realm' }, `${npcRealm(n)} · ${EL[n.el].n} hệ · ${npcAge(n)} tuổi · ${npcTagName(n)} · ${relLabel(n.rel)} (${Math.round(n.rel)})`),
           h('div', { class: 'small muted' }, n.how || ''))),
       sec('Hồ sơ'),
       kv('Gia thế', ex ? (n.bio?.family || `Xuất thân ${SECTS[ex.from]?.n ?? ''}`) : n.bio?.family ? `${n.sect && SECTS[n.sect] ? SECTS[n.sect].n + ' · ' : ''}${n.bio.family}` : n.sect && SECTS[n.sect] ? SECTS[n.sect].n : n.how || '—'),
@@ -609,11 +822,13 @@ function openCompanion(id: string) {
 }
 function npcRow(n: NPC, acts: (HTMLElement | null)[], note = ''): HTMLElement {
   const c = n.rel >= 40 ? '#4f7a55' : n.rel <= -40 ? '#9b2a1f' : '#6e6253';
+  const validActs = acts.filter(Boolean) as HTMLElement[];
+  const actsCls = validActs.length >= 3 ? 'acts acts-2col' : 'acts';
   return h('div', { class: 'item' }, h('div', { class: 'ic ic-svg rel-av click', style: { borderColor: c, color: c }, title: 'Xem tranh', onclick: () => openPortrait(n.name, npcPic(n), n.g, npcRealm(n), 'quyen', npcPicWanted(n), n.id), html: avatarSvg(n.g, n.r, n.el, 34, npcPic(n)) }),
     h('div', { class: 'nm' }, h('b', {}, n.name), ' ', h('span', { class: 'pill', style: { color: c } }, npcTagName(n)), h('small', {}, `${npcRealm(n)} · ${npcAge(n)} tuổi · ${relLabel(n.rel)} (${Math.round(n.rel)}) · ${n.trait}`), note ? h('small', { style: { color: 'var(--seal)' } }, note) : null),
-    h('div', { class: 'acts' }, ...acts));
+    h('div', { class: actsCls }, ...validActs));
 }
-function meetNpc(id: string) {
+export function meetNpc(id: string) {
   const n = s.npcs.find((x) => x.id === id)!;
   showScene({
     title: n.name,
@@ -1120,7 +1335,7 @@ function peopleBoard(kind: 'tk' | 'cg'): HTMLElement[] {
   const nBeast = rows.filter((r) => r.person?.beast || r.npc?.beast || (r.mine && s.beast)).length;
   const nRace = rows.filter((r) => r.person?.race || r.person?.races?.length).length;
   out.push(h('div', { class: 'small muted' }, (kind === 'tk'
-    ? `Thiên Kiêu Bảng ${worldName(w)}: tu sĩ có thân thể không quá ${fmt(TK_AGE[w])} tuổi, xếp theo thực lực tổng hợp; bằng điểm thì người trẻ hơn đứng trước. Xét toàn giới, mọi chủng tộc; chỉ lấy top 100. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : s.r === 0 ? 'Phàm nhân không có tên trên bảng.' : age() > TK_AGE[w] ? `Ngươi đã quá ${fmt(TK_AGE[w])} tuổi, không còn trên bảng.` : 'Ngươi chưa lọt top 100.'}`
+    ? `Thiên Kiêu Bảng ${worldName(w)}: tu sĩ có thân thể không quá ${fmt(TK_AGE[w])} tuổi (yêu tu không quá ${fmt(TK_AGE[w] * 4)} tuổi), xếp theo thực lực tổng hợp; bằng điểm thì người trẻ hơn đứng trước. Xét toàn giới, mọi chủng tộc; chỉ lấy top 100. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : s.r === 0 ? 'Phàm nhân không có tên trên bảng.' : age() > (s.beast ? TK_AGE[w] * 4 : TK_AGE[w]) ? `Ngươi đã quá tuổi bảng (${fmt(s.beast ? TK_AGE[w] * 4 : TK_AGE[w])} tuổi), không còn trên bảng.` : 'Ngươi chưa lọt top 100.'}`
     : `Cường Giả Bảng ${worldName(w)}: xếp theo thực lực tổng hợp trên toàn giới; bằng điểm thì người trẻ hơn đứng trước. Chỉ lấy top 100. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : 'Ngươi chưa có tên.'}`) + (nBeast ? ` Trên bảng có ${nBeast} yêu tu hóa hình.` : '')));
   if (nRace) out.push(h('div', { class: 'small muted' }, `Trong bảng còn có ${nRace} người thuộc dị tộc cổ.`));
   const list = h('div', { class: 'list' });

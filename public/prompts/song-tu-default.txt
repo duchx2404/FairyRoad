@@ -1,27 +1,6 @@
-Tại {{place}}, {{me}} cùng các {{partnerNames}} chuẩn bị nhập định.
-
+    Tại {{place}}, {{me}} cùng {{partnerNames}} chuẩn bị song tu. Ngay khi cánh cửa phòng khép lại, bầu không khí tĩnh mịch lập tức bị đốt cháy bởi hơi thở rực lửa dồn dập. 
 {{#withPartner}}
-{{me}} ngồi xuống bên {{name}}, nhẹ nhàng nắm tay.
-{{me}}: Nàng đã sẵn sàng chưa?
-{{name}} khẽ gật đầu, đặt bàn tay còn lại lên đầu gối.
-{{name}}: Có ngươi bên cạnh, ta rất yên tâm.
-{{me}}: Vậy hãy chậm rãi điều hòa hơi thở.
-Hai người nhắm mắt, từng chút đưa nhịp thở hòa cùng nhau.
-{{/withPartner}}
-
-{{#withNextPartner}}
-{{me}} quay sang {{name}}, giúp nàng chỉnh lại tư thế nhập định.
-{{name}}: Chờ ta một chút, tâm trí ta vẫn chưa yên.
-{{me}} mỉm cười, ngồi xuống bên cạnh.
-{{me}}: Không cần vội. Ta sẽ chờ nàng.
-{{name}} hít một hơi thật sâu rồi từ từ thả lỏng đôi vai.
-{{name}}: Được rồi, chúng ta bắt đầu nhé.
-{{/withNextPartner}}
-
-Sau một lượt vận khí, mọi người chậm rãi thu công. Không gian trở lại yên tĩnh.
-
-    Ngay khi cánh cửa phòng khép lại, bầu không khí tĩnh mịch lập tức bị đốt cháy bởi hơi thở rực lửa dồn dập. 
-    Ngươi không kìm nén thêm được nữa, tiến tới xoay người [npc.Name] lại, kéo sát nàng vào lồng ngực săn chắc ấm nóng của mình. 
+    {{me}} không kìm nén thêm được nữa, tiến tới xoay người {{name}} lại, kéo sát nàng vào lồng ngực săn chắc ấm nóng của mình. 
     Hai thân hình dán chặt vào nhau không một kẽ hở qua lớp xiêm y mỏng manh. 
     Ngươi cúi đầu, ghì chặt gáy nàng và dâng hiến một nụ hôn nồng cháy, điên cuồng ngấu nghiến đôi môi đào mềm mại. 
     Lưỡi ngươi chủ động cạy mở đôi môi nàng, quấn lấy chiếc lưỡi thơm tho, ẩm ướt đầy gợi dục của nàng, mút mát thèm khát tiếng rên rỉ ngọt ngào râm ran trong cổ họng nàng.
@@ -36,7 +15,8 @@ Sau một lượt vận khí, mọi người chậm rãi thu công. Không gian 
     tiến thẳng vào vùng cấm địa sâu kín giữa hai chân nàng. Ngón tay ngươi chạm vào khe lồn ẩm ướt, 
     mơn trớn những nếp gấp mềm mại của mép lồn chứa chan mật thủy dâm đãng đang không ngừng rỉ ra ướt đẫm. 
     Khi ngón tay ngươi khẽ tách hai cánh môi âm hộ ra và thọc sâu vào lỗ âm đạo mút mát chặt chẽ đầy ấm nóng, 
-    [npc.Name] run rẩy dữ dội, hai tay ôm ghì lấy cổ ngươi rên rỉ thất thanh: <dialogue speaker="[npc.Name]">Áh... ưm... sâu quá... ư... sướng...</dialogue>
+    {{name}} run rẩy dữ dội, hai tay ôm ghì lấy cổ ngươi rên rỉ thất thanh.
+    {{name}}: Ah... ưm... sâu quá... ư... sướng...
 
     Đôi môi ngươi trượt xuống liếm láp bầu vú căng tròn đang căng cứng, sau đó ngươi nhẹ nhàng hôn lên vành tai nàng. Hơi thở dồn dập khiến nàng rùng mình. 
     Ngươi tiếp tục hôn lên bụng nàng rồi xuống đến lỗ lồn. Lưỡi ngươi đưa vào bên trong khuấy đảo xung quanh vành lồn khiến nàng cong người như con tôm vì sướng. 
@@ -45,16 +25,39 @@ Sau một lượt vận khí, mọi người chậm rãi thu công. Không gian 
     Dục vọng nguyên thủy dâng trào tột đỉnh, cặc của ngươi đã cương cứng nóng bỏng, trướng to đến mức nổi đầy gân xanh cuồn cuộn. 
     Ngươi bế thốc nàng lên, bắt nàng dạng rộng hai chân vòng qua hông mình, rồi nhắm thẳng vào khe lồn đỏ hồng đầm đìa nước nôi dâm đãng mà đâm mạnh một cú lút cán. 
     Con cặc to nóng như thanh sắt nung đỏ thọc sâu ngập lụt vào tận đáy âm đạo, phá vỡ mọi phòng ngự, trực tiếp va chạm cuồng nhiệt vào tử cung mềm mại bên trong. 
-    [npc.Name] hét lên một tiếng đầy sung sướng đê mê, khoái cảm cực độ ập đến như sóng thần khiến nàng run bần bật, lỗ đít co thắt điên cuồng đầy kích thích.
+    {{name}} hét lên một tiếng đầy sung sướng đê mê, khoái cảm cực độ ập đến như sóng thần khiến nàng run bần bật, lỗ đít co thắt điên cuồng đầy kích thích.
 
     Ngươi bắt đầu luật động cuồng nhiệt, dùng lực hông dồn dập dập mạnh con cặc ra vào lỗ lồn ấm nóng. 
     Tiếng va chạm da thịt "bạch bạch bạch" vang dội liên hồi hòa quyện cùng tiếng nước dâm thủy lép nhép dâm mỹ phát ra từ lỗ lồn. 
     Ngươi đổi sang tư thế bắt nàng quỳ sấp, nhổm mông tròn lẳng ra phía sau, phơi bày toàn bộ khe lồn đỏ rực và lỗ đít nhỏ nhắn sẫm màu kích thích cực hạn. 
     Ngươi nắm chặt eo nàng, từ phía sau đâm mạnh cặc vào sâu hoắm trong lồn, mỗi một cú thúc dập đều cắm lút gốc khiến hai bầu vú nàng lắc lư điên cuồng trước ngực. 
-    Nàng gục đầu xuống gối rên rỉ rên la dâm đãng: <dialogue speaker="[npc.Name]">Ôi cặc to quá... đâm chết thiếp rồi... ưm... cu bự thúc sâu quá... áhh...</dialogue>
+    Nàng gục đầu xuống gối rên rỉ rên la dâm đãng: 
+    {{name}}: Ôi cặc to quá... đâm chết thiếp rồi... ưm... cu bự thúc sâu quá... ahhh...
 
     Nhịp điệu dập cặc càng lúc càng điên cuồng gấp gáp, mồ hôi đầm đìa hòa quyện giữa hai thân thể trần trụi nồng nặc mùi hoan lạc dâm dục. 
     Khi đạt đến đỉnh điểm của sự sung sướng nhục dục cực hạn, con cặc ngươi giật giật dữ dội thọc sâu vào tận cùng tử cung nàng, bắn ra những luồng tinh dịch nóng hổi, 
-    đậm đặc, phun thẳng vào sâu trong tử cung ấm áp của nàng. [npc.Name] thăng hoa tột cùng, lỗ lồn co bóp kẹp chặt lấy cặc ngươi điên cuồng, 
+    đậm đặc, phun thẳng vào sâu trong tử cung ấm áp của nàng. {{name}} thăng hoa tột cùng, lỗ lồn co bóp kẹp chặt lấy cặc ngươi điên cuồng, 
     nàng rên rỉ kiệt sức đổ gục trong vòng tay ngươi, 2 chân vòng qua eo ngươi kẹp chặt không cho ngươi rút con cặc khổng lồ ra khỏi lỗ lồn của nàng, 
-    tận hưởng dư vị sung sướng, đê mê của cuộc mây mưa trần trụi cuồng nhiệt nhất thế gian.`;
+    tận hưởng dư vị sung sướng, đê mê của cuộc mây mưa trần trụi cuồng nhiệt nhất thế gian.
+
+    Ngươi hôn nàng 1 cái rồi quay sang những người khác.
+{{/withPartner}}
+
+{{#withNextPartner}}
+    {{me}} quay sang {{name1}}, giúp nàng nhanh chóng cởi y phục.
+    {{name1}}: Chậm thôi, ta không chạy mất đâu.
+    {{me}} mỉm cười, ngồi xuống bên cạnh.
+    {{me}}: Nhưng ta không chờ được nữa.
+    {{name1}} hít một hơi thật sâu rồi từ từ tiến lại phía ngươi.
+    {{name1}}: Vậy... chúng ta bắt đầu nhé.
+    Nói xong, {{name1}} bò lên người ngươi ngồi lên đùi, đặt 1 nụ hôn thật nồng cháy lên môi ngươi.
+
+    Bị {{name1}} tấn công khiến ngươi càng hưng phấn. Con cu vừa mới xuất xong đã ngay lập tức cứng lại cạ vào lỗ lồn hồng hào không lông của {{name1}} đến mức hơi rỉ nước.
+    {{me}}: Xem ra nàng cũng không đợi được nữa rồi.
+    {{name1}}: Đáng ghét. Chàng chỉ biết bắt nạt ta thôi.
+    {{me}}: Ta chỉ thích bắt nạt nàng trên giường thôi.
+    Nói xong, ngươi lại hôn núm vú, 1 tay vòng ra sau giữ lấy bờ lưng trần mềm mại, 1 tay thì ra sức nhào nặn bên vú còn lại. {{name1}} thì cứ chủ động cạ lồn vào con cu ngươi nhưng không nhét vào khiến ngươi cực kỳ bứt rứt.
+
+    Thêm 1 lúc, ngươi chịu không nổi nữa bèn đẩy nàng lên giường. 2 tay ngươi nắm chặt 2 tay nàng, con cu thì liên tục dập vào lỗ lồn của nàng. Ngươi dùng đủ tư thế để dập nàng khiến nàng rên liên tục.
+    {{name1}}: Ah...ah...ah...Sướng quá...
+{{/withNextPartner}}

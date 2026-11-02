@@ -88,7 +88,7 @@ export interface TcPerson {
   pic?: string;
   home?: string;
 }
-interface TcState { v: 1; people: TcPerson[]; rank: { tk: number; cg: number }; y: number; meteorYear?: number; bought?: Record<number, boolean>; beastMig?: 1 | 2; raceMig?: 1; chiefMig?: 1; celMig?: 1; recruitDiversity?: 1 }
+interface TcState { v: 1; people: TcPerson[]; rank: { tk: number; cg: number }; y: number; meteorYear?: number; bought?: Record<number, boolean>; beastMig?: 1 | 2; beastAgeMig?: 1; raceMig?: 1; chiefMig?: 1; celMig?: 1; recruitDiversity?: 1 }
 
 export interface TcRow {
   power?: number;
@@ -112,8 +112,9 @@ export interface TcRow {
   rank: number;
 }
 
-/** Tuổi thân thể tối đa để còn được gọi là thiên kiêu, theo giới. */
+/** Tuổi thân thể tối đa để còn được gọi là thiên kiêu, theo giới. Yêu tu thọ mệnh gấp 4 lần nhân tộc nên giới hạn tuổi là 400 (ở Thương Lan). */
 export const TK_AGE = [100, 400, 1500, 5000, 15000, 50000];
+export const tkAgeMax = (w: number, isBeast = false) => TK_AGE[w] * (isBeast ? 4 : 1);
 const N_TK = 14, N_CG = 14;
 /** Các đại tộc Hỗn Độn (ngoài thánh địa) có thể đưa trẻ về Thương Lan. */
 const HD_CLANS: [string, string][] = [['Diệp gia Hỗn Độn', 'Diệp'], ['Khương gia Hỗn Độn', 'Khương'], ['Cơ gia Hỗn Độn', 'Cơ'], ['Hiên Viên thị', 'Hiên Viên'], ['Ngô gia Hỗn Độn', 'Ngô']];
@@ -121,6 +122,7 @@ const HD_CLANS: [string, string][] = [['Diệp gia Hỗn Độn', 'Diệp'], ['K
 export const tc = (): TcState => {
   const T: TcState = (s.flags.tienco ||= gen());
   if (T.beastMig !== 2) { migrateBeasts(T, !T.beastMig); T.beastMig = 2; } // bản lưu cũ: thêm yêu tu / đổi sang huyết mạch Sơn Hải Kinh & thần thú
+  if (!T.beastAgeMig) { migrateBeastAgesAndRealms(T); T.beastAgeMig = 1; }
   if (!T.raceMig) { migrateRaces(T); T.raceMig = 1; }
   if (!T.chiefMig) { addHonghuangChiefs(T); T.chiefMig = 1; }
   if (!s.flags.tcDoctrineMigrated) { addHonghuangChiefs(T); s.flags.tcDoctrineMigrated = true; }
@@ -437,6 +439,30 @@ function migrateRaces(T: TcState) {
     p.race = race.n;
   }
 }
+function migrateBeastAgesAndRealms(T: TcState) {
+  for (const p of T.people) {
+    if (p.npc || p.lord || p.chief || p.ret || p.heroine) continue;
+    if (!p.beast && (p as any).race !== 'yeu') continue;
+    const curAge = Math.floor(s.year - p.born);
+    const tkLimit = TK_AGE[p.world];
+    // Yêu tu ở bảng thiên kiêu (tuổi cũ <= tkLimit):
+    // Phân bổ lại độ tuổi sang khoảng [48 .. tkLimit * 4] (Thương Lan: 48 .. 400 tuổi)
+    // Và điều chỉnh thực lực tương ứng với 1/4 độ tuổi (100 tuổi chỉ ngang 25 tuổi nhân tộc)
+    if (curAge <= tkLimit) {
+      const rnd = seeded(hashStr(p.id + ':beast-age-v2'));
+      const minAge = 48;
+      const maxAge = tkLimit * 4;
+      const newAge = Math.round(minAge + rnd() * (maxAge - minAge));
+      p.born = s.year - newAge;
+      p.soulBorn = s.year - newAge;
+      const humanEq = newAge / 4;
+      const grown = realmAfter(Math.max(0, humanEq - 10), p.talent, npcCap(p.world));
+      p.r = grown.r;
+      p.st = grown.st;
+      p.p = grown.p;
+    }
+  }
+}
 /** Thiên kiêu trẻ của bốn thần giới, mỗi giới tu chân một bộ (Thiên Đình / Linh Sơn / Địa Phủ / Yêu Giới của giới ấy). */
 const CEL_YOUTH: Record<CelestialId, [string, 'm' | 'f', string?][]> = {
   thiendinh: [['Thiên tướng trẻ tuổi dưới trướng Thác Tháp Thiên Vương', 'm'], ['Tiên nữ Dao Trì, đệ tử Vương Mẫu', 'f'], ['Tiên đồng giữ lò Đâu Suất Cung', 'm']],
@@ -450,9 +476,12 @@ function addCelestialYouth(people: TcPerson[], y: number) {
     const cap = npcCap(w);
     for (const id of Object.keys(CEL_YOUTH) as CelestialId[]) {
       for (const [from, g, race] of CEL_YOUTH[id]) {
-        const a = Math.round(TK_AGE[w] * (0.3 + rnd() * 0.6));
+        const isBeast = id === 'yeugioi' || race === 'yeu' || /yêu|hồ|long/i.test(from);
+        const maxAge = tkAgeMax(w, isBeast);
+        const a = Math.round(maxAge * (0.3 + rnd() * 0.6));
         const talent = 1.5 + rnd() * 0.8;
-        const { r, st, p } = realmAfter(Math.max(0, a - 10), talent, cap);
+        const effectiveAge = isBeast ? a / 4 : a;
+        const { r, st, p } = realmAfter(Math.max(0, effectiveAge - 10), talent, cap);
         people.push({ id: uid(), name: genName(rnd, g), g, world: w, born: y - a, soulBorn: y - a, r, st, p, talent, el: ALL_EL[Math.floor(rnd() * ALL_EL.length)], sect: CELESTIAL[id].n, from, asc: 0, alive: true, ...(race ? { race } : {}) });
       }
     }
@@ -647,28 +676,35 @@ function gen(): TcState {
       if (r < 0.25) return { n: `Hoàng thất ${WORLDS[w]}`, tier: 2 };
       return pickRecruitSect(pool.length ? pool : sects, rnd);
     };
-    // Thiên kiêu: trẻ theo tuổi thân thể, tư chất cao
+    // Thiên kiêu: trẻ theo tuổi thân thể, tư chất cao. Yêu tu thọ mệnh gấp 4 lần (tối đa 400 tuổi), tu vi xấp xỉ nhân tộc lúc 1/4 tuổi
     for (let i = 0; i < N_TK; i++) {
       const g = rnd() < 0.5 ? 'm' : 'f';
-      const a = Math.round(rf(Math.max(12, TK_AGE[w] * 0.12), TK_AGE[w]));
+      const isBeast = rnd() < BEAST_RATE;
+      const maxAge = tkAgeMax(w, isBeast);
+      const minAge = isBeast ? 12 * 4 : 12;
+      const a = Math.round(rf(minAge, maxAge));
       const talent = rf(1.3, 2.3);
-      const { r, st, p } = realmAfter(Math.max(0, a - 10), talent, cap);
+      const effectiveAge = isBeast ? a / 4 : a;
+      const { r, st, p } = realmAfter(Math.max(0, effectiveAge - 10), talent, cap);
       const sc = pickSect(rnd() < 0.6);
-      people.push({ id: uid(), name: genName(rnd, g), g, world: w, born: y - a, soulBorn: y - a, r, st, p, talent, el: pk(ALL_EL), sect: sc.n, from: sc.tier >= 4 ? `Thánh ${g === 'm' ? 'tử' : 'nữ'} ${sc.n}` : sc.tier >= 3 ? `Thân truyền ${sc.n}` : sc.n === 'Tán tu' ? 'Tán tu không rõ sư thừa' : `Đệ tử ${sc.n}`, asc: 0, alive: true });
-      if (rnd() < BEAST_RATE) beastify(people[people.length - 1], rnd, w); // yêu thú hóa hình cũng là thiên kiêu
+      const person: TcPerson = { id: uid(), name: genName(rnd, g), g, world: w, born: y - a, soulBorn: y - a, r, st, p, talent, el: pk(ALL_EL), sect: sc.n, from: sc.tier >= 4 ? `Thánh ${g === 'm' ? 'tử' : 'nữ'} ${sc.n}` : sc.tier >= 3 ? `Thân truyền ${sc.n}` : sc.n === 'Tán tu' ? 'Tán tu không rõ sư thừa' : `Đệ tử ${sc.n}`, asc: 0, alive: true };
+      if (isBeast) beastify(person, rnd, w); // yêu thú hóa hình cũng là thiên kiêu
+      people.push(person);
     }
     // Cường giả: cảnh giới sát trần giới, tuổi lớn
     for (let i = 0; i < N_CG; i++) {
       const g = rnd() < 0.6 ? 'm' : 'f';
+      const isBeast = rnd() < BEAST_RATE;
       const r = Math.max(1, cap - Math.floor(rnd() * rnd() * 4));
       const st = Math.floor(rnd() * 4);
-      const life = REALMS[r].life * worldLife(w);
+      const life = REALMS[r].life * worldLife(w) * (isBeast ? 4 : 1);
       const a = Math.round(life * rf(0.35, 0.85));
       const sc = pickSect(true);
       const talent = rf(0.8, 1.5);
       const name = rnd() < 0.7 ? daoTitle(pk(g === 'm' ? DAO_HAO : DAO_HAO_F), r, st, sc.tier, g) : genName(rnd, g);
-      people.push({ id: uid(), name, g, world: w, born: y - a, soulBorn: y - a - (w ? Math.round(rf(0.3, 0.9) * TK_AGE[w - 1] * 3) : 0), r, st, p: rnd(), talent, el: pk(ALL_EL), sect: sc.n, from: sc.tier >= 4 ? `Thái thượng trưởng lão ${sc.n}` : sc.tier >= 3 ? `Lão tổ ${sc.n}` : sc.n === 'Tán tu' ? 'Tán tu' : `Trấn giữ ${sc.n}`, asc: w, alive: true });
-      if (rnd() < BEAST_RATE) beastify(people[people.length - 1], rnd, w); // đại yêu hóa hình trên Cường Giả Bảng
+      const person: TcPerson = { id: uid(), name, g, world: w, born: y - a, soulBorn: y - a - (w ? Math.round(rf(0.3, 0.9) * TK_AGE[w - 1] * 3) : 0), r, st, p: rnd(), talent, el: pk(ALL_EL), sect: sc.n, from: sc.tier >= 4 ? `Thái thượng trưởng lão ${sc.n}` : sc.tier >= 3 ? `Lão tổ ${sc.n}` : sc.n === 'Tán tu' ? 'Tán tu' : `Trấn giữ ${sc.n}`, asc: w, alive: true };
+      if (isBeast) beastify(person, rnd, w); // đại yêu hóa hình trên Cường Giả Bảng
+      people.push(person);
     }
   }
   // Kẻ giữ Đại Đạo ở Hỗn Độn
@@ -769,14 +805,17 @@ export function tiencoTick(y: number) {
 slots.tiencoTick = tiencoTick;
 const cap = (w: number) => npcCap(w);
 function grow(p: TcPerson, y: number) {
+  const isBeast = !!(p.beast || (p as any).race === 'yeu');
   const bodyAge = s.year - p.born;
+  const startAge = isBeast ? 24 : 6;
   if (p.r === 0) {
-    if (bodyAge >= 6) { p.r = 1; p.st = 0; p.p = 0; } else return;
+    if (bodyAge >= startAge) { p.r = 1; p.st = 0; p.p = 0; } else return;
   }
   let left = y;
+  const speedMul = isBeast ? 0.25 : 1; // Thực lực yêu tộc tăng chậm hơn nhân tộc 4 lần
   let guard = 0;
   while (left > 0 && guard++ < 400) {
-    const per = (REALMS[p.r].turn * 12) / Math.max(0.2, p.talent);
+    const per = ((REALMS[p.r].turn * 12) / Math.max(0.2, p.talent)) / speedMul;
     const step = Math.min(left, per);
     left -= step;
     p.p += step / per;
@@ -794,7 +833,7 @@ function grow(p: TcPerson, y: number) {
     else if (Math.random() < 0.35) { kill(p, 'độ kiếp thất bại, tro bay khói tan'); return; }
     else p.p = 0.6;
   }
-  const life = REALMS[p.r].life * worldLife(p.world) * 1.05;
+  const life = REALMS[p.r].life * worldLife(p.world) * 1.05 * (isBeast ? 4 : 1);
   if (s.year - p.born > life) kill(p, 'thọ tận');
   else if (Math.random() < y / (life * 2.5 * (1 + (p.luck ?? 0) * 0.05))) kill(p, ['bỏ mạng trong hiểm địa', 'bị kẻ thù ám sát', 'tẩu hỏa nhập ma'][Math.floor(Math.random() * 3)]); // rủi ro theo tỉ lệ thọ nguyên: cường giả sống hàng vạn năm không chết vặt
 }
@@ -846,7 +885,8 @@ export function board(kind: 'tk' | 'cg', w = worldOf()): TcRow[] {
     const r = n?.r ?? p!.r, st = n?.st ?? p!.st;
     if (r === 0) continue;
     const a = Math.floor(s.year - (n?.born ?? p!.born));
-    if (kind === 'tk' && a > TK_AGE[w]) continue;
+    const isBeast = !!(p?.beast || n?.beast || (n as any)?.race === 'yeu' || (p as any)?.race === 'yeu');
+    if (kind === 'tk' && a > tkAgeMax(w, isBeast)) continue;
     rows.push({ id: p?.id ?? 'npc:' + n!.id, name: n?.name ?? p!.name, g: n?.g ?? p!.g, r, st, age: a,
       soul: p ? Math.floor(s.year - p.soulBorn) : a,
       note: p ? noteOf(p) : [n!.sect && SECTS[n!.sect] ? SECTS[n!.sect].n : '', n!.how].filter(Boolean).join(' · ') || 'Người quen',
@@ -867,7 +907,8 @@ export function board(kind: 'tk' | 'cg', w = worldOf()): TcRow[] {
           births[birthKey] = s.year - initialAge;
         }
         const a = Math.floor(s.year - births[birthKey]);
-        if (kind === 'tk' && a > TK_AGE[w]) return;
+        const isCelBeast = id === 'yeugioi' || /yêu|thần thú|long|phượng/i.test(o.title);
+        if (kind === 'tk' && a > tkAgeMax(w, isCelBeast)) return;
         rows.push({ id: `cel:${id}:${i}`, name: o.name, g: o.f ? 'f' : 'm', r: o.r, st: o.tier === 0 ? 3 : 2 - (i % 3), age: a, soul: a, note: `${o.title} · ${CELESTIAL[id].n}${o.daoHao ? ` · Đạo hiệu: ${o.daoHao}` : ''}`, force: CELESTIAL[id].n, role: o.title, rank: 0, daoHao: o.daoHao, celestialTier: o.tier });
       });
     }
@@ -875,7 +916,8 @@ export function board(kind: 'tk' | 'cg', w = worldOf()): TcRow[] {
   // người quen trong nhân mạch (luôn cùng giới với người chơi)
   if (w === worldOf()) {
     const a = Math.floor(age());
-    if (s.r > 0 && (kind === 'cg' || a <= TK_AGE[w])) rows.push({ id: 'me', name: s.name, g: s.g, r: s.r, st: s.st, age: a, soul: Math.floor(soulAge()), note: s.sect && SECTS[s.sect.id] ? SECTS[s.sect.id].n : 'Chính ngươi', mine: true, rank: 0 });
+    const isPlayerBeast = !!((s as any).beast || (s as any).race === 'yeu');
+    if (s.r > 0 && (kind === 'cg' || a <= tkAgeMax(w, isPlayerBeast))) rows.push({ id: 'me', name: s.name, g: s.g, r: s.r, st: s.st, age: a, soul: Math.floor(soulAge()), note: s.sect && SECTS[s.sect.id] ? SECTS[s.sect.id].n : 'Chính ngươi', mine: true, rank: 0 });
   }
   for (const row of rows) row.power = rankingPower(row, w);
   return rankedHundred<TcRow>(rows, () => {
@@ -894,14 +936,27 @@ export function recruitPerson(w: number, young = false): TcPerson {
   const g = rnd() < 0.5 ? 'm' : 'f';
   const talent = 1.3 + rnd();
   const target = Math.max(1, npcCap(w) - Math.floor(rnd() * 4));
-  const bodyAge = young ? Math.floor(18 + rnd() * (TK_AGE[w] - 18))
-    : Math.floor(REALMS[target].life * worldLife(w) * (0.4 + rnd() * 0.4));
-  const grown = realmAfter(Math.max(0, bodyAge - 10), talent, npcCap(w));
+  const isBeast = rnd() < BEAST_RATE;
+  const maxAge = young ? tkAgeMax(w, isBeast) : Math.floor(REALMS[target].life * worldLife(w) * (0.4 + rnd() * 0.4) * (isBeast ? 4 : 1));
+  const minAge = young ? (isBeast ? 24 : 18) : 18;
+  const bodyAge = Math.floor(minAge + rnd() * Math.max(1, maxAge - minAge));
+  const effectiveYears = Math.max(0, (isBeast ? bodyAge / 4 : bodyAge) - 10);
+  const grown = realmAfter(effectiveYears, talent, npcCap(w));
   const r = grown.r;
   const sect = pickRecruitSect(sectsOf(w), rnd)?.n ?? 'Tán tu';
   const p: TcPerson = { id: uid(), name: genName(rnd, g), g, world: w, born: s.year - bodyAge, soulBorn: s.year - bodyAge,
     r, st: grown.st, p: grown.p, talent, el: pkAny(rnd, ALL_EL), sect, from: `Đệ tử ${sect}`, asc: 0, alive: true };
-  diversifyRecruit(p, rnd);
+  if (isBeast) {
+    beastify(p, rnd, p.world, true);
+    fitTribe(p, p.world);
+    beastHome(p);
+    fitDoctrine(p);
+  } else {
+    if (rnd() < MYTHIC_RACE_RATE && MYTHIC_RACES.length) p.race = pkAny(rnd, MYTHIC_RACES).n;
+    fitTribe(p, p.world);
+    beastHome(p);
+    fitDoctrine(p);
+  }
   T.people.push(p);
   ensureWorldNames(T.people);
   return p;

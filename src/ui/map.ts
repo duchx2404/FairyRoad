@@ -491,18 +491,9 @@ function buildBg() {
   g.restore();
   // núi vẽ sau cùng, ngoài vùng cắt theo bờ biển để đỉnh núi sát bờ không bị cắt cụt
   drawMountains(g);
-  // tên vùng
+  // tên sông: chữ nghiêng nhỏ, xoay theo dòng chảy
   g.save();
   g.textAlign = 'center';
-  g.font = '700 84px "Noto Serif", serif';
-  const labels = REGION_LABELS;
-  for (const [t, x, y, sz] of labels) {
-    g.font = `700 ${sz}px "Noto Serif", serif`;
-    g.fillStyle = sz >= 100 ? 'rgba(42,36,31,0.16)' : 'rgba(110,40,30,0.32)';
-    g.letterSpacing = sz >= 100 ? '30px' : '10px';
-    g.fillText(t, x, y);
-  }
-  // tên sông: chữ nghiêng nhỏ, xoay theo dòng chảy
   g.letterSpacing = '2px';
   g.font = 'italic 600 34px "Noto Serif", serif';
   g.fillStyle = 'rgba(48,88,112,0.75)';
@@ -635,6 +626,62 @@ export function zoom(dir: number, cx = innerWidth / 2, cy = innerHeight / 2) {
 }
 export const toScreen = (x: number, y: number) => ({ x: (x - view.x) * view.z, y: (y - view.y) * view.z });
 
+/** Vẽ tên Vực, Châu và Biển: khi thu nhỏ (zoom out) thì đậm rõ, khi phóng to (zoom in) thì mờ dần. */
+function drawRegionLabels(g: CanvasRenderingContext2D, z: number) {
+  const labels = REGION_LABELS;
+  if (!labels.length) return;
+
+  // Hệ số mờ dần theo mức zoom (z càng lớn thì càng mờ)
+  // Vực (sz >= 100): rõ nhất khi z <= 0.20, mờ dần và ẩn hoàn toàn khi z >= 0.80
+  const kVuc = Math.max(0, Math.min(1, (0.80 - z) / (0.80 - 0.18)));
+  const aVuc = 0.95 * Math.pow(kVuc, 1.2);
+
+  // Châu (72 <= sz < 100): rõ nhất khi z <= 0.22, mờ dần và ẩn hoàn toàn khi z >= 0.95
+  const kChau = Math.max(0, Math.min(1, (0.95 - z) / (0.95 - 0.20)));
+  const aChau = 0.92 * Math.pow(kChau, 1.2);
+
+  // Biển (sz < 72): mờ dần từ z = 0.20 đến z = 0.75
+  const kSea = Math.max(0, Math.min(1, (0.75 - z) / (0.75 - 0.18)));
+  const aSea = 0.85 * Math.pow(kSea, 1.2);
+
+  if (aVuc <= 0.01 && aChau <= 0.01 && aSea <= 0.01) return;
+
+  g.save();
+  g.textAlign = 'center';
+  g.textBaseline = 'alphabetic';
+
+  for (const [t, x, y, sz] of labels) {
+    const isVuc = sz >= 100;
+    const isSea = sz < 72;
+    const alpha = isVuc ? aVuc : isSea ? aSea : aChau;
+    if (alpha <= 0.01) continue;
+
+    // Khi thu nhỏ tối đa (zoom out), đảm bảo kích thước hiển thị trên màn hình tối thiểu ~11-15px để luôn đọc rõ nét
+    const minScreenPx = isVuc ? 15 : isSea ? 11 : 12;
+    const effectiveSz = Math.max(sz, minScreenPx / z);
+
+    g.font = `700 ${Math.round(effectiveSz)}px "Noto Serif", serif`;
+    g.letterSpacing = isVuc ? '30px' : isSea ? '12px' : '10px';
+
+    // Viền sáng mỏng (halo) màu giấy cổ giúp chữ nổi bật, đậm đà trên mọi nền địa hình
+    const haloAlpha = alpha * 0.75;
+    g.lineWidth = isVuc ? 7 : isSea ? 4 : 5;
+    g.strokeStyle = `rgba(248, 242, 227, ${haloAlpha.toFixed(3)})`;
+    g.strokeText(t, x, y);
+
+    // Mực đậm: Vực dùng mực đen đậm, Châu dùng son trầm, Biển dùng lam thẫm
+    if (isVuc) {
+      g.fillStyle = `rgba(32, 26, 20, ${alpha.toFixed(3)})`;
+    } else if (isSea) {
+      g.fillStyle = `rgba(38, 75, 96, ${alpha.toFixed(3)})`;
+    } else {
+      g.fillStyle = `rgba(118, 32, 22, ${alpha.toFixed(3)})`;
+    }
+    g.fillText(t, x, y);
+  }
+  g.restore();
+}
+
 let pulse = 0;
 export function draw() {
   if (!bg || bgVer !== worldVer) { buildBg(); bgVer = worldVer; }
@@ -645,6 +692,7 @@ export function draw() {
   ctx.scale(view.z, view.z);
   ctx.translate(-view.x, -view.y);
   ctx.drawImage(bg!, 0, 0, MAP_W, MAP_H);
+  drawRegionLabels(ctx, view.z);
   if (!s) { ctx.restore(); return; }
   // đường đi dự kiến
   if (travelLine) {

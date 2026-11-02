@@ -6,7 +6,8 @@ import { h, $, btn, bar } from './dom';
 import { hasPhoto, photoUrl } from './art';
 import { drawButtons } from './artgen';
 import { R_CHUANTHANH, laws } from '../engine/dao';
-import { openModal, refresh } from './modal';
+import { openModal, closeModal, refresh } from './modal';
+import { stoneForRealm, STONE_NAMES, STONE_VALUE, formatStonesDetail, formatStonesShort, stonesToBottleneck } from '../engine/stones';
 import { weaponKind } from './arena';
 import { s, type Pin, type NPC } from '../engine/state';
 import { LAST_WORLD, RMAX, worldName, REALMS, STAGES, splitName, GIVEN_F, GIVEN_M } from '../data/core';
@@ -128,7 +129,7 @@ export function renderHud() {
       h('div', {},
         h('div', { class: 'hud-name' }, s.name),
         h('div', { class: 'hud-realm' }, stageName() + (s.world ? ` · ${worldName(s.world)}` : '')),
-        h('div', { class: 'hud-sub' }, `${fmt(a)} / ${fmt(life)} tuổi${s.world ? ` (hồn ${fmt(soulAge())})` : ''} · ${fmt(s.money)} linh thạch`),
+        h('div', { class: 'hud-sub', title: formatStonesDetail(s.money) }, `${fmt(a)} / ${fmt(life)} tuổi${s.world ? ` (hồn ${fmt(soulAge())})` : ''} · ${formatStonesShort(s.money)}`),
       ),
     ),
     h('div', { class: 'hud-detail' },
@@ -178,8 +179,8 @@ export function renderActions() {
   } else {
     const turn = turnLen();
     add(h('div', { class: 'act-group' },
-      btn('Bế quan', () => run(() => cultivate(1)), 'prime', { title: `Một lượt: ${yearsTxt(turn)}` }),
-      btn('×5', () => run(() => cultivate(5)), 'small', { title: `5 lượt: ${yearsTxt(turn * 5)}` }),
+      btn('Bế quan', openCultivateModal, 'prime', { title: `Bế quan tu luyện (chọn số lượt & dùng linh thạch)` }),
+      btn('×5', () => run(() => cultivate(5)), 'small', { title: `Bế quan nhanh 5 lượt: ${yearsTxt(turn * 5)}` }),
       btn(s.body === 'thiendo' && s.r === 1 ? 'Tới tầng kế' : 'Tới bình cảnh', () => run(() => cultivate(60)), 'small', { title: 'Bế quan liên tục tới khi chạm bình cảnh / lên tầng mới (có thể bị sự kiện cắt ngang)' }),
     ));
   }
@@ -230,4 +231,108 @@ export function showPinPopup(p: Pin, sx: number, sy: number) {
   setTravelLine(p);
   place(sx, sy);
 }
+export function openCultivateModal() {
+  if (s.flags.childhood) { run(() => cultivate(1)); return; }
+  if (needEngageScene()) { run(() => cultivate(1)); return; }
+  if (atBottleneck()) {
+    toast(s.r === 0 ? 'Linh khí đã đầy, hãy đả thông kinh mạch bước vào Luyện Khí.' : 'Đã chạm bình cảnh, hãy thử đột phá!');
+    return;
+  }
+
+  const turn = turnLen();
+  const info = stonesToBottleneck();
+  let turns = 1;
+  let useStones = 0;
+
+  const modalBox = h('div', { class: 'cult-modal' });
+
+  const render = () => {
+    modalBox.innerHTML = '';
+
+    const curProg = Math.round(s.prog);
+    const curStage = stageName();
+    const curRate = Math.round(cultRate());
+
+    const realmInfo = h('div', { class: 'card', style: { marginBottom: '12px', padding: '10px' } },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '6px' } },
+        h('b', {}, `Cảnh giới: ${curStage}`),
+        h('span', { class: 'muted' }, `Tốc độ: +${curRate}%/lượt (${yearsTxt(turn)})`),
+      ),
+      h('div', { style: { background: '#2e261f', borderRadius: '4px', overflow: 'hidden', height: '14px', position: 'relative' } },
+        h('div', { style: { background: '#8fae72', width: `${Math.min(100, curProg)}%`, height: '100%', transition: 'width 0.2s' } }),
+        h('div', { style: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, textAlign: 'center', fontSize: '10px', lineHeight: '14px', color: '#fff', textShadow: '0 1px 2px #000' } }, `${curProg}%`),
+      ),
+    );
+
+    const val = STONE_VALUE[info.stoneGrade];
+    const avail = Math.floor(s.money / val);
+    const detailStr = formatStonesDetail(s.money);
+
+    const stoneSec = h('div', { class: 'card', style: { marginBottom: '12px', padding: '10px' } },
+      h('div', { style: { marginBottom: '6px' } },
+        h('b', {}, `Linh thạch tu luyện phù hợp: `),
+        h('span', { style: { color: '#e6c374', fontWeight: 'bold' } }, info.stoneName),
+      ),
+      h('div', { class: 'small muted', style: { marginBottom: '6px' } },
+        `Quy đổi: 1 ${info.stoneName} = ${val.toLocaleString('vi-VN')} Hạ phẩm. Hiện có: ${avail.toLocaleString('vi-VN')} viên (Tổng: ${detailStr}).`,
+      ),
+      h('div', { class: 'small', style: { marginBottom: '10px', color: '#a0a0a0' } },
+        `Mỗi viên ${info.stoneName} luyện hóa tăng +1% tu vi. Còn thiếu ước tính ${info.neededStones.toLocaleString('vi-VN')} viên để đạt bình cảnh.`,
+      ),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' } },
+        h('span', {}, 'Số lượng dùng: '),
+        h('input', {
+          type: 'number',
+          min: '0',
+          max: String(avail),
+          value: String(useStones),
+          style: { width: '100px', padding: '4px 8px', borderRadius: '4px', background: '#1c1917', border: '1px solid #57534e', color: '#f5f5f4' },
+          oninput: (e: Event) => {
+            const valInput = parseInt((e.target as HTMLInputElement).value, 10);
+            useStones = isNaN(valInput) ? 0 : Math.max(0, Math.min(avail, valInput));
+            updatePreview();
+          },
+        }),
+        btn('Không dùng', () => { useStones = 0; render(); }, 'small ghost'),
+        btn('Tới bình cảnh', () => {
+          const fresh = stonesToBottleneck();
+          useStones = fresh.usableStones;
+          render();
+        }, 'small prime', { title: `Tự động chọn ${info.usableStones} viên để đạt bình cảnh` }),
+        btn('Dùng tối đa', () => { useStones = avail; render(); }, 'small'),
+      ),
+    );
+
+    const turnSec = h('div', { class: 'card', style: { marginBottom: '12px', padding: '10px' } },
+      h('b', {}, 'Thời gian bế quan tĩnh tọa: '),
+      h('div', { style: { display: 'flex', gap: '8px', marginTop: '6px' } },
+        btn(`1 lượt (${yearsTxt(turn)})`, () => { turns = 1; render(); }, 'small' + (turns === 1 ? ' prime' : '')),
+        btn(`5 lượt (${yearsTxt(turn * 5)})`, () => { turns = 5; render(); }, 'small' + (turns === 5 ? ' prime' : '')),
+        btn(s.body === 'thiendo' && s.r === 1 ? 'Tới tầng kế' : 'Tới bình cảnh', () => { turns = 60; render(); }, 'small' + (turns === 60 ? ' prime' : '')),
+      ),
+    );
+
+    const previewDiv = h('div', { class: 'small', style: { color: '#8fae72', marginBottom: '14px' } });
+    const updatePreview = () => {
+      const stoneCost = useStones * val;
+      const gainEstimate = Math.round(turns * curRate + useStones);
+      previewDiv.innerHTML = `Dự kiến: Tiêu hao <b>${useStones.toLocaleString('vi-VN')}</b> viên ${info.stoneName} (${stoneCost.toLocaleString('vi-VN')} Hạ phẩm). Tổng tu vi nhận được ước tính khoảng <b>+${gainEstimate}%</b>.`;
+    };
+    updatePreview();
+
+    const acts = h('div', { style: { display: 'flex', justifyContent: 'flex-end', gap: '10px' } },
+      btn('Hủy', () => closeModal(), 'ghost'),
+      btn('Bắt đầu Bế quan', () => {
+        closeModal();
+        run(() => cultivate(turns, useStones));
+      }, 'prime'),
+    );
+
+    modalBox.append(realmInfo, stoneSec, turnSec, previewDiv, acts);
+  };
+
+  render();
+  openModal('Bế Quan Tu Luyện', modalBox, { wide: true, seal: 'lotus' });
+}
+
 export { toast, esc };

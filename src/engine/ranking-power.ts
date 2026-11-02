@@ -34,4 +34,6 @@ export function rankingPower(row: TcRow, world: number): number {
   const relic = p ? treasureBonus(p) : 0;
   return Math.round((atk + def * 1.2 + hp / 8) * arts * (1 + relic));
 }
-export const compareRankPower = (a: TcRow, b: TcRow) => (b.power ?? 0) - (a.power ?? 0) || a.age - b.age || a.id.localeCompare(b.id);
+export const isBeastRow = (r: TcRow) => !!(r.person?.beast || r.npc?.beast || (r.npc as any)?.race === 'yeu' || (r.person as any)?.race === 'yeu' || (r.mine && ((s as any).beast || (s as any).race === 'yeu')));
+export const eqAge = (r: TcRow) => (isBeastRow(r) ? r.age / 4 : r.age);
+export const compareRankPower = (a: TcRow, b: TcRow) => (b.power ?? 0) - (a.power ?? 0) || eqAge(a) - eqAge(b) || a.id.localeCompare(b.id);

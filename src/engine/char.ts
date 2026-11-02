@@ -4,6 +4,7 @@ import { localItemId, limitGear } from '../data/local-items';
 import { PHAM_BONUS } from '../data/core';
 import { slots } from './slots';
 import { PHAPQUYET, CHANLINH, pqGrade, pqPrice } from '../data/spirit';
+import { getLinh } from './beast-companion';
 // Chỉ số dẫn xuất của nhân vật và quản lý túi đồ.
 import { WORLD, RMAX, worldMult, worldLife, TANG_T, DAO_CO, BODIES, REALMS, ROOTS, HON_DON_ROOT, hiddenRootKind, BATQUAI, EL, SINH, type El, type StatKey, STAGES } from '../data/core';
 import { LOCS, SECTS } from '../data/world';
@@ -77,12 +78,21 @@ export const tamSlots = () => (s.r <= 9 ? [1, 2, 2, 3, 3, 4, 4, 5, 5, 6][s.r] : 
 export const tamSum = (k: 'tam' | 'ngo' | 'cult' | 'brk' | 'calm') => tamActive().reduce((a, id) => a + (TAMPHAP[id]?.[k] || 0), 0);
 export const pqList = (): string[] => (s.flags.phapquyet ||= []);
 export const pqSum = (k: 'cult' | 'herb' | 'speed' | 'flee' | 'hide' | 'atk' | 'def' | 'heal' | 'luck') => pqList().reduce((a, id) => a + (PHAPQUYET[id]?.[k] || 0), 0);
-/** Chân linh đang theo: { id, name, bond 0..100 }. */
-/** Chân linh, cũng là tọa kỵ. ride = chỉ để cưỡi (không xuất chiến). */
-export const myLinh = (): { id: string; name: string; bond: number; ride?: boolean } | null => s.flags.chanlinh || null;
+/** Chân linh đang theo: tự động chuẩn hóa trạng thái cảnh giới, tuổi thọ, giai đoạn. */
+export const myLinh = () => getLinh();
 /** Chân linh đang xuất chiến (mặc định có); chỉ để cưỡi thì không vào trận, không cộng công / thủ / huyết. */
 export const linhFights = () => { const c = myLinh(); return !!c && !c.ride; };
-export const clSum = (k: 'atk' | 'def' | 'hp' | 'cult' | 'luck' | 'flee') => { const c = myLinh(); if (!c) return 0; if (c.ride && (k === 'atk' || k === 'def' || k === 'hp')) return 0; const d = CHANLINH[c.id]; return ((d?.[k] || 0) as number) * (0.6 + c.bond / 250); };
+export const clSum = (k: 'atk' | 'def' | 'hp' | 'cult' | 'luck' | 'flee') => {
+  const c = myLinh();
+  if (!c) return 0;
+  if (c.ride && (k === 'atk' || k === 'def' || k === 'hp')) return 0;
+  const d = CHANLINH[c.id];
+  let mult = 0.6 + c.bond / 250;
+  if (c.stage === 'aunen') mult *= 0.9;
+  else if (c.stage === 'gia') mult *= 0.7;
+  else mult *= 1.3;
+  return ((d?.[k] || 0) as number) * mult;
+};
 /** Phẩm đạo cơ hiện tại (chỉ có từ Trúc Cơ). Save cũ mặc định Trung phẩm. */
 export const daoCo = (): number => (s.r >= 2 ? (s.flags.daoCo ?? 1) : -1);
 export const daoCoInfo = () => (daoCo() >= 0 ? DAO_CO[daoCo()] : null);

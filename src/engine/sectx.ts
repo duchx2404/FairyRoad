@@ -2,6 +2,7 @@ import { worldDefinitions } from '../data/local-items';
 // Chức năng mở rộng của đệ tử tông môn: Nhiệm Vụ Đường, Bái sư, Tỉ thí, Đại bỉ, Bế quan linh mạch.
 import { REALMS, EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, type El, splitName, RMAX } from '../data/core';
 import { SKILLS, TAMPHAP, HERBS, MATS, TECHS, WEAPON_N, type Weapon } from '../data/items';
+import { isSameSect } from '../data/declining-schools';
 import { effRi, thapHidden, tamList, addItem } from './char';
 import { learnSkill } from './api';
 import { CRAFT_N, craftTitle, gainXp, xpNeed, type CraftK } from './craft';
@@ -288,11 +289,19 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
     if (w === 4) {
       name = item.canonName;
     } else {
+      const isMasterSeat = curMaster && isSameSect(curMaster.sect, sct.id) && (
+        (item.legacyRole && (s.flags.masterLegacyRole === item.legacyRole || curMaster.how?.includes(item.legacyRole))) ||
+        (item.title && curMaster.how?.includes(item.title.split(' – ')[0])) ||
+        (item.seat && curMaster.how?.includes(item.seat))
+      );
       const holder = item.legacyRole ? people.find((p) => p.alive && p.world === w && p.legacyRole === item.legacyRole) : undefined;
-      if (holder?.name) {
-        name = holder.name;
-      } else if (curMaster && curMaster.sect === sct.id && item.title && curMaster.how?.includes(item.title.split(' – ')[0])) {
+      if (isMasterSeat) {
         name = curMaster.name;
+        if (holder && holder.name !== curMaster.name) {
+          holder.name = curMaster.name;
+        }
+      } else if (holder?.name) {
+        name = holder.name;
       } else {
         name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
       }
@@ -324,13 +333,175 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
   });
 }
 
+interface LegacyDiscipleSeat {
+  canonName: string;
+  sur: string;
+  title: string;
+  seatTitle: string;
+  g: 'm' | 'f';
+  el: El;
+  rankKey: 'thantruyen' | 'noimon' | 'ngoaimon';
+  rankName: string;
+  beast?: string;
+  d: string;
+}
+
+const LEGACY_SCHOOL_DISCIPLES: Record<SchoolKey, LegacyDiscipleSeat[]> = {
+  jie: [
+    // Thân truyền (5)
+    { canonName: 'Hỏa Linh', sur: 'Hỏa', title: 'Hỏa Linh Đạo Nhân', seatTitle: 'Thủ tịch đại sư tỷ · Thân truyền Bích Du Cung', g: 'f', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đa Bảo Đạo Nhân, nắm giữ Kim Quang Lạc Mục Châu và huấn luyện ba ngàn Hỏa Long Binh lừng danh Phong Thần.' },
+    { canonName: 'Dư Nguyên', sur: 'Dư', title: 'Nhất Khí Tiên', seatTitle: 'Thân truyền Kiếm phong', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Luyện khí sĩ Bồng Lai Đảo, đệ tử Kim Linh Thánh Mẫu, mình đồng da sắt đao thương bất nhập, nắm giữ Hóa Huyết Thần Đao kỳ bảo.' },
+    { canonName: 'Hàm Chi', sur: 'Hàm', title: 'Hàm Chi Tiên Tử', seatTitle: 'Thân truyền Tam Tiên Đảo', g: 'f', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đắc đạo tiên cô nơi hải đảo Bích Du, bạn đồng tu của Tam Tiêu nương nương, nắm giữ Phong Húy Túi thổi ra hắc phong làm tan hồn phách.' },
+    { canonName: 'Thải Vân', sur: 'Thải', title: 'Thải Vân Tiên Tử', seatTitle: 'Thân truyền Trận viện', g: 'f', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Tiên tử đảo Kim Ngao trợ trận Cửu Khúc Hoàng Hà, chấp chưởng Lục Mục Châu bắn ra hào quang làm mù mắt địch nhân.' },
+    { canonName: 'Bạch Lễ', sur: 'Bạch', title: 'Liệt Diễm Thiên Quân', seatTitle: 'Thân truyền Đan phong', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Một trong Thập Thiên Quân Kim Ngao Đảo, chủ trì Liệt Diễm Trận gồm Tam Muội Chân Hỏa, Không Trung Hỏa và Thạch Trung Hỏa.' },
+    // Nội môn (5)
+    { canonName: 'Ma Lễ Thanh', sur: 'Ma', title: 'Tăng Trưởng Thiên Vương', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'phong', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, chấp chưởng Thanh Vân Bảo Kiếm, vung kiếm sinh ra phong hỏa vạn dặm.' },
+    { canonName: 'Ma Lễ Hồng', sur: 'Ma', title: 'Quảng Mục Thiên Vương', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'am', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, chấp chưởng Hỗn Nguyên Tán che trời chuyển nhật nguyệt, giữ nghiêm môn quy Tiệt Giáo.' },
+    { canonName: 'Ma Lễ Hải', sur: 'Ma', title: 'Đa Văn Thiên Vương', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'thuy', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, gảy Bích Ngọc Tỳ Bà dẫn động huyền âm, am hiểu âm luật và điển tích Tiệt Giáo.' },
+    { canonName: 'Ma Lễ Thọ', sur: 'Ma', title: 'Trì Quốc Thiên Vương', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'loi', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Một trong Ma Gia Tứ Tướng, nuôi dưỡng Hoa Hồ Điêu dị thú hộ thể, thể phách dũng mãnh thiện chiến.' },
+    { canonName: 'Tần Hoàn', sur: 'Tần', title: 'Thiên Tuyệt Thiên Quân', seatTitle: 'Đệ tử nội môn · Lôi đường', g: 'm', el: 'loi', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đứng đầu Thập Thiên Quân Kim Ngao Đảo, chủ trì Thiên Tuyệt Trận, dẫn thiên lôi địa hỏa sát phạt.' },
+    // Ngoại môn (4)
+    { canonName: 'Dư Hóa', sur: 'Dư', title: 'Thất Thủ Tướng Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'kim', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Nhất Khí Tiên Dư Nguyên, cưỡi Hỏa Nhãn Kim Tinh Thú, tinh thông Lục Hồn Phiên tuần tra chân núi sơn môn.' },
+    { canonName: 'Hồ Lôi', sur: 'Hồ', title: 'Hồ Lôi Tiên Đồng', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Hỏa Linh Thánh Mẫu, tinh thông thuật thế thân cắt đầu lại mọc, coi quản khoáng mạch hậu sơn.' },
+    { canonName: 'Trần Cửu Công', sur: 'Trần', title: 'Chiêu Bảo Thiên Tôn', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử thân cận của Huyền Đàn Chân Quân Triệu Công Minh nơi La Phù Động, chăm nom vườn linh thảo dưới núi.' },
+    { canonName: 'Diêu Thiếu Tư', sur: 'Diêu', title: 'Nạp Trân Thiên Tôn', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Triệu Công Minh, mới gia nhập môn hạ Kim Ngao Đảo, cần cù thu nạp trân bảo cống hiến cho tông.' },
+  ],
+  chan: [
+    // Thân truyền (5)
+    { canonName: 'Dương Tiễn', sur: 'Dương', title: 'Hiển Thánh Chân Quân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Ngọc Tuyền Sơn', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Ngọc Đỉnh Chân Nhân, tu thành Bát Cửu Huyền Công, trán mở tam nhãn, dẫn Hao Thiên Khuyển vô địch thế hệ trẻ.' },
+    { canonName: 'Na Tra', sur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seatTitle: 'Thân truyền Càn Nguyên Sơn', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thái Ất Chân Nhân, hóa thân hoa sen thanh tịnh, chân đạp Phong Hỏa Luân, vung Hỏa Tiêm Thương uy chấn tứ hải.' },
+    { canonName: 'Hoàng Thiên Hóa', sur: 'Hoàng', title: 'Bính Linh Công', seatTitle: 'Thân truyền Tử Dương Động', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thanh Hư Đạo Đức Chân Quân, cưỡi Ngọc Kỳ Lân, nắm giữ Mạc Tà Kiếm và Toản Tâm Đinh sát khí ngút trời.' },
+    { canonName: 'Lôi Chấn Tử', sur: 'Cơ', title: 'Phong Lôi Thần Tướng', seatTitle: 'Thân truyền Chung Nam Sơn', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Vân Trung Tử, ăn tiên đào mọc cánh Phong Lôi, tay cầm Hoàng Kim Côn hộ vệ đạo thống Ngọc Hư.' },
+    { canonName: 'Vi Hộ', sur: 'Vi', title: 'Hàng Ma Chân Nhân', seatTitle: 'Thân truyền Kim Kê Sơn', g: 'm', el: 'tho', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đạo Hạnh Thiên Tôn, nắm giữ Hàng Ma Xử ngàn cân bất hoại, thể phách kim cang kiên cố.' },
+    // Nội môn (5)
+    { canonName: 'Kim Tra', sur: 'Lý', title: 'Độn Long Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Văn Thù Quảng Pháp Thiên Tôn, nắm giữ Độn Long Thung chấp hành môn quy Côn Lôn.' },
+    { canonName: 'Mộc Tra', sur: 'Lý', title: 'Ngô Câu Kiếm Sĩ', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'moc', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Phổ Hiền Chân Nhân, tinh thông Ngô Câu Song Kiếm, ngày đêm tôi luyện kiếm ý.' },
+    { canonName: 'Ân Giao', sur: 'Ân', title: 'Phiên Thiên Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Quảng Thành Tử tại Cửu Tiên Sơn, mọc ba đầu sáu tay, thừa kế ấn pháp Phiên Thiên.' },
+    { canonName: 'Ân Hồng', sur: 'Ân', title: 'Âm Dương Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Xích Tinh Tử tại Thái Hoa Sơn, tinh thông Âm Dương Kính và điển tích Ngọc Hư.' },
+    { canonName: 'Bạch Hạc Đồng Tử', sur: 'Bạch', title: 'Bạch Hạc Tiên Đồng', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thị giả tọa tiền của Nguyên Thủy Thiên Tôn, thanh tao thoát tục, hỗ trợ chăm nom lò luyện đan Ngọc Hư.' },
+    // Ngoại môn (4)
+    { canonName: 'Thổ Hành Tôn', sur: 'Thổ', title: 'Địa Hành Chân Nhân', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Cụ Lưu Tôn tại Phi Vân Động, tinh thông Địa Hành Thuật ngày đi ngàn dặm dưới lòng đất, quản lý quặng mỏ Côn Lôn.' },
+    { canonName: 'Dương Nhậm', sur: 'Dương', title: 'Giáp Ất Chân Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Thanh Hư Đạo Đức Chân Quân, trong hốc mắt mọc tay, lòng bàn tay có mắt thần nhìn thấu hư không, canh gác chân núi Côn Lôn.' },
+    { canonName: 'Long Tu Hổ', sur: 'Long', title: 'Trấn Sơn Dị Thú', seatTitle: 'Đệ tử ngoại môn · Hộ sơn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Dị thú đầu rồng mình cọp, đệ tử của Khương Tử Nha, ném đá hóa thành lôi hỏa trấn giữ sơn môn.' },
+    { canonName: 'Vũ Cát', sur: 'Vũ', title: 'Vị Thủy Tiên Sinh', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử tiều phu bái Khương Tử Nha bên bờ sông Vị Thủy, chăm chỉ tưới tiêu dược điền Côn Lôn Sơn.' },
+  ],
+  laozi: [
+    // Thân truyền (5)
+    { canonName: 'Lữ Động Tân', sur: 'Lữ', title: 'Thuần Dương Chân Nhân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Bát Cảnh Cung', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử kiệt xuất nhất của phái Thái Thanh Đạo Giáo, kiếm pháp Thuần Dương siêu phàm nhập thánh, một bầu rượu một thanh kiếm tiêu dao tam giới.' },
+    { canonName: 'Hà Tiên Cô', sur: 'Hà', title: 'Thái Thanh Tiên Cô', seatTitle: 'Thân truyền Đan phong', g: 'f', el: 'thuy', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Nữ tiên duy nhất trong Bát Tiên Đạo gia, tay cầm hoa sen ngàn năm, hấp thu nhật nguyệt tinh hoa, tinh thông đan đạo dưỡng sinh trường thọ.' },
+    { canonName: 'Thiết Quải Lý', sur: 'Lý', title: 'Dược Vương Đạo Nhân', seatTitle: 'Thân truyền Dược viện', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Nguyên lão Bát Tiên, hồ lô chứa tiên đan cứu nhân độ thế, gậy sắt xua đuổi tà ma chốn hồng trần.' },
+    { canonName: 'Hán Chung Ly', sur: 'Chung', title: 'Chính Dương Chân Nhân', seatTitle: 'Thân truyền Khí phong', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Sư phụ của Lữ Động Tân, tay cầm Ba Tiêu Quạt vàng, phất quạt khởi khởi tam muội thần phong, tinh thông thuật luyện đan luyện khí Thái Thanh.' },
+    { canonName: 'Hàn Tương Tử', sur: 'Hàn', title: 'Thanh Âm Chân Nhân', seatTitle: 'Thân truyền Trận viện', g: 'm', el: 'moc', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Thổi ngọc tiêu làm muôn hoa đua nở, tiếng tiêu dẫn động linh khí đất trời hóa thành hộ sơn tiên trận thanh tĩnh.' },
+    // Nội môn (5)
+    { canonName: 'Trương Quả Lão', sur: 'Trương', title: 'Thông Huyền Lão Nhân', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Cưỡi lừa ngược ngao du thiên hạ, tay cầm Ngư Cổ thần khí, thấu hiểu điển tích Đạo Đức Kinh.' },
+    { canonName: 'Lam Thái Hòa', sur: 'Lam', title: 'Thải Hoa Tiên Tử', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'moc', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Tay mang giỏ hoa chứa vạn thảo Bát Cảnh Cung, ca hát khúc tiên đạo, tâm tính vô ưu vô lự.' },
+    { canonName: 'Tào Quốc Cữu', sur: 'Tào', title: 'Thanh Tĩnh Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Nắm giữ Ngọc Bản trừ khử tà niệm, chấp pháp vô tư, dứt bỏ vinh hoa thế tục hướng đạo.' },
+    { canonName: 'Canh Tang Sở', sur: 'Canh', title: 'Động Linh Chân Nhân', seatTitle: 'Đệ tử nội môn · Kiếm đường', g: 'm', el: 'phong', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử Lão Tử tại Úy Lỗi Sơn, lĩnh ngộ kiếm ý vô vi, lấy tĩnh chế động.' },
+    { canonName: 'Bạch Hạc Tiên Đồng', sur: 'Bạch', title: 'Thái Thanh Hạc Đồng', seatTitle: 'Đệ tử nội môn · Luyện võ đường', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Linh hạc trông coi lò Bát Quái Cung, thân pháp nhẹ tựa lông hồng, biến hóa khôn lường.' },
+    // Ngoại môn (4)
+    { canonName: 'Thanh Đồng', sur: 'Thanh', title: 'Huyền Đô Đồng Tử', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đồng tử áo xanh đón gió trước cửa Huyền Đô Sơn, chào đón khách thập phương hướng đạo.' },
+    { canonName: 'Tử Hà', sur: 'Tử', title: 'Tử Hà Tiên Tử', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'f', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Tiên tử đón ráng chiều tử khí Hàm Cốc Quan, tưới tiêu dược điền Thái Thanh.' },
+    { canonName: 'Cương Lực Sĩ', sur: 'Cương', title: 'Hoàng Cân Lực Sĩ', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Lực sĩ hộ pháp Bát Cảnh Cung, sức mạnh dời non lấp biển, khai thác linh khoáng hậu sơn.' },
+    { canonName: 'Thanh Ngưu Đồng Tử', sur: 'Ngưu', title: 'Thị Ngưu Tiên Đồng', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Mới nhập môn chăm sóc tọa kỵ Thanh Ngưu của Thái Thượng Lão Quân, chất phác cần mẫn.' },
+  ],
+  buddhist: [
+    // Thân truyền (5)
+    { canonName: 'Kim Thiền', sur: 'Kim', title: 'Kim Thiền Pháp Sư', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Linh Sơn', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền thứ hai của Đức Phật Như Lai trên đỉnh Linh Sơn, Phật pháp cao thâm, đạo tâm thuần khiết không vướng bụi trần.' },
+    { canonName: 'Mục Kiền Liên', sur: 'Mục', title: 'Đại Mục Kiền Liên Tôn Giả', seatTitle: 'Thân truyền Chấp pháp điện', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Thần thông đệ nhất trong mười đại đệ tử của Phật Đà, tay cầm tích trượng giáng phục tà ma khắp ba cõi.' },
+    { canonName: 'Xá Lợi Phất', sur: 'Xá', title: 'Trí Tuệ Tôn Giả', seatTitle: 'Thân truyền Tàng kinh viện', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Trí tuệ đệ nhất trong môn hạ Tây Phương, thông suốt mọi pháp tướng, khai mở tuệ nhãn cho chúng sinh.' },
+    { canonName: 'Tu Bồ Đề', sur: 'Tu', title: 'Giải Không Tôn Giả', seatTitle: 'Thân truyền Trận viện', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Giải không đệ nhất, ngộ triệt chân lý vạn pháp giai không, thi triển kim cương kết giới không gì phá nổi.' },
+    { canonName: 'Khổng Tuyên', sur: 'Khổng', title: 'Minh Vương Tôn Giả', seatTitle: 'Thân truyền Chiến đường', g: 'm', el: 'quang', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Chân thân Khổng Tước đệ nhất thiên địa, tu luyện Ngũ Sắc Thần Quang không vật gì không quét, hộ đạo Phật môn.' },
+    // Nội môn (5)
+    { canonName: 'Phú Lâu Na', sur: 'Phú', title: 'Thuyết Pháp Tôn Giả', seatTitle: 'Đệ tử nội môn · Diễn võ đường', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thuyết pháp đệ nhất Phật môn, biện tài vô ngại, hàng phục tâm ma.' },
+    { canonName: 'Ca Chiên Diên', sur: 'Ca', title: 'Luận Nghị Tôn Giả', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'tho', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Luận nghị đệ nhất, phân biệt chân ngụy, giữ gìn giới luật thanh tịnh.' },
+    { canonName: 'A Nậu Lâu Đà', sur: 'A', title: 'Thiên Nhãn Tôn Giả', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thiên nhãn đệ nhất, thấy rõ tam thiên đại thiên thế giới, thấu triệt nhân quả.' },
+    { canonName: 'Ưu Bà Ly', sur: 'Ưu', title: 'Trì Giới Tôn Giả', seatTitle: 'Đệ tử nội môn · Giới luật đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Trì giới nghiêm minh nhất môn hạ Linh Sơn, không phạm một tơ hào thanh quy.' },
+    { canonName: 'La Hầu La', sur: 'La', title: 'Mật Hạnh Tôn Giả', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'thuy', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Mật hạnh đệ nhất, âm thầm tu trì đan dược và công đức, nhu hòa nhẫn nhục.' },
+    // Ngoại môn (4)
+    { canonName: 'Hàng Long', sur: 'Long', title: 'Hàng Long La Hán', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'loi', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đứng đầu Thập Bát La Hán, hàng phục ác long, trấn giữ sơn môn dưới chân Linh Sơn.' },
+    { canonName: 'Phục Hổ', sur: 'Hổ', title: 'Phục Hổ La Hán', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'kim', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Hàng phục mãnh hổ hung hãn, trông coi bảo kho và linh khoáng Tây Vực.' },
+    { canonName: 'Trường Mi', sur: 'A', title: 'Trường Mi La Hán', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Lông mày dài trắng rủ xuống đất, từ bi hái thuốc cứu độ dân gian dưới chân núi.' },
+    { canonName: 'Bạch Long', sur: 'Long', title: 'Bát Bộ Thiên Long', seatTitle: 'Đệ tử ngoại môn · Tân tấn nhập môn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Long tộc Tây Hải quy y cửa Phật, chăm nom hồ sen Bát Bảo Công Đức Thủy.' },
+  ],
+};
+
+function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: number, rnd: () => number, rp: <T>(a: readonly T[]) => T, chu: number): SectDisciple[] {
+  const w = s.world ?? 0;
+  const seats = LEGACY_SCHOOL_DISCIPLES[sk];
+  const usedNames = new Set<string>();
+  const usedGivens = new Set<string>();
+  const elders = elderRoster(sct);
+  for (const e of elders) {
+    usedNames.add(nameKey(e.name));
+    usedGivens.add(nameKey(splitName(e.name).given));
+  }
+  if (s.name) usedNames.add(nameKey(s.name));
+  for (const n of s.npcs) if (n.name) usedNames.add(nameKey(n.name));
+
+  const BEAST_POOL = ['Lôi Giao', 'Hỏa Hồ', 'Bạch Viên', 'Thanh Xà', 'Kim Điêu', 'Bạch Hổ', 'Hắc Báo'];
+
+  return seats.map((item, i) => {
+    let name: string;
+    if (w === 4) {
+      name = item.canonName;
+    } else {
+      name = uniquePersonalName(item.g, item.sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
+      usedNames.add(nameKey(name));
+      usedGivens.add(nameKey(splitName(name).given));
+    }
+    const shortTitle = item.title.split(' – ')[0];
+    const d = w === 4 ? item.d : `Hậu nhân họ ${item.sur} kế thừa đạo hiệu ${shortTitle}. ${item.d}`;
+
+    let r: number;
+    let st: number;
+    let age: number;
+
+    let beast: string | undefined = item.beast;
+    if (!beast && sk === 'jie' && rnd() < 0.45) {
+      beast = rp(BEAST_POOL);
+    }
+
+    if (item.rankKey === 'thantruyen') {
+      r = Math.max(0, chu - 2 - (i > 2 && rnd() < 0.3 ? 1 : 0));
+      st = r === 0 ? 3 : Math.floor(rnd() * 2) + 1;
+      age = beast ? Math.round(55 + rnd() * 35) : Math.round(18 + rnd() * 8);
+    } else if (item.rankKey === 'noimon') {
+      r = Math.max(0, chu - 3);
+      st = r === 0 ? Math.floor(rnd() * 2) + 2 : Math.floor(rnd() * 3);
+      age = beast ? Math.round(40 + rnd() * 30) : Math.round(15 + rnd() * 7);
+    } else {
+      r = 0;
+      st = Math.floor(rnd() * 3) + 1;
+      age = beast ? Math.round(25 + rnd() * 25) : Math.round(13 + rnd() * 5);
+    }
+
+    return {
+      key: `${sct.id}:${era}:legacy_disc:${i}`,
+      name,
+      g: item.g,
+      r: clamp(r, 0, 8),
+      st: clamp(st, 0, 3),
+      el: item.el,
+      rankKey: item.rankKey,
+      rankName: item.rankName,
+      title: item.title,
+      seatTitle: item.seatTitle,
+      d,
+      age,
+      trait: rp(TRAITS),
+      beast,
+    };
+  });
+}
+
 /** Toàn bộ trưởng lão nhận đồ đệ của tông (đổi mỗi 30 năm). */
-export function elderRoster(): Elder[] {
-  const sct = sc();
+export function elderRoster(targetSect?: (typeof SECTS)[string]): Elder[] {
+  const sct = targetSect ?? (s.sect ? sc() : null);
+  if (!sct) return [];
   const era = Math.floor(s.year / 30);
   const rnd = seeded(hashStr(`${sct.id}:elders:${era}`));
   const rp = <T,>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)];
-  const chu = SECT_TIER_INFO[sct.tier].chu;
+  const chu = SECT_TIER_INFO[sct.tier]?.chu ?? 3;
   const sk = schoolKeyOfSect(sct.n);
   if (sk) return legacySchoolRoster(sk, sct, era, rnd, rp, chu);
   const used = new Set<string>();
@@ -390,12 +561,248 @@ const refused = (): Record<string, number> => ((s.flags.baiNo ||= {}) as Record<
 const baseName = (n: string) => n.replace(TITLE_RE, '');
 export const isMyMaster = (e: Elder) => {
   const m = master();
-  if (!m || m.sect !== s.sect?.id) return false;
+  if (!m || !isSameSect(m.sect, s.sect?.id)) return false;
+  if (baseName(m.name) === baseName(e.name)) return true;
   if (e.legacyRole && (s.flags.masterLegacyRole === e.legacyRole || m.how?.includes(e.legacyRole))) return true;
   if (e.title && m.how?.includes(e.title.split(' – ')[0])) return true;
   if (e.seat && m.how?.includes(e.seat)) return true;
-  return baseName(m.name) === baseName(e.name);
+  return false;
 };
+/** Lấy NPC có sẵn hoặc khởi tạo NPC mới cho một trưởng lão trong tông. */
+export function getOrCreateElderNpc(e: Elder, sectId: string): import('./state').NPC {
+  const sct = SECTS[sectId];
+  if (isMyMaster(e)) {
+    const m = master();
+    if (m && isSameSect(m.sect, sectId)) return m;
+  }
+  let n = s.npcs.find((x) => x.alive && isSameSect(x.sect, sectId) && (x.name === e.name || (e.legacyRole && x.how?.includes(e.legacyRole))));
+  if (!n) {
+    const isMine = s.sect?.id === sectId;
+    const fullTitle = e.title ? (e.seat && !e.title.includes(e.seat) ? `${e.title} · ${e.seat}` : e.title) : e.seat;
+    n = mkNpc({
+      name: e.name,
+      g: e.g,
+      r: e.r,
+      st: e.st,
+      sect: sectId,
+      tag: isMine ? (e.top ? 'senior' : 'acq') : 'acq',
+      rel: isMine ? (e.top ? 20 : 10) : 0,
+      el: e.el,
+      age: e.age,
+      how: `${fullTitle} ${sct?.n || ''}`,
+      talent: e.top ? 1.4 : 1.0,
+    });
+    n.trait = e.trait;
+    addNpc(n);
+  }
+  return n;
+}
+
+export interface SectDisciple {
+  key: string;
+  name: string;
+  g: 'm' | 'f';
+  r: number;
+  st: number;
+  el: El;
+  rankKey: 'thantruyen' | 'noimon' | 'ngoaimon';
+  rankName: string;
+  title: string;
+  seatTitle?: string;
+  d: string;
+  age: number;
+  trait: string;
+  beast?: string;
+}
+
+/** Danh sách đệ tử đại diện của tông (thân truyền, nội môn, ngoại môn). */
+export function discipleRoster(targetSect?: (typeof SECTS)[string]): SectDisciple[] {
+  const sct = targetSect ?? (s.sect ? sc() : null);
+  if (!sct) return [];
+  const era = Math.floor(s.year / 10);
+  const rnd = seeded(hashStr(`${sct.id}:disciples:${era}`));
+  const rp = <T,>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)];
+  const chu = SECT_TIER_INFO[sct.tier]?.chu ?? 3;
+  const sk = schoolKeyOfSect(sct.n);
+  if (sk) return legacySchoolDisciples(sk, sct, era, rnd, rp, chu);
+
+  const isJie = sct.id.includes('jie') || sct.n.includes('Tiệt Giáo');
+  const isDragon = !!sct.dragon || sct.id.includes('longcung') || sct.n.includes('Long Cung');
+
+  const elders = elderRoster(sct);
+  const usedNames = new Set<string>(elders.map((e) => nameKey(e.name)));
+  if (s.name) usedNames.add(nameKey(s.name));
+  for (const n of s.npcs) if (n.name) usedNames.add(nameKey(n.name));
+
+  const usedGivens = new Set<string>();
+  const BEAST_POOL = ['Lôi Giao', 'Hỏa Hồ', 'Bạch Viên', 'Thanh Xà', 'Kim Điêu', 'Bạch Hổ', 'Hắc Báo'];
+  const out: SectDisciple[] = [];
+
+  const genName = (g: 'm' | 'f', surPref?: string) => {
+    const sur = surPref || rp(SURN);
+    return uniquePersonalName(g, sur, usedNames, `${s.id}:${sct.id}:disc:${era}:${out.length}`, usedGivens);
+  };
+
+  const add = (
+    rankKey: 'thantruyen' | 'noimon' | 'ngoaimon',
+    rankName: string,
+    title: string,
+    d: string,
+    r: number,
+    st: number,
+    age: number,
+    gFix?: 'm' | 'f',
+    surPref?: string,
+    forceBeast?: string
+  ) => {
+    const g: 'm' | 'f' = gFix ?? (sct.fem ? 'f' : rnd() < 0.5 ? 'm' : 'f');
+    const name = genName(g, surPref);
+    usedNames.add(nameKey(name));
+    usedGivens.add(nameKey(splitName(name).given));
+
+    let beast: string | undefined = forceBeast;
+    if (!beast && isJie && rnd() < 0.45) {
+      beast = rp(BEAST_POOL);
+    } else if (!beast && isDragon) {
+      beast = 'Long Tộc';
+    }
+
+    const finalAge = beast ? Math.round(age * (2.5 + rnd() * 1.5)) : age;
+
+    out.push({
+      key: `${sct.id}:${era}:disc:${out.length}`,
+      name,
+      g,
+      r: clamp(r, 0, 8),
+      st: clamp(st, 0, 3),
+      el: rp(sct.el),
+      rankKey,
+      rankName,
+      title,
+      d,
+      age: finalAge,
+      trait: rp(TRAITS),
+      beast,
+    });
+  };
+
+  // 1. Thân truyền đệ tử (3 - 5 người)
+  const chiefR = Math.max(0, chu - 2);
+  const chiefSt = chiefR === 0 ? 3 : Math.floor(rnd() * 2) + 1;
+  const seniorG: 'm' | 'f' = sct.fem ? 'f' : rnd() < 0.6 ? 'm' : 'f';
+
+  add(
+    'thantruyen',
+    'Thân truyền đệ tử',
+    seniorG === 'm' ? 'Thủ tịch đại sư huynh' : 'Thủ tịch đại sư tỷ',
+    `Đứng đầu thế hệ trẻ trong ${sct.n}, được định vị làm rường cột tương lai của tông môn, khí độ hiên ngang.`,
+    chiefR,
+    chiefSt,
+    Math.round(20 + rnd() * 6),
+    seniorG
+  );
+
+  add(
+    'thantruyen',
+    'Thân truyền đệ tử',
+    `Thân truyền đệ tử ${headTitle(sct)}`,
+    `Đệ tử chân truyền do đích thân ${headTitle(sct)} dốc lòng chỉ điểm, tinh thông công pháp trấn phái.`,
+    chiefR,
+    Math.max(0, chiefSt - 1),
+    Math.round(18 + rnd() * 6)
+  );
+
+  add(
+    'thantruyen',
+    'Thân truyền đệ tử',
+    'Thân truyền đệ tử Đan phong',
+    'Quanh thân phảng phất mùi dược thảo, tay cầm hỏa phiến, đã có thể tự tay luyện chế linh đan nhị giai.',
+    Math.max(0, chiefR - (rnd() < 0.4 ? 1 : 0)),
+    Math.floor(rnd() * 3) + 1,
+    Math.round(18 + rnd() * 7)
+  );
+
+  add(
+    'thantruyen',
+    'Thân truyền đệ tử',
+    'Thân truyền đệ tử Kiếm phong',
+    'Kiếm ý lăng lệ, am hiểu sát phạt chi thuật, thường dẫn đầu đệ tử tông môn trừ ma vệ đạo.',
+    Math.max(0, chiefR - (rnd() < 0.4 ? 1 : 0)),
+    Math.floor(rnd() * 3) + 1,
+    Math.round(17 + rnd() * 7)
+  );
+
+  if (sct.tier >= 2 || isJie) {
+    add(
+      'thantruyen',
+      'Thân truyền đệ tử',
+      'Thân truyền đệ tử Trận viện',
+      'Tinh thông trận đồ cấm chế và phù văn huyền ảo, phất tay liền có thể khởi động tiểu hộ thể trận.',
+      Math.max(0, chiefR - 1),
+      Math.floor(rnd() * 3) + 1,
+      Math.round(17 + rnd() * 6)
+    );
+  }
+
+  // 2. Nội môn đệ tử (5 người)
+  const innerR = Math.max(0, chu - 3);
+  const innerDefs: [string, string][] = [
+    ['Đệ tử nội môn · Kiếm đường', 'Ngày đêm mài giũa kiếm chiêu nơi diễn võ trường, khát khao sớm ngày bước vào hàng ngũ chân truyền.'],
+    ['Đệ tử nội môn · Chấp pháp đường', 'Tính tình cương trực, chấp hành môn quy cẩn trọng, phụ trách tuần tra sơn môn và duy trì kỷ cương.'],
+    ['Đệ tử nội môn · Đan viện', 'Cần cù bên lò luyện đan, hỗ trợ phân loại linh thảo và chăm sóc hỏa hầu.'],
+    ['Đệ tử nội môn · Tàng kinh các', 'Ham mê cổ tịch và điển tích tiên đạo, tính tình trầm tĩnh ít lời nhưng hiểu biết uyên bác.'],
+    ['Đệ tử nội môn · Luyện võ đường', 'Thể phách cường tráng, tinh thông chưởng cước hộ thân, tính tình hào sảng phóng khoáng.'],
+  ];
+
+  for (const [title, desc] of innerDefs) {
+    const st = innerR === 0 ? Math.floor(rnd() * 2) + 2 : Math.floor(rnd() * 3);
+    add('noimon', 'Nội môn đệ tử', title, desc, innerR, st, Math.round(15 + rnd() * 8));
+  }
+
+  // 3. Ngoại môn đệ tử (4 người)
+  const outerDefs: [string, string][] = [
+    ['Đệ tử ngoại môn · Dược viên', 'Ngày ngày gánh nước tưới tiêu linh điền dưới chân núi, chăm chỉ tích lũy điểm cống hiến để nhập nội môn.'],
+    ['Đệ tử ngoại môn · Khai khoáng', 'Khai thác quặng thô nơi linh quặng hậu sơn, tôi luyện sức bền và ý chí trên con đường tu tiên.'],
+    ['Đệ tử ngoại môn · Tuần sơn', 'Canh gác sơn môn dưới chân núi, tinh thần cảnh giác, nắm rõ đường đi nước bước trong sơn môn.'],
+    ['Đệ tử ngoại môn · Tân tấn nhập môn', 'Mới vượt qua khảo hạch nhập môn, tràn trề khát vọng và kính ngưỡng các vị sư huynh sư tỷ.'],
+  ];
+
+  for (const [title, desc] of outerDefs) {
+    add('ngoaimon', 'Ngoại môn đệ tử', title, desc, 0, Math.floor(rnd() * 3) + 1, Math.round(13 + rnd() * 6));
+  }
+
+  return out;
+}
+
+/** Lấy NPC có sẵn hoặc khởi tạo NPC mới cho một đệ tử tông môn. */
+export function getOrCreateDiscipleNpc(d: SectDisciple, sectId: string): import('./state').NPC {
+  const sct = SECTS[sectId];
+  let n = s.npcs.find((x) => x.alive && isSameSect(x.sect, sectId) && x.name === d.name);
+  if (!n) {
+    const isMine = s.sect?.id === sectId;
+    const fullRole = d.seatTitle ? `${d.seatTitle} (${d.title})` : d.title;
+    n = mkNpc({
+      name: d.name,
+      g: d.g,
+      r: d.r,
+      st: d.st,
+      sect: sectId,
+      tag: isMine ? 'peer' : 'acq',
+      rel: isMine ? (d.rankKey === 'thantruyen' ? 25 : 15) : 0,
+      el: d.el,
+      age: d.age,
+      how: `${fullRole} · ${d.rankName} của ${sct?.n || ''}. ${d.d}`,
+      talent: d.rankKey === 'thantruyen' ? 1.4 : d.rankKey === 'noimon' ? 1.1 : 0.8,
+    });
+    n.trait = d.trait;
+    if (d.beast) {
+      n.beast = d.beast;
+      n.race = 'Yêu tộc';
+    }
+    addNpc(n);
+  }
+  return n;
+}
 /** Con cháu của bậc lão tổ trong chính tông này: trưởng lão nào cũng phải nể mặt. */
 export function backer(): string | null {
   if (!s.sect || s.flags.holyScion !== s.sect.id) return null;

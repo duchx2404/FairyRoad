@@ -1,7 +1,7 @@
 import { s } from './state';
 import type { TcPerson } from './tienco';
 import { LEGENDARY_TREASURES, treasureManifest } from '../data/treasure-grades';
-import { DECLINING_SCHOOLS, branchId, branchSchool, legacyRoleKey } from '../data/declining-schools';
+import { DECLINING_SCHOOLS, branchId, branchSchool, legacyRoleKey, isSameSect } from '../data/declining-schools';
 import { npcCap, REALMS, splitName } from '../data/core';
 import { nameKey, uniquePersonalName } from '../core/names';
 import { hashStr, seeded } from '../core/util';
@@ -35,7 +35,18 @@ export function maintainLegacyHolders(people: TcPerson[]) {
     if (original) (original.treasures ??= []).push(t.id);
     for (let w = 0; w < 4; w++) {
       const key = legacyRoleKey(t);
-      let holder = people.find(p => p.alive && p.world === w && p.legacyRole === key);
+      const allHolders = people.filter(p => p.alive && p.world === w && p.legacyRole === key);
+      let holder = allHolders[0];
+      if (allHolders.length > 1) {
+        const linkedHolder = allHolders.find(p => p.npc && linked.has(p.npc));
+        if (linkedHolder) holder = linkedHolder;
+        for (const extra of allHolders) {
+          if (extra !== holder) {
+            extra.alive = false;
+            delete extra.legacyRole;
+          }
+        }
+      }
       if (!holder) {
         const id = `legacy-holder:${w}:${key}:${people.length}`;
         const rnd = seeded(hashStr(s.id + id));
@@ -57,12 +68,25 @@ export function maintainLegacyHolders(people: TcPerson[]) {
       (holder.treasures ??= []).push(t.id);
       if (w === (s.world ?? 0) && holder) {
         if (!holder.npc) {
-          const m = s.npcs.find(n => n.alive && n.tag === 'master' && n.sect === holder!.sect && (s.flags.masterLegacyRole === key || n.how?.includes(t.role) || (t.role.includes('Giáo chủ') && n.how?.includes('Giáo chủ'))));
-          if (m) holder.npc = m.id;
+          const m = s.npcs.find(n => n.alive && n.tag === 'master' && isSameSect(n.sect, holder!.sect) && (s.flags.masterLegacyRole === key || n.how?.includes(t.role) || (t.role.includes('Giáo chủ') && n.how?.includes('Giáo chủ'))));
+          if (m) {
+            holder.npc = m.id;
+            s.flags.masterLegacyRole = key;
+          }
         }
         if (holder.npc) {
           const n = linked.get(holder.npc);
-          if (n && n.name !== holder.name) n.name = holder.name;
+          if (n) {
+            if (n.tag === 'master') {
+              if (holder.name !== n.name) holder.name = n.name;
+              if (n.r) holder.r = n.r;
+              if (n.st) holder.st = n.st;
+              if (n.born) { holder.born = n.born; holder.soulBorn = holder.born; }
+              if (n.beast) { holder.beast = n.beast; holder.race = 'Yêu tộc'; }
+            } else {
+              if (n.name !== holder.name) n.name = holder.name;
+            }
+          }
         }
       }
     }

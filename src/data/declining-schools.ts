@@ -1,4 +1,4 @@
-import { worldPack, applyWorld, LOCS, MAP_W, MAP_H, type Vuc, type Loc } from './world';
+import { worldPack, applyWorld, LOCS, MAP_W, MAP_H, SECTS, type Vuc, type Loc } from './world';
 import { TECHS } from './items';
 import type { LegendaryTreasure } from './treasure-grades';
 
@@ -13,6 +13,20 @@ export const branchId = (w: number, school: LegacySchool) => `legacy_${w}_${scho
 export const seatId = (w: number, school: LegacySchool) => `legacy_${w}_${school}_seat`;
 export const branchSchool = (name: string) => (Object.keys(DECLINING_SCHOOLS) as LegacySchool[]).find(k => DECLINING_SCHOOLS[k].name === name);
 export const legacyRoleKey = (t: LegendaryTreasure) => `${t.school}:${t.role}`;
+
+export function isSameSect(sectA?: string | null, sectB?: string | null): boolean {
+  if (!sectA || !sectB) return false;
+  if (sectA === sectB) return true;
+  const nameA = SECTS[sectA]?.n ?? sectA;
+  const nameB = SECTS[sectB]?.n ?? sectB;
+  if (nameA === nameB || sectA === nameB || sectB === nameA) return true;
+  for (const [k, v] of Object.entries(DECLINING_SCHOOLS)) {
+    const isA = sectA === v.name || sectA.endsWith(`_${k}`) || nameA === v.name;
+    const isB = sectB === v.name || sectB.endsWith(`_${k}`) || nameB === v.name;
+    if (isA && isB) return true;
+  }
+  return false;
+}
 
 export const SCHOOL_VUC: Record<LegacySchool, Vuc> = {
   chan: 'trung',

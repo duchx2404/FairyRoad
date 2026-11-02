@@ -9,6 +9,7 @@ import { LOCS, REGIONS } from '../data/world';
 import { s } from './state';
 import { effRi, itemPrice, itemName, addItem, addGear, buyMult, sellMult, removeItem, bagFree } from './char';
 import { addLog, passTime } from './core';
+import { mkChanLinh } from './beast-companion';
 import { isExclusiveTech, skillOwners } from './sect';
 import { clamp, seeded, hashStr } from '../core/util';
 
@@ -308,7 +309,7 @@ export function winLot(lot: Lot, price: number): string {
     const b = CHANLINH[beastId];
     if (b) {
       if (!s.flags.chanlinh) {
-        s.flags.chanlinh = { id: beastId, name: b.n, bond: 40 };
+        mkChanLinh(beastId, b.n, true);
         s.money -= price;
         (s.flags.aucSold ||= {})[lot.key] = true;
         addLog(`Đấu giá được linh thú ấu niên ${b.n}, kết khế ước thành công!`, 'good');

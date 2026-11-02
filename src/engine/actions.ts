@@ -8,7 +8,8 @@ import { HERBS, PILLS, PILL_GRADE } from '../data/items';
 import { s, type Pin } from './state';
 import { wedDaolu } from './relationships';
 import { moneyScale, effRi, pqSum, cultRate, atBottleneck, addItem, has, stat, root, M, itemName, maxHp, itemPrice, removeItem, stageName, perfectBody, myLinh } from './char';
-import { missionProg, trucCoKind, cultivateTurn, passTime, btChance, failBonus, breakthrough, pillBonusOf, addLog, mark, setLoc, travelYears, travelBlock, needsShip, shipFare, dist, travelSpeed, spawnPin, nearestLoc, mkNpc, addNpc, relChange, findNpc, npcRealm, daolu } from './core';
+import { missionProg, trucCoKind, cultivateTurn, passTime, btChance, failBonus, breakthrough, pillBonusOf, addLog, addProg, mark, setLoc, travelYears, travelBlock, needsShip, shipFare, dist, travelSpeed, spawnPin, nearestLoc, mkNpc, addNpc, relChange, findNpc, npcRealm, daolu } from './core';
+import { stoneForRealm, STONE_NAMES, STONE_VALUE } from './stones';
 import { EVENTS, pickEvent, markSeen, evTitle, type Choice, type GameEvent, type Where } from './events';
 import { fight, fightSummary, beastFoe, dangerLabel, fightLogs, type FightResult, type FoeSpec } from './combat';
 import { canJoin, joinSect, missionPool, sect, promote, promoInfo } from './sect';
@@ -47,16 +48,36 @@ function tryEvent(where: Where, p = 1): Scene | null {
 export const drainFights = () => fightLogs.splice(0, fightLogs.length);
 
 // ---------- Bế quan ----------
-export function cultivate(n: number): Scene {
+export function cultivate(n: number, stoneCount = 0): Scene {
   if (s.flags.childhood) return childScene();
   if (needEngageScene()) return engageScene();
   if (root().m === 0) return { title: 'Ngồi thiền', text: 'Ngươi ngồi cả ngày cố cảm nhận linh khí. Chỉ thấy tê chân. Phế linh căn không thể tu luyện — trừ phi tìm được kỳ ngộ hoặc Tẩy Tủy Đan.' + (passTime(0.25), '') };
   if (atBottleneck()) return { title: 'Bình cảnh', text: 'Tu vi đã chạm bình cảnh, bế quan thêm cũng vô ích. Hãy đột phá.' };
+
   const startR = `${s.r}.${s.st}.${s.flags.tang ?? 1}`;
   let total = 0;
   let turns = 0;
   const y0 = s.year;
+
+  // Hấp thu linh thạch hỗ trợ tu luyện
+  let stoneUsed = 0;
+  let stoneProgGain = 0;
+  let stoneName = '';
+  if (stoneCount > 0 && !atBottleneck()) {
+    const g = stoneForRealm(s.r);
+    stoneName = STONE_NAMES[g];
+    const val = STONE_VALUE[g];
+    const maxAfford = Math.floor(s.money / val);
+    stoneUsed = Math.max(0, Math.min(stoneCount, maxAfford));
+    if (stoneUsed > 0) {
+      s.money -= stoneUsed * val;
+      stoneProgGain = stoneUsed;
+      addProg(stoneProgGain);
+    }
+  }
+
   for (let i = 0; i < n; i++) {
+    if (atBottleneck() || s.dead) break;
     const r = cultivateTurn();
     total += r.gain;
     turns++;
@@ -65,12 +86,20 @@ export function cultivate(n: number): Scene {
     if (r.stageUp && s.body === 'thiendo' && s.r === 1 && n > 5) break; // Thiên Đố: dừng khi lên tầng mới
     const ev = tryEvent('cult', 0.07);
     if (ev) {
-      ev.text = `(Bế quan ${yearsTxt(s.year - y0)}, tu vi +${Math.round(total)}%.)\n\n` + ev.text;
+      ev.text = `(Bế quan ${yearsTxt(s.year - y0)}, tu vi +${Math.round(total)}%${stoneUsed ? `, luyện hóa ${stoneUsed} ${stoneName}` : ''}.)\n\n` + ev.text;
       return ev;
     }
     if (pendingDeathSoon() || needEngageScene()) break; // tới mười sáu tuổi: dừng để hiện định đoạt hôn ước
   }
-  let text = `Bế quan ${yearsTxt(s.year - y0)}. Tu vi tăng ${Math.round(total)}% (${Math.round(cultRate())}%/lượt).`;
+
+  let text = n > 0
+    ? `Bế quan ${yearsTxt(s.year - y0)}. Tu vi tăng ${Math.round(total)}% (${Math.round(cultRate())}%/lượt).`
+    : `Tĩnh tọa luyện hóa linh thạch.`;
+
+  if (stoneUsed > 0) {
+    text += ` Đã tiêu hao ${stoneUsed.toLocaleString('vi-VN')} viên ${stoneName}, tinh thuần linh lực giúp tu vi tăng thêm +${stoneProgGain}%.`;
+  }
+
   if (`${s.r}.${s.st}.${s.flags.tang ?? 1}` !== startR) text += ` Tinh tiến tới ${stageName()}.`;
   if (atBottleneck()) text += s.r === 0 ? ' Linh khí trong người đã đầy, có thể thử đả thông kinh mạch bước vào Luyện Khí.' : ' Đã chạm bình cảnh, có thể thử đột phá.';
   if (!s.tech && s.r === 0) text += ' (Không có công pháp, tu luyện như mò kim đáy biển. Hãy tìm một bộ công pháp.)';
