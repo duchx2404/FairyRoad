@@ -1,0 +1,2 @@
+Kết quả tu luyện đã được game tính: {{outcome}}
+Giữ đúng kết quả này. Không tự thêm phần thưởng, thay đổi cảnh giới hoặc tạo hậu quả mới.
