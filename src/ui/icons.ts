@@ -87,7 +87,7 @@ export function skillIconSvg(k: Skill | string, size = 32, dim = false): string 
   const s = typeof k === 'string' ? SKILLS[k] : k;
   if (!s) return tile('none', '#7a6a55', size, dim);
   const cs = skHue(s)?.c ?? [elColor(s.el)];
-  if (s.id === 'phapthientuongdia') { const ph = pttdPhoto(size, dim); if (ph) return ph; }
+  if (s.id === 'phapthientuongdia' || s.id === 'honnguyenphaptuong') { const ph = pttdPhoto(size, dim); if (ph) return ph; }
   return photoSvg('sk_' + s.id, cs[0], size, dim) || tile(skillShape(s), cs, size, dim);
 }
 export function techIconSvg(t: Tech | string, size = 32, dim = false): string {

@@ -202,24 +202,25 @@ export function unequip(slot: number): string {
   s.gearBag.push(g);
   return `Tháo ${g.n}.`;
 }
-/** Hỗn Độn Tàn Kiếm chưa sửa ("tàn khuyết" là trạng thái, không phải tên). */
-export const isChaosBroken = (g: Gear | null | undefined) => !!g?.grow && g.n.includes('(tàn khuyết)');
-/** Sửa Hỗn Độn Tàn Kiếm bằng Hỗn Độn Thạch: bỏ chữ tàn khuyết, tăng tỷ lệ trưởng thành và chỉ số. */
+/** Hỗn Độn Kiếm (Tàn khuyết) chưa sửa ("Tàn khuyết" là trạng thái, không phải tên). */
+export const isChaosBroken = (g: Gear | null | undefined) => !!g?.grow && /\(tàn khuyết\)/i.test(g.n);
+/** Sửa Hỗn Độn Kiếm (Tàn khuyết) bằng Hỗn Độn Thạch: trở thành Hỗn Độn Chí Bảo, tăng tỷ lệ trưởng thành và chỉ số. */
 export function repairChaosSword(uid: string): string {
   const g = [...s.gear, ...s.gearBag].find((x) => x?.uid === uid);
   if (!g || !isChaosBroken(g)) return '';
   if (!count('m:hondonthach')) return 'Cần một khối Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới.';
   removeItem('m:hondonthach', 1);
   const old = g.growMul ?? 1;
-  g.n = 'Hỗn Độn Kiếm';
+  g.n = 'Hỗn Độn Kiếm'; g.g = 12; g.q = 3;
   g.growMul = 1.8;
   g.luck += 4;
   g.cult = Math.max(g.cult, 12);
   regrowGear();
-  addLog('Hỗn Độn Thạch dung vào thân kiếm: Hỗn Độn Kiếm trở lại nguyên vẹn.', 'good');
-  return `Khối Hỗn Độn Thạch tan vào vết nứt trên thân kiếm. Kiếm rung lên một tiếng dài, những vết khuyết liền lại. Hỗn Độn Kiếm đã nguyên vẹn: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×1.8, có thêm thủ, khí vận +4, tu luyện +12%.`;
+  addLog('Hỗn Độn Thạch dung vào thân kiếm: Hỗn Độn Kiếm trở thành Hỗn Độn Chí Bảo.', 'good');
+  return `Khối Hỗn Độn Thạch tan vào vết nứt trên thân kiếm. Kiếm rung lên một tiếng dài, những vết khuyết liền lại. Hỗn Độn Kiếm đã nguyên vẹn, trở thành Hỗn Độn Chí Bảo: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×1.8, có thêm thủ, khí vận +4, tu luyện +12%.`;
 }
 export function gearLine(g: Gear): string {
+  if (g.grow) regrowGear();
   const p: string[] = [];
   if (g.atk) p.push(`Công +${fmt(g.atk)}`);
   if (g.def) p.push(`Thủ +${fmt(g.def)}`);
@@ -230,7 +231,7 @@ export function gearLine(g: Gear): string {
   if (g.grow) p.push(`Trưởng thành ×${(g.growMul ?? 1).toFixed(1)}`);
   return p.join(' · ');
 }
-export const gearGrade = (g: Gear) => gearLabel(g);
+export const gearGrade = (g: Gear) => { if (g.grow) regrowGear(); return gearLabel(g); };
 export function discard(id: string, g?: number) {
   if (id === 'x:ngocboidoi') return 'Nửa ngọc bội này luôn theo ngươi, không thể vứt bỏ.';
   removeItem(id, count(id, g), g);

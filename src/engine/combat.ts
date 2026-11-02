@@ -104,17 +104,19 @@ const BEAST_SKILLS: Record<string, Skill> = {
   gam: { id: 'gam', n: 'Gầm thét', el: null, tier: 1, k: 'atk', m: 1.6, cd: 0, d: '' },
 };
 const ELEM_BEAST_SKILL: Record<El, string> = {
-  kim: 'kimtien', moc: 'dangleo', thuy: 'thuytien', hoa: 'hoacau', tho: 'thothuan', bang: 'hanbangtien', loi: 'loiquang', phong: 'phongnhan', am: 'uanhthich', quang: 'quangkiem', yin: 'phehon', yang: 'dieunhat',
+  kim: 'kimtien', moc: 'dangleo', thuy: 'thuytien', hoa: 'hoacau', tho: 'thothuan', bang: 'hanbangtien', loi: 'loiquang', phong: 'phongnhan', am: 'uanhthich', quang: 'quangkiem', yin: 'phehon', yang: 'dieunhat', hondon: 'khaithien',
 };
 
 /** Linh lực mỗi lần thi triển chiêu thức. */
-export const skCost = (k: Skill) => Math.max(3, Math.round(2 + k.m * 2.2 + k.tier * 0.8));
+export const skCost = (k: Skill) => k.el === 'hondon'
+  ? Math.max(3, Math.round(2 + Math.min(k.m, 2.2 + effRi() * 0.35) * 2.2 + Math.min(k.tier, Math.max(1, effRi())) * 0.8))
+  : Math.max(3, Math.round(2 + k.m * 2.2 + k.tier * 0.8));
 
 export function mkFoe(spec: FoeSpec, rng: Rng = Math.random): Fighter {
   const R = (a: number, b: number) => a + rng() * (b - a);
   const P = <T,>(arr: T[]) => arr[Math.floor(rng() * arr.length)];
   const st = spec.st ?? Math.floor(R(0, 4));
-  const el: El | null = spec.el === undefined ? P(Object.keys(EL) as El[]) : spec.el;
+  const el: El | null = spec.el === undefined ? P((Object.keys(EL) as El[]).filter((e) => e !== 'hondon')) : spec.el; // hệ Hỗn Độn chỉ có ở chiêu Hỗn Nguyên Kinh
   const kind = spec.kind || 'cultivator';
   const rr = spec.dao ? spec.r : Math.min(spec.r, npcCap()); // Đại Đạo chỉ có một
   let p = npcPow(rr, st) * (spec.mult ?? 1) * R(0.9, 1.1);
@@ -317,7 +319,7 @@ export class Battle {
     let d = p.atk * m * em * this.uyMul() * Math.pow(1.5, this.burns) * daoMult({ laws: p.laws || [], daos: p.daos || [] }, { laws: f.laws || [], daos: f.daos || [] });
     if (this.contempt && this.round === 1) d *= 1.6;
     if (has('cuongchien')) d *= 1 + (1 - p.hp / p.maxHp) * 0.5;
-    d = Math.max(d * 0.15, d - f.def * 0.5) * (sk.k === 'multi' ? 3 : 1);
+    d = Math.max(d * 0.15, d - f.def * 0.5) * (sk.k === 'multi' ? 3 : 1) * (sk.all ? this.foeSide().length || 1 : 1);
     return { v: Math.round(d), k: 'dmg', em };
   }
   /** Các đòn địch có thể ra (để hiện bảng chiêu thức của địch). */
@@ -366,7 +368,7 @@ export class Battle {
   private cast(a: Fighter, d: Fighter, sk: Skill) {
     const m = a.player ? this.skMul(sk) : sk.m;
     switch (sk.k) {
-      case 'atk': this.hit(a, d, m, sk.el, sk.n); break;
+      case 'atk': if (sk.all) { const mine = a === this.p || this.allies.includes(a); for (const t of mine ? this.foeSide() : this.meSide()) this.hit(a, t, m, sk.el, sk.n); } else this.hit(a, d, m, sk.el, sk.n); break; // all: đánh toàn bộ kẻ địch
       case 'multi': for (let i = 0; i < 3 && d.hp > 0; i++) this.hit(a, d, m, sk.el, `${sk.n} (${i + 1})`); break;
       case 'dot': { const dm = this.hit(a, d, m, sk.el, sk.n); d.dot.push({ dmg: Math.max(1, Math.round(dm * 0.6)), turns: 3 }); break; }
       case 'heal': {
@@ -432,7 +434,7 @@ export class Battle {
         if (!sk || !this.canUse(sk)) return false;
         this.mp -= skCost(sk);
         this.used.push(sk.id);
-        if (sk.id === 'phapthientuongdia') this.pttd = true;
+        if (sk.id === 'phapthientuongdia' || sk.id === 'honnguyenphaptuong') this.pttd = true;
         this.cast(this.p, this.foe, sk);
         break;
       }

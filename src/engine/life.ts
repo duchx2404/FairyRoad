@@ -1,6 +1,6 @@
 import { worldDefinitions } from '../data/local-items';
 // Đầu thai, cái chết, điểm số, luân hồi và thành tựu.
-import { kmSyncSkills } from './kinhmach';
+import { kmSyncSkills, kmFillNew, kmAutoAll } from './kinhmach';
 import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, ORIGINS, PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, HON_DON_ROOT, hiddenRootKind, REALMS, STAGES, type El, type StatKey } from '../data/core';
 import { BEASTS, LOCS, LOC_LIST, SECTS, RK, REGIONS, applyWorld, beastRoot } from '../data/world';
 import { mkGear } from '../data/items';
@@ -9,7 +9,7 @@ import { joinSect } from './sect';
 import { TECHS, MAX_SKILLS } from '../data/items';
 import { s, meta, setState, save, saveMeta, codexAdd, type State, type LifeRec } from './state';
 import { setLoc, mkNpc, mkName, addNpc, mark, addLog, clearPendingDeath, friends, renameNpc, holyNpcName } from './core';
-import { root, age, rootLabel, powerScore, stageName } from './char';
+import { root, age, rootLabel, powerScore, stageName, regrowGear } from './char';
 import { hooks } from './bus';
 import { mkBrideBio } from './bride';
 import { ch, pick, ri, shuffle, uid, wpick, clamp } from '../core/util';
@@ -316,7 +316,7 @@ export function newLife(o: NewLifeOpts) {
     fam.how = `${fam.g === 'm' ? 'Phụ thân' : 'Mẫu thân'}, trưởng lão Kết Đan của ${clan.n}`;
     const anc = mkNpc({ r: clan.ancestor, st: 2, tag: 'kin', rel: 50, sect: clan.patron, el: clan.el[0], how: `Lão tổ ${clan.n}, bế quan đã lâu`, age: Math.round(REALMS[clan.ancestor].life * 0.6), talent: 0.6 });
     anc.name = withSur(clan.sur, anc.name);
-    if (org.id === 'diep_hondon') {
+    if (org.id === 'diep_hondon') { // dòng chính Hỗn Độn
       s.flags.hondonBlood = true;
       s.flags.childhood = true; // 1–6 tuổi: chưa tu luyện
       s.flags.dhHeir = true;
@@ -351,11 +351,13 @@ export function newLife(o: NewLifeOpts) {
       if (grand) mark('Đại hôn ước: tất cả thánh địa và thế gia Trung Vực đều định thân với ngươi');
       s.flags.dhBrides = ids;
       // tiên kiếm tàn khuyết, lớn theo tu vi
-      s.gear[0] = { uid: uid(), slot: 0, n: 'Hỗn Độn Tàn Kiếm (tàn khuyết)', g: 6, q: 3, lv: 0, el: null, atk: 0, def: 0, hp: 0, cult: 0, luck: 2, cap: 0, refined: true, grow: true };
+      s.gear[0] = { uid: uid(), slot: 0, n: 'Hỗn Độn Kiếm (Tàn khuyết)', g: 1, q: 0, lv: 0, el: null, atk: 0, def: 0, hp: 0, cult: 0, luck: 2, cap: 0, refined: true, grow: true };
       anc.how = 'Lão tổ Diệp thị Hoang Cổ — người duy nhất nhận ra huyết mạch Hỗn Độn trong người ngươi';
       fam.how = `${fam.g === 'm' ? 'Dưỡng phụ' : 'Dưỡng mẫu'}, gia chủ Diệp thị Hoang Cổ — người nhặt ngươi từ chiếc nôi rơi xuống từ khe nứt không gian`;
       fam.r = 2; fam.life = 220;
     } else if (clan.id === 'diep') {
+      s.flags.hondonBlood = true;
+      s.gear[0] = { uid: uid(), slot: 0, n: 'Hỗn Độn Kiếm (Tàn khuyết)', g: 1, q: 0, lv: 0, el: null, atk: 0, def: 0, hp: 0, cult: 0, luck: 2, cap: 0, refined: true, grow: true };
       // gia tộc suy tàn: lão tổ cuối cùng sắp tọa hóa, cha mẹ chỉ còn Trúc Cơ
       anc.how = 'Lão tổ cuối cùng của Diệp thị Hoang Cổ, thọ nguyên sắp cạn';
       anc.born = s.year - Math.round(anc.life * 0.94);
@@ -448,18 +450,18 @@ export function newLife(o: NewLifeOpts) {
     s.tech = 'batcuu';
     s.techM = 0;
     for (const k of TECHS.batcuu.skills) if (!s.known.includes(k)) { s.known.push(k); if (s.skills.length < MAX_SKILLS) s.skills.push(k); }
-    if (org.id === 'diep_hondon') {
-      // dòng chính Hỗn Độn: công pháp trấn tộc Cửu Chuyển Huyền Công làm công pháp chính
-      s.tech = 'cuuchuyen';
-      for (const k of TECHS.cuuchuyen.skills) if (!s.known.includes(k)) s.known.push(k);
-      s.skills = [...TECHS.cuuchuyen.skills];
+    if (org.id === 'diep_hondon' || org.clanId === 'diep') { // chọn Diệp gia: khởi đầu Hỗn Nguyên Kinh
+      // Diệp gia: Hỗn Nguyên Kinh mang 3 chiêu Hỗn Độn, phẩm theo trần giới
+      s.flags.hondonBlood = true; s.tech = 'honnguyenkinh';
+      for (const k of TECHS.honnguyenkinh.skills) if (!s.known.includes(k)) s.known.push(k);
+      s.skills = [...TECHS.honnguyenkinh.skills];
     }
     s.flags.coPhu = true;
     s.bag.push({ id: 'x:cophu', n: 1 }, { id: 'm:phuchi', n: 6 }, { id: 'm:chusa', n: 6 }, { id: 'm:yeubiphuchi', n: 4 });
     if (s.craft.talis < 1) s.craft.talis = 1;
     for (const r of ['trantaphu', 'thanhanhphu', 'hoaphu', 'kimcangphu', 'hoixuanphu']) if (!s.recipes.includes(r)) s.recipes.push(r);
     addLog(org.id === 'diep_hondon'
-      ? 'Ngày ngươi tròn một tuổi, lão tổ đặt tay lên trán ngươi rồi rụt lại như chạm phải lửa. "Huyết mạch này… không phải của Thương Lan." Trong người ngươi, một bộ công pháp mà Thương Lan chưa ai từng thấy tự vận chuyển — Cửu Chuyển Huyền Công, công pháp trấn tộc của Diệp gia Hỗn Độn. Bát Cửu Huyền Công của Diệp thị Hoang Cổ cũng chỉ là một nhánh tách ra từ nó. Lão trao cho ngươi bí tịch chế phù thượng cổ — và tấm ngọc bội Hỗn Độn đã nằm trong nôi của ngươi.'
+      ? 'Ngày ngươi tròn một tuổi, lão tổ đặt tay lên trán ngươi rồi rụt lại như chạm phải lửa. "Huyết mạch này… không phải của Thương Lan." Trong người ngươi, một bộ công pháp chí cao tự vận chuyển — Hỗn Nguyên Kinh, công pháp trấn tộc của Diệp gia Hỗn Độn. Lão trao cho ngươi bí tịch chế phù thượng cổ — cùng thanh Hỗn Độn Kiếm (Tàn khuyết) và tấm ngọc bội Hỗn Độn đã nằm trong nôi của ngươi.'
       : org.clanId === 'diep'
       ? 'Mười tuổi. Lão tổ gọi ngươi vào từ đường, đặt tay lên trán ngươi. Một luồng nhiệt chạy qua bảy mươi hai huyệt khiếu — Bát Cửu Huyền Công, chỉ máu họ Diệp mới mở được. Rồi lão đưa ngươi cuốn da thú cũ: "Bí tịch chế phù thượng cổ. Nhà ta mất hết, chỉ còn giữ được hai thứ này."'
       : 'Mười tuổi. Trong tay nải cha mẹ để lại có một cuốn da thú cũ khắc chữ "Diệp" và một tấm ngọc giản. Ngươi vừa chạm vào, một luồng nhiệt chạy qua bảy mươi hai huyệt khiếu — như có thứ gì trong máu vừa thức dậy.', 'good');
@@ -469,6 +471,8 @@ export function newLife(o: NewLifeOpts) {
   if (org.id === 'diep_hondon') addLog('Một tuổi. Ngươi lớn lên ở Diệp gia Tổ Địa, là con nuôi của gia chủ và người kế thừa đã được chỉ định. Các vị thánh nữ có hôn ước với ngươi đều sinh cùng năm.');
   else if (hiddenRootKind(o.fate.root.k)) addLog('Mười tuổi. Thầy bói đặt tay ngươi lên đá trắc linh: không một tia sáng. "Phế linh căn." Cả làng thở dài. Chỉ mình ngươi cảm thấy, trong người có những dòng chảy nhỏ đang lặng lẽ xoay vòng.');
   else addLog(`Mười tuổi. ${root().n}. ${o.fate.root.k === 0 ? 'Thầy bói trong làng lắc đầu: "Đứa nhỏ này không có tiên duyên."' : 'Người trong làng nói ngươi có tướng lạ.'}`);
+  regrowGear();
+  kmFillNew();
   save();
 }
 
@@ -551,6 +555,8 @@ export function ascend(): string {
   setLoc(towns[Math.floor(Math.random() * towns.length)].id);
   addLog(`Phi thăng ${to}. Người quen, tông môn, ân oán ở hạ giới — tất cả ở lại phía sau.`, 'good');
   addLog(`Pháp tắc ${to} ép thân thể ngươi về hình hài một tuổi. Ký ức, tâm cảnh, ngộ tính vẫn nguyên vẹn (linh hồn ${Math.floor(s.year - s.flags.soulBorn)} tuổi, đã sống ${Math.floor(s.flags.lifeLived)} năm ở các giới dưới). Thọ nguyên tính lại từ đầu — và khác hài nhi thường, ngươi tu luyện được ngay: đặc quyền phi thăng.`, 'good');
+  regrowGear();
+  if (s.flags.hondonBlood) kmAutoAll();
   { const drop = kmSyncSkills(); if (drop.length) addLog(`Kinh mạch tu lại từ đầu, chỉ còn chỗ cho vài chiêu. Tạm cất: ${drop.join(', ')}.`); }
   if (s.flags.hondonBlood && w >= 5) {
     s.stats.ngo += 2; s.stats.can += 2;
@@ -594,6 +600,8 @@ function finish(cause: string) {
   meta.karma += karma;
   meta.karmaTotal += karma;
   meta.worldYear = Math.floor(s.year);
+  regrowGear();
+  kmFillNew();
   save();
 }
 

@@ -64,7 +64,7 @@ export function joinSect(id: string, rank = -1): string {
   setLoc(sc.loc);
   const t = TECHS[sc.tech];
   let txt = `Ngươi trở thành ${rankLabel(startRank, sc, s.g).toLowerCase()} của ${sc.n} (${SECT_TIER[sc.tier]}). Môn quy: "${sc.motto}"`;
-  if (!s.tech || TECHS[s.tech].tier <= t.tier) {
+  if (!s.tech || (!TECHS[s.tech]?.grow && TECHS[s.tech].tier <= t.tier)) {
     s.tech = sc.tech;
     s.techM = 0;
     for (const k of t.skills) if (!s.known.includes(k)) { s.known.push(k); s.skills.push(k); }

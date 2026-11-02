@@ -23,6 +23,14 @@ export function normalizeWorldItems() {
     recipes: s.recipes, tamphap: s.flags.tamphap, tamActive: s.flags.tamActive, phapquyet: s.flags.phapquyet,
   }));
   const key = (kind: string, id: string) => localItemId(kind + ':' + id, w).slice(kind.length + 1);
+  if (s.flags.hondonBlood || s.origin === 'diep_hondon' || s.origin === 'thegia_diep') {
+    s.flags.hondonBlood = true;
+    if (!s.tech || s.tech.endsWith('cuuchuyen')) s.tech = 'honnguyenkinh';
+    for (const sk of ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong']) {
+      if (!s.known.includes(sk)) s.known.push(sk);
+      if (!s.skills.includes(sk) && s.skills.length < 4) s.skills.push(sk);
+    }
+  }
   if (s.tech) s.tech = key('cp', s.tech);
   s.known = [...new Set(s.known.map(id => key('sk', id)))];
   s.skills = [...new Set(s.skills.map(id => key('sk', id)))];
@@ -35,6 +43,6 @@ export function normalizeWorldItems() {
   }));
   s.recipes = [...new Set(s.recipes.map(id => localRecipeId(id, w)))];
   for (const item of s.bag) item.id = localItemId(item.id, w);
-  for (const g of [...s.gear, ...s.gearBag]) if (g) limitGear(g, w);
+  for (const g of [...s.gear, ...s.gearBag]) if (g) { if (g.grow && g.n.startsWith('Hỗn Độn Tàn Kiếm')) g.n = 'Hỗn Độn Kiếm (Tàn khuyết)'; limitGear(g, w); }
   for (const n of s.npcs) normalizeNpcItems(n, w);
 }

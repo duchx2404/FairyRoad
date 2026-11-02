@@ -1,4 +1,5 @@
 import { worldDefinitions } from '../data/local-items';
+import { setGrowStateReader } from '../data/treasure-grades';
 import { localItemId, limitGear } from '../data/local-items';
 import { PHAM_BONUS } from '../data/core';
 import { slots } from './slots';
@@ -8,7 +9,7 @@ import { WORLD, RMAX, worldMult, worldLife, TANG_T, DAO_CO, BODIES, REALMS, ROOT
 import { LOCS, SECTS } from '../data/world';
 import {
   TAMPHAP, tamGrade, tamEffect, tamPrice, TECHS, techSpeed, techPow, pillGrade, talisGrade, techGrade, skillGrade, HERBS, PILLS, MATS, TALIS, SKILLS, SPECIALS, PILL_GRADE, GRADE_MULT, BAG_CAP,
-  herbPrice, pillPrice, matPrice, talisPrice, techPrice, skillPrice, gradeLabel, type Gear, type Tech,
+  herbPrice, pillPrice, matPrice, talisPrice, techPrice, skillPrice, gradeLabel, artGradeLabel, type Gear, type Tech,
 } from '../data/items';
 import { s, codexAdd, type BagItem } from './state';
 import { clamp } from '../core/util';
@@ -168,12 +169,13 @@ export function cultRate(): number {
 
 // ---------- Chiến lực ----------
 /** Tiên khí tàn khuyết: chỉ số tính lại theo cảnh giới (tương đương) và giới hiện tại. */
+setGrowStateReader(() => ({ r: s ? effRi() : 0, st: s?.st ?? 0, w: s?.world ?? WORLD.lv }));
 function growGear(g: Gear) {
-  limitGear(g, s.world ?? 0);
+  const oldG = g.g, oldQ = g.q; limitGear(g, s.world ?? 0);
   const lv = Math.max(1, effRi());
   const m = g.growMul ?? 1;
-  if (g.lv === lv && g.gw === WORLD.lv && (g.gm ?? 1) === m) return;
-  const base = (REALMS[lv].pow * 0.25 * (1 + g.g * 0.45) + 2) * 1.6 * worldMult();
+  if (g.lv === lv && g.gw === WORLD.lv && (g.gm ?? 1) === m && g.g === oldG && g.q === oldQ && g.atk > 0) return;
+  const base = (REALMS[lv].pow * 0.25 * (1 + g.g * 0.45) + 2) * (1 + (g.q ?? 0) * 0.12) * 1.3 * worldMult();
   g.atk = Math.round(base * 1.2 * m);
   g.hp = Math.round(base * 1.5 * m);
   g.def = Math.round(base * 0.5 * (m - 1)); // bản đã sửa mới có thủ
@@ -216,6 +218,7 @@ export function skSource(id: string): Tech | null {
 export function skSrcMul(id: string): number {
   const sk = SKILLS[id], src = skSource(id);
   if (!sk || !src) return 1;
+  if (src.grow) { setGrowStateReader(() => ({ r: s ? effRi() : 0, st: s?.st ?? 0, w: s?.world ?? WORLD.lv })); return 1 + (src.tier - 1) * 0.08 + (src.pq ?? 0) * 0.03; }
   return Math.max(0.7, Math.min(1.6, 1 + 0.12 * (src.tier - sk.tier) + 0.04 * (src.pq ?? 0)));
 }
 /** Giai/phẩm hiển thị của một võ công ngươi đã học: theo công pháp truyền thụ (không thấp hơn bản gốc). */
@@ -225,7 +228,7 @@ export function skEff(id: string): { tier: number; pq: number } {
   if (!src || src.tier < sk.tier || (src.tier === sk.tier && (src.pq ?? 0) <= (sk.pq ?? 0))) return { tier: sk.tier, pq: sk.pq ?? 0 };
   return { tier: src.tier, pq: src.pq ?? 0 };
 }
-export const skGradeOf = (id: string) => { const e = skEff(id); return gradeLabel(e.tier, e.pq); };
+export const skGradeOf = (id: string) => { const e = skEff(id); return artGradeLabel(e.tier, e.pq); };
 export const atkOf = () => Math.round((basePow() + gearSum('atk')) * (1 + (pqSum('atk') + clSum('atk')) / 100) * (1 + slots.kmAtk()));
 export const defOf = () => Math.round((basePow() * 0.35 * ((s.tech && TECHS[s.tech].def) || 1) + gearSum('def')) * (1 + (pqSum('def') + clSum('def')) / 100));
 export function maxHp(): number {
@@ -343,7 +346,7 @@ export function removeItem(id: string, n = 1, g?: number): boolean {
   return true;
 }
 export function addGear(g: Gear): boolean {
-  limitGear(g, s.world ?? 0);
+  const oldG = g.g, oldQ = g.q; limitGear(g, s.world ?? 0);
   if (bagFree() <= 0) return false;
   s.gearBag.push(g);
   return true;

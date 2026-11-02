@@ -5,8 +5,8 @@ await import('../src/data/worlds');
 const { newLife, rollFate } = await import('../src/engine/life');
 const ST = await import('../src/engine/state');
 const { WORLD } = await import('../src/data/core');
-const { worldPack, applyWorld, SECTS, LOCS } = await import('../src/data/world');
-const { DECLINING_SCHOOLS, branchId, legacyRoleKey } = await import('../src/data/declining-schools');
+const { worldPack, applyWorld, SECTS, LOCS, ISLANDS } = await import('../src/data/world');
+const { DECLINING_SCHOOLS, SCHOOL_VUC, SCHOOL_SEAT, branchId, seatId, legacyRoleKey } = await import('../src/data/declining-schools');
 const { tcPeople, recruitPerson } = await import('../src/engine/tienco');
 const { treasureBoard, toolBoard } = await import('../src/engine/bang');
 const { LEGENDARY_TREASURES, TREASURE_TIERS, treasureManifest, worldTreasureCap, worldArtCap } = await import('../src/data/treasure-grades');
@@ -28,7 +28,15 @@ for (let w = 0; w < 4; w++) {
   const people = tcPeople();
   for (const school of Object.keys(DECLINING_SCHOOLS) as (keyof typeof DECLINING_SCHOOLS)[]) {
     const sc = worldPack(w).sects[branchId(w, school)];
-    check(sc && LOCS[sc.loc], `branch visible in world ${w}: ${school}`);
+    const loc = LOCS[sc.loc], seat = LOCS[seatId(w, school)];
+    check(sc && loc && seat && seat.n === SCHOOL_SEAT[school].n, `branch and seat visible in world ${w}: ${school}`);
+    check(worldPack(w).regions[loc.reg]?.vuc === SCHOOL_VUC[school] && worldPack(w).regions[seat.reg]?.vuc === SCHOOL_VUC[school], `branch and seat in canonical vuc (${SCHOOL_VUC[school]}): ${school}`);
+    check(loc.chau === seat.chau && Math.hypot(loc.x - seat.x, loc.y - seat.y) <= 180, `branch next to seat in same chau in world ${w}: ${school}`);
+    if (school === 'jie') {
+      const m = worldPack(w).landmass.dong;
+      check(loc.island && seat.island && seat.x > m.x + m.rx, `Kim Ngao Dao and Tiet Giao are East Sea islands in world ${w}`);
+      check(ISLANDS.some(([x, y]) => x === seat.x && y === seat.y) && ISLANDS.some(([x, y]) => x === loc.x && y === loc.y), `island geometry matches in world ${w}`);
+    }
     check(TECHS[sc.tech].tier < 5, 'declining branch technique below divine');
     const members = people.filter(p => p.world === w && p.alive && p.sect === sc.n);
     check(members.length >= 1 && members.length <= 3, 'very few branch members');
@@ -37,6 +45,10 @@ for (let w = 0; w < 4; w++) {
       if (ware.gear) check(ware.gear.g <= 4, 'branch gear cap');
       if (ware.id.startsWith('cp:')) check(TECHS[ware.id.slice(3)].tier <= 4, 'branch book cap');
     }
+  }
+  const locList = (Object.keys(DECLINING_SCHOOLS) as (keyof typeof DECLINING_SCHOOLS)[]).map(k => LOCS[branchId(w, k)]);
+  for (let a = 0; a < locList.length; a++) for (let b = a + 1; b < locList.length; b++) {
+    check(Math.hypot(locList[a].x - locList[b].x, locList[a].y - locList[b].y) > 200, `declining schools well separated on map in world ${w}`);
   }
   for (let i = 0; i < 20; i++) recruitPerson(w);
   for (const school of Object.keys(DECLINING_SCHOOLS) as (keyof typeof DECLINING_SCHOOLS)[]) check(tcPeople().filter(p => p.world === w && p.alive && p.sect === DECLINING_SCHOOLS[school].name).length <= 3, 'rank refill cannot flood branches');

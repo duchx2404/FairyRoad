@@ -17,6 +17,36 @@ export const WORLD_ART_CAP = [4, 5, 6, 7, 8, 9] as const;
 export const worldArtCap = (w = WORLD.lv): number => WORLD_ART_CAP[Math.max(0, Math.min(5, w))];
 export const localTreasureGrade = (g: number, w = WORLD.lv) => Math.max(0, Math.min(g, worldTreasureCap(w)));
 
+let _growState: () => { r: number; st: number; w: number } = () => ({ r: 0, st: 0, w: WORLD.lv });
+export function setGrowStateReader(fn: () => { r: number; st: number; w: number }) { _growState = fn; }
+
+/** Phẩm cấp công pháp/thuật pháp trưởng thành theo người dùng: bắt đầu từ Hoàng giai hạ phẩm (1, 0), tăng theo cảnh giới, bị chặn bởi trần giới hiện tại. */
+export function growArtGrade(w?: number, r?: number, st?: number): { tier: number; pq: number } {
+  const cur = _growState();
+  const ww = w ?? cur.w, rr = r ?? cur.r, ss = Math.max(0, Math.min(3, st ?? cur.st));
+  const cap = worldArtCap(ww);
+  const floor = ww > 0 ? worldArtCap(ww - 1) : 0;
+  let tier = Math.max(1, rr);
+  let pq = rr <= 0 ? 0 : ss;
+  if (tier < floor) { tier = floor; pq = 3; }
+  if (tier > cap) { tier = cap; pq = 3; }
+  return { tier, pq };
+}
+
+/** Phẩm cấp pháp bảo trưởng thành theo người dùng: bắt đầu từ Hoàng giai hạ phẩm (1, 0), tăng theo cảnh giới, bị chặn bởi trần giới hiện tại (bản tàn khuyết tối đa Hỗn Độn Linh Bảo cực phẩm 11, 3). */
+export function growTreasureGrade(broken: boolean, w?: number, r?: number, st?: number): { g: number; q: number } {
+  if (!broken) return { g: 12, q: 3 };
+  const cur = _growState();
+  const ww = w ?? cur.w, rr = r ?? cur.r, ss = Math.max(0, Math.min(3, st ?? cur.st));
+  const cap = Math.min(worldTreasureCap(ww), 11);
+  const floor = ww > 0 ? Math.min(worldTreasureCap(ww - 1), 11) : 0;
+  let g = Math.max(1, rr);
+  let q = rr <= 0 ? 0 : ss;
+  if (g < floor) { g = floor; q = 3; }
+  if (g > cap) { g = cap; q = 3; }
+  return { g, q };
+}
+
 export interface LegendaryTreasure {
   id: string;
   name: string;

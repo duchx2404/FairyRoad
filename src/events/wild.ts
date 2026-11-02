@@ -1864,7 +1864,7 @@ register([
   },
 ]);
 
-// ======================= Hỗn Độn giới: Hỗn Độn Thạch (sửa Hỗn Độn Tàn Kiếm) =======================
+// ======================= Hỗn Độn giới: Hỗn Độn Thạch (sửa Hỗn Độn Kiếm (Tàn khuyết)) =======================
 /** Hỗn Độn Thú canh đá: luôn Hợp Đạo sơ kỳ, không theo cấp nơi đứng. */
 const chaosGuard = (mult: number): FoeSpec => ({ ...yeuThu(LV(), mult), name: 'Hỗn Độn Thú', r: REALMS.findIndex((x) => x.n === 'Hợp Đạo'), st: 0 });
 const chaosSwordBroken = () => [...s.gear, ...s.gearBag].some((g) => isChaosBroken(g));

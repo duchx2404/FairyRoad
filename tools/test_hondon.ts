@@ -61,7 +61,51 @@ for (let i = 0; i < N; i++) {
 }
 console.log(`=== ${N} lần thử (chọn "${process.env.FIGHT ? 'tự đánh' : 'kiếm dẫn đường'}") === lấy được đá: ${got} · thua/chạy: ${lost} · tử trận: ${died}`);
 
-// ===== Luật Đại Đạo chỉ có một =====
+// ===== Kiểm tra Hỗn Độn Kiếm (Tàn khuyết) & Hỗn Nguyên Kinh =====
+{
+  const { TECHS, SKILLS, skillEffect, artGradeLabel, gearLabel } = await import('../src/data/items');
+  const { kmCalc } = await import('../src/engine/kinhmach');
+  const { Battle, mkFoe } = await import('../src/engine/combat');
+  const org = ORIGINS.find((o) => o.id === 'diep_hondon')!;
+  life.newLife({ name: 'Diệp Thần', g: 'm', origin: org.id, fate: life.fitRoot(life.rollFate(false, 'm'), org), perks: [] });
+  const s = ST.s;
+  const sw = s.gear[0]!;
+  if (sw.n !== 'Hỗn Độn Kiếm (Tàn khuyết)') throw new Error(`Tên kiếm sai: ${sw.n}`);
+  if (s.tech !== 'honnguyenkinh') throw new Error(`Công pháp sai: ${s.tech}`);
+  for (const id of ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong']) {
+    if (!s.known.includes(id) || !s.skills.includes(id)) throw new Error(`Thiếu chiêu: ${id}`);
+    const sk = SKILLS[id];
+    if (sk.el !== 'hondon' || !sk.all) throw new Error(`Thuộc tính/AoE sai cho ${id}: el=${sk.el}, all=${sk.all}`);
+  }
+  const km = kmCalc();
+  const khacCount = km.links.filter((l) => l.k === 'khac').length;
+  if (khacCount > 0) throw new Error(`Kinh mạch bị nghịch: ${khacCount}`);
+  console.log(`\n[Kiểm tra khởi đầu] Kiếm: ${sw.n} (${artGradeLabel(sw.g, sw.q)}) · Công pháp: ${TECHS[s.tech].n} (${artGradeLabel(TECHS[s.tech].tier, TECHS[s.tech].pq)}) · Kinh mạch: ${Object.keys(km.cells).length}/${km.P.length} mảnh đã xếp (${km.used} huyệt), nghịch=${khacCount}`);
+  if (sw.g !== 1 || sw.q !== 0) throw new Error(`Kiếm không bắt đầu ở Hoàng giai hạ phẩm: g=${sw.g}, q=${sw.q}`);
+  if (TECHS[s.tech].tier !== 1 || TECHS[s.tech].pq !== 0) throw new Error(`Hỗn Nguyên Kinh không bắt đầu ở Hoàng giai hạ phẩm: tier=${TECHS[s.tech].tier}, pq=${TECHS[s.tech].pq}`);
+  const expectedSwordGrades = [4, 5, 6, 9, 10, 11];
+  const expectedArtTiers = [4, 5, 6, 7, 8, 9];
+  for (let w = 0; w <= LAST_WORLD; w++) {
+    if (w > 0) life.ascend();
+    s.r = 9 + w * 2; s.st = 3; // tu tới đỉnh giới hiện tại để chạm trần phẩm của giới
+    const g = s.gear[0]!;
+    const t = TECHS[s.tech];
+    console.log(`  Giới ${w} (${worldName(w)}): ${g.n} [${gearLabel(g)} · ${gearLine(g)}] | ${t.n} [${artGradeLabel(t.tier, t.pq)}] | Chiêu: ${SKILLS.honnguyenkhaithien.n} [${artGradeLabel(SKILLS.honnguyenkhaithien.tier, SKILLS.honnguyenkhaithien.pq)} · ${skillEffect(SKILLS.honnguyenkhaithien)}]`);
+    if (g.g !== expectedSwordGrades[w] || g.q !== 3) throw new Error(`Phẩm kiếm sai ở giới ${w}: g=${g.g}, q=${g.q}`);
+    if (t.tier !== expectedArtTiers[w] || t.pq !== 3) throw new Error(`Phẩm công pháp sai ở giới ${w}: tier=${t.tier}, pq=${t.pq}`);
+    for (const id of ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong']) {
+      if (SKILLS[id].tier !== expectedArtTiers[w] || SKILLS[id].pq !== 3) throw new Error(`Phẩm chiêu ${id} sai ở giới ${w}`);
+    }
+  }
+  // Kiểm tra AoE đánh toàn bộ kẻ địch
+  const b = new Battle({ name: 'Địch 1', r: s.r, mult: 100 }, { group: [{ name: 'Địch 2', r: s.r, mult: 100 }, { name: 'Địch 3', r: s.r, mult: 100 }] }, 42);
+  const allFoes = [b.foe, ...b.foes];
+  const hpBefore = allFoes.map((f) => f.hp);
+  b.do({ t: 'sk', id: 'honnguyenkhaithien' });
+  const hpAfter = allFoes.map((f) => f.hp);
+  if (!hpAfter.every((hp, idx) => hp < hpBefore[idx])) throw new Error(`Chiêu AoE không trúng toàn bộ kẻ địch: ${hpBefore} -> ${hpAfter}`);
+  console.log(`  AoE 3 mục tiêu: HP ${hpBefore.join('/')} → ${hpAfter.join('/')} (OK)`);
+}
 {
   const { beastFoe, mkFoe } = await import('../src/engine/combat');
   const { mkNpc } = await import('../src/engine/core');

@@ -370,7 +370,7 @@ function bagPanel(): HTMLElement[] {
   }
   return out;
 }
-/** Nút sửa Hỗn Độn Tàn Kiếm: cần Hỗn Độn Thạch trong túi. */
+/** Nút sửa Hỗn Độn Kiếm (Tàn khuyết): cần Hỗn Độn Thạch trong túi. */
 function repairBtn(uid: string, act: (m: string) => void) {
   const ok = count('m:hondonthach') > 0;
   return btn('Sửa', () => act(repairChaosSword(uid)), 'small prime', { dis: !ok, title: ok ? 'Dùng một Hỗn Độn Thạch để sửa kiếm' : 'Cần Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới' });

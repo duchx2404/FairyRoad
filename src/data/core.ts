@@ -1,6 +1,6 @@
 // Dữ liệu nền: ngũ hành, cảnh giới, linh căn, thể chất, thiên phú, xuất thân, tên.
 
-export type El = 'kim' | 'moc' | 'thuy' | 'hoa' | 'tho' | 'bang' | 'loi' | 'phong' | 'am' | 'quang' | 'yin' | 'yang';
+export type El = 'kim' | 'moc' | 'thuy' | 'hoa' | 'tho' | 'bang' | 'loi' | 'phong' | 'am' | 'quang' | 'yin' | 'yang' | 'hondon';
 
 export const EL: Record<El, { n: string; c: string }> = {
   kim: { n: 'Kim', c: '#a8862f' },
@@ -15,6 +15,7 @@ export const EL: Record<El, { n: string; c: string }> = {
   quang: { n: 'Quang', c: '#c49a2c' },
   yin: { n: 'Âm', c: '#2a2a3a' },
   yang: { n: 'Dương', c: '#e0a030' },
+  hondon: { n: 'Hỗn Độn', c: '#a886d8' },
 };
 export const BASIC_EL: El[] = ['kim', 'moc', 'thuy', 'hoa', 'tho'];
 export const VARIANT_EL: El[] = ['bang', 'loi', 'phong', 'am', 'quang'];
@@ -39,14 +40,15 @@ const KHAC: Record<El, El[]> = {
   quang: ['am', 'bang'],
   yin: ['yang', 'am', 'quang'],
   yang: ['yin', 'am', 'quang'],
+  hondon: [],
 };
 /** a sinh b (tương sinh) — công pháp hệ được sinh vẫn tu được, chậm hơn chút. */
 export const SINH: Partial<Record<El, El>> = { kim: 'thuy', thuy: 'moc', moc: 'hoa', hoa: 'tho', tho: 'kim' };
 
 export function elMult(att: El | null | undefined, def: El | null | undefined): number {
-  if (!att || !def) return 1;
-  if (KHAC[att].includes(def)) return 1.5;
-  if (KHAC[def].includes(att)) return 0.75;
+  if (!att || !def || att === 'hondon' || def === 'hondon') return 1;
+  if (KHAC[att]?.includes(def)) return 1.5;
+  if (KHAC[def]?.includes(att)) return 0.75;
   return 1;
 }
 export const khacOf = (e: El) => KHAC[e];
@@ -399,7 +401,7 @@ for (const o of ORIGINS) {
 {
   const d = ORIGINS.find((o) => o.id === 'thegia_diep')!;
   d.n = 'Đích {tu} Diệp thị Hoang Cổ';
-  d.d += ' Khởi đầu có truyền thừa huyết mạch: Bát Cửu Huyền Công và bí tịch chế phù thượng cổ.';
+  d.d += ' Khởi đầu mang Hỗn Nguyên Kinh, Hỗn Độn Kiếm (Tàn khuyết) lớn theo tu vi và bí tịch chế phù thượng cổ.';
   d.gearG = 2;
   d.stat = { ngo: 1, can: 1, tam: 1 };
   d.karma = 120;
@@ -411,7 +413,7 @@ ORIGINS.push({
   loc: 'diepgia',
   clan: 'Diệp',
   clanId: 'diep',
-  d: 'Đêm ngươi ra đời, Hư Không Liệt Cốc nứt toác, một chiếc nôi gỗ Hỗn Độn rơi xuống Thương Lan. Diệp thị Hoang Cổ nhặt về nuôi; ngọc bội trong nôi cho thấy ngươi là dòng chính Diệp gia ở Hỗn Độn, gốc của mọi người mang họ Diệp. Gia chủ nhận ngươi làm con nuôi, chỉ định làm người kế thừa, định sẵn hôn ước với thánh nữ của ít nhất ba thánh địa — có khi là tất cả thánh địa và thế gia Trung Vực. Bắt đầu từ năm một tuổi: tới sáu tuổi chưa thể tu luyện, chỉ lớn lên cùng các thánh nữ. Sáu tuổi thức tỉnh linh căn; gia nhập tông môn / đại hoàng triều thì các vị hôn thê gửi thư chúc mừng; mười sáu tuổi các hôn ước được định đoạt. Mang theo Cửu Chuyển Huyền Công (Tiên giai), Bát Cửu Huyền Công, cổ phù, một thanh tiên kiếm tàn khuyết lớn theo tu vi, và bổng lộc hằng tháng của gia tộc.',
+  d: 'Đêm ngươi ra đời, Hư Không Liệt Cốc nứt toác, một chiếc nôi gỗ Hỗn Độn rơi xuống Thương Lan. Diệp thị Hoang Cổ nhặt về nuôi; ngọc bội trong nôi cho thấy ngươi là dòng chính Diệp gia ở Hỗn Độn, gốc của mọi người mang họ Diệp. Gia chủ nhận ngươi làm con nuôi, chỉ định làm người kế thừa, định sẵn hôn ước với thánh nữ của ít nhất ba thánh địa — có khi là tất cả thánh địa và thế gia Trung Vực. Bắt đầu từ năm một tuổi: tới sáu tuổi chưa thể tu luyện, chỉ lớn lên cùng các thánh nữ. Sáu tuổi thức tỉnh linh căn; gia nhập tông môn / đại hoàng triều thì các vị hôn thê gửi thư chúc mừng; mười sáu tuổi các hôn ước được định đoạt. Mang theo Hỗn Nguyên Kinh, Bát Cửu Huyền Công, cổ phù, Hỗn Độn Kiếm (Tàn khuyết) lớn theo tu vi, và bổng lộc hằng tháng của gia tộc.',
   money: 10500,
   stat: { ngo: 5, can: 5, van: 10, tam: 5 },
   karma: 300,

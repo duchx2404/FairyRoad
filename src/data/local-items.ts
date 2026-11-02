@@ -1,7 +1,7 @@
 import { WORLD } from './core';
 import { TECHS, SKILLS, TAMPHAP, PILLS, TALIS, pillGiai, type Gear } from './items';
 import { PHAPQUYET } from './spirit';
-import { worldArtCap, worldTreasureCap } from './treasure-grades';
+import { worldArtCap, worldTreasureCap, growTreasureGrade } from './treasure-grades';
 
 const tables = { cp: TECHS, sk: SKILLS, tp: TAMPHAP, fq: PHAPQUYET, p: PILLS, t: TALIS };
 type Kind = keyof typeof tables;
@@ -20,7 +20,7 @@ export function localItemId(id: string, w = WORLD.lv, cap = worldArtCap(w)): str
   const item = table[key];
   if (!item) return id;
   const grade = kind === 'p' ? pillGiai(item as typeof PILLS[string]) : item.tier;
-  if (grade <= cap) return id;
+  if (item.grow || item.el === 'hondon' || grade <= cap) return id;
   const baseKey = old?.[3] ?? key;
   const next = `local${w}_g${cap}_${baseKey}`;
   if (!table[next]) {
@@ -55,6 +55,7 @@ export function worldDefinitions<K extends Kind>(kind: K, w = WORLD.lv): Array<(
 
 /** Existing and scripted gear is normalized too, including stats; repeat calls are idempotent. */
 export function limitGear(g: Gear, w = WORLD.lv, cap: number = worldTreasureCap(w)) {
+  if (g.grow) { const gr = growTreasureGrade(/\(tàn khuyết\)/i.test(g.n), w); g.g = Math.min(cap, gr.g); g.q = gr.q; return g; } // Hỗn Độn Kiếm: bắt đầu từ phẩm thấp nhất, trưởng thành theo người dùng và trần giới
   if (g.g <= cap) return g;
   const ratio = (1 + cap * 0.45) / (1 + g.g * 0.45);
   for (const k of ['atk', 'def', 'hp', 'cult', 'cap', 'luck'] as const) g[k] = Math.floor(g[k] * ratio);

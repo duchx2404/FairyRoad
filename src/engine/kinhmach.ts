@@ -30,7 +30,7 @@ export const HX_NAME = ['Khí Hải', 'Đản Trung', 'Bách Hội', 'Mệnh Mô
 const KM_N = [4, 10, 18, 26, 34, 42, 50, 58, 66, 72];
 const HX_N = [0, 1, 2, 3, 4, 6, 8, 10, 12, 14];
 /** Số ô khai mở: theo cảnh giới, mỗi kinh mạch đả thông thêm 2 ô. */
-export const kmOpen = () => Math.min(KM_TOTAL, (KM_N[Math.min(9, effRi())] ?? 72) + Math.max(0, effRi() - 9) * 2 + s.meridians * 2);
+export const kmOpen = () => Math.min(KM_TOTAL, (KM_N[Math.min(9, effRi())] ?? 72) + Math.max(0, effRi() - 9) * 2 + s.meridians * 2 + (s.flags?.hondonBlood ? 26 : 0));
 const hxCap = () => 12 + (['hondon', 'thiendo', 'kimcuong', 'cuuduong', 'thaiam'].includes(body().id) ? 4 : 0);
 export const hxCount = () => Math.min(20, Math.round(((HX_N[Math.min(9, effRi())] ?? 14) + Math.max(0, effRi() - 9)) * hxCap() / 12));
 
@@ -52,7 +52,7 @@ export function shapeOf(id: string, n: number): [number, number][] {
 }
 export function kmPieces(): Piece[] {
   const P: Piece[] = [];
-  for (const k of s.skills) { const sk = SKILLS[k]; if (sk) P.push({ id: 'sk:' + k, kind: 'sk', key: k, n: sk.n, el: sk.el, size: skSize(sk.tier), shape: [] }); }
+  for (const k of s.skills) { const sk = SKILLS[k]; if (sk) P.push({ id: 'sk:' + k, kind: 'sk', key: k, n: sk.n, el: sk.el, size: sk.el === 'hondon' ? 4 : skSize(sk.tier), shape: [] }); }
   for (const k of tamActive()) { const t = TAMPHAP[k]; if (t) P.push({ id: 'tk:' + k, kind: 'tk', key: k, n: t.n, el: null, size: 2 + Math.ceil(t.tier / 2), shape: [] }); }
   for (const p of P) p.shape = shapeOf(p.id, p.size);
   return P;
@@ -67,9 +67,10 @@ export function kmCells(p: Piece, pl: Pl): [number, number][] {
 
 // ---------- Quan hệ ngũ hành ----------
 export const kmRel = (a: El | null, b: El | null): 'dong' | 'sinh' | 'khac' | null =>
-  !a || !b ? null : a === b ? 'dong' : SINH[a] === b || SINH[b] === a ? 'sinh' : khacOf(a)?.includes(b) || khacOf(b)?.includes(a) ? 'khac' : null;
+  !a || !b ? null : a === b ? 'dong' : a === 'hondon' || b === 'hondon' || SINH[a] === b || SINH[b] === a ? 'sinh' : khacOf(a)?.includes(b) || khacOf(b)?.includes(a) ? 'khac' : null;
 /** Quan hệ hệ của mảnh với linh căn: hợp mệnh, mệnh sinh, sinh mệnh (dưỡng), khắc mệnh. */
 export function kmRoot(e: El | null): 'menh' | 'sinh' | 'duong' | 'khac' | null {
+  if (e === 'hondon') return 'menh';
   const R = s.root.els;
   if (!e || !R.length) return null;
   if (R.includes(e)) return 'menh';
@@ -89,7 +90,7 @@ export interface KmCalc {
 }
 let cKey = '', cVal: KmCalc | null = null;
 export function kmCalc(): KmCalc {
-  const key = JSON.stringify([s.flags.kmb, s.skills, tamActive(), s.root.els, effRi(), s.meridians, s.body]);
+  const key = JSON.stringify([s.flags.kmb, s.skills, tamActive(), s.root.els, effRi(), s.meridians, s.body, s.world]);
   if (cVal && key === cKey) return cVal;
   const P = kmPieces(), open = new Set(ORDER.slice(0, kmOpen())), B = new Map<number, string>(), cells: KmCalc['cells'] = {};
   const st = store();

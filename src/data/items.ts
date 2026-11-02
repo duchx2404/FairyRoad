@@ -1,5 +1,5 @@
 // Công pháp, thuật pháp, đan dược, linh thảo, vật liệu, phù lục, trang bị.
-import { TREASURE_TIERS, ART_TIERS, localTreasureGrade } from './treasure-grades';
+import { TREASURE_TIERS, ART_TIERS, localTreasureGrade, worldArtCap, growArtGrade, growTreasureGrade } from './treasure-grades';
 import { REALMS, EL, worldMult, type El } from './core';
 import { pick, ri, rf, ch } from '../core/util';
 
@@ -30,8 +30,10 @@ export interface Tech {
   def?: number;
   hp?: number;
   blood?: string; // công pháp huyết mạch: chỉ người mang huyết mạch này tu được, không rơi, không bán
+  grow?: boolean; // phẩm trưởng thành theo người dùng: luôn bằng trần phẩm của giới đang ở (Hỗn Nguyên Kinh)
 }
 export const TECHS: Record<string, Tech> = {
+  honnguyenkinh: { id: 'honnguyenkinh', n: 'Hỗn Nguyên Kinh', el: ['hondon'], get tier() { return growArtGrade().tier; }, get pq() { return growArtGrade().pq; }, blood: 'diep_hondon', grow: true, skills: ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong'], pw: 1.35, hp: 1.45, def: 1.3, d: 'Công pháp trấn tộc chí cao của Diệp gia Hỗn Độn, vạn đạo quy nguyên. Bắt đầu từ phẩm thấp nhất rồi trưởng thành theo người dùng, bị giới hạn phẩm theo trần của giới đang ở; khi về tới Hỗn Độn giới sẽ không còn giới hạn trần.' },
   cuuchuyen: { id: 'cuuchuyen', n: 'Cửu Chuyển Huyền Công', el: [], tier: 6, blood: 'diep_hondon', skills: ['cuuchuyenphathien', 'cuuchuyenkimthan', 'tichhuyettrungsinh', 'phapthientuongdia'], pw: 1.3, hp: 1.4, def: 1.25, d: 'Công pháp trấn tộc của Diệp gia Hỗn Độn. Chín lần chuyển hóa nhục thân: mỗi lần chuyển là thay máu đổi xương, tới chuyển thứ chín thì nhỏ máu tái sinh, vạn kiếp bất diệt. Chỉ dòng chính Diệp gia Hỗn Độn mới khai mở được.' },
   batcuu: { id: 'batcuu', n: 'Bát Cửu Huyền Công', el: [], tier: 5, blood: 'diep', skills: ['phapthientuongdia', 'thatthapnhibien'], pw: 1.15, hp: 1.2, def: 1.1, d: 'Công pháp huyết mạch của Diệp thị Hoang Cổ. Tu tới đại thành có bảy mươi hai phép biến hóa, nhục thân luyện tới bất hoại, pháp thiên tượng địa. Không mang máu họ Diệp thì đọc cũng không hiểu nổi một chữ.' },
   thanhtam: { id: 'thanhtam', n: 'Thanh Tâm Dẫn Khí Thuật', el: [], tier: 1, skills: ['chuongphong'], d: 'Pháp môn dẫn khí nhập thể phổ biến nhất. Ai cũng tu được, nhưng chẳng ai tu nhanh.' },
@@ -85,8 +87,8 @@ export const TECHS: Record<string, Tech> = {
   thanhvukiem: { id: 'thanhvukiem', n: 'Thanh Vũ Phong Lôi Kiếm', el: ['phong', 'loi'], tier: 4, skills: ['phongloi', 'tutieuloi'], pw: 1.2, d: 'Kiếm thế như mưa xanh, mỗi giọt mang tiếng sấm.' },
   bichhaitrieu: { id: 'bichhaitrieu', n: 'Bích Hải Triều Sinh Kinh', el: ['thuy', 'moc'], tier: 4, skills: ['tinhhailang', 'thuymanthien'], hp: 1.25, d: 'Như thủy triều, rút đi rồi lại về, sinh cơ không cạn.' },
 };
-export const TECH_SPEED = [0, 1, 1.25, 1.55, 2, 2.5, 3.2];
-export const TECH_POW = [0, 1, 1.2, 1.45, 1.8, 2.25, 2.9];
+export const TECH_SPEED = [0, 1, 1.25, 1.55, 2, 2.5, 3.2, 4, 5, 6.2];
+export const TECH_POW = [0, 1, 1.2, 1.45, 1.8, 2.25, 2.9, 3.6, 4.5, 5.6];
 // Công pháp mới cấp Thần/Tiên giai
 Object.assign(TECHS, {
   vanyeuhoahinh: { id: 'vanyeuhoahinh', n: 'Vạn Yêu Hóa Hình Kinh', el: ['moc', 'tho', 'am', 'phong'], tier: 5, skills: ['thuvuong', 'vanmoc'], pw: 1.15, hp: 1.15, d: 'Trấn đình chi bảo của Vạn Yêu Thánh Đình: dạy yêu hóa người, dạy người hiểu yêu.' },
@@ -125,6 +127,8 @@ export interface Skill {
   peak?: boolean; // chân truyền của phong chủ, không bán, không rơi
   /** Chiêu hồi phục có thêm hồi máu theo lượt: mỗi lượt hồi m × lượng hồi tức thời, trong `turns` lượt. Chỉ hồi máu, không hồi giáp. */
   hot?: { m: number; turns: number };
+  /** Gây sát thương lên toàn bộ kẻ địch (chỉ với kiểu 'atk'). */
+  all?: boolean;
   d: string;
 }
 export type Weapon = 'kiem' | 'dao' | 'thuong' | 'quyen' | 'chuong' | 'cung' | 'kich';
@@ -162,6 +166,9 @@ export const SKILLS: Record<string, Skill> = {
   kimchungtrao: { id: 'kimchungtrao', n: 'Kim Chung Tráo', el: 'kim', tier: 2, k: 'shield', m: 1.6, cd: 4, d: 'Chuông vàng hộ thể.' },
   diahoa: { id: 'diahoa', n: 'Địa Hỏa Phần Thiên', el: 'hoa', tier: 3, k: 'dot', m: 1.4, cd: 3, d: 'Lửa đất trào lên thiêu đốt.' },
   liemloi: { id: 'liemloi', n: 'Liên Hoàn Lôi Kích', el: 'loi', tier: 3, k: 'multi', m: 1, cd: 3, d: 'Sét giật liên tiếp.' },
+  honnguyenkhaithien: { id: 'honnguyenkhaithien', n: 'Hỗn Nguyên Khai Thiên Kiếm', el: 'hondon', get tier() { return growArtGrade().tier; }, get pq() { return growArtGrade().pq; }, k: 'atk', all: true, m: 4.5, cd: 4, w: 'kiem', sword: true, peak: true, d: 'Một kiếm khai thiên tích địa, kiếm khí hỗn độn quét ngang toàn bộ kẻ địch. Tăng phẩm theo Hỗn Nguyên Kinh.' },
+  honnguyenphaptuong: { id: 'honnguyenphaptuong', n: 'Hỗn Nguyên Pháp tướng', el: 'hondon', get tier() { return growArtGrade().tier; }, get pq() { return growArtGrade().pq; }, k: 'atk', all: true, m: 4.0, cd: 4, peak: true, d: 'Hóa hiện pháp tướng Hỗn Nguyên cao vạn trượng, uy áp nghiền nát toàn bộ kẻ địch. Tăng phẩm theo Hỗn Nguyên Kinh.' },
+  vankiemquytong: { id: 'vankiemquytong', n: 'Vạn Kiếm quy tông', el: 'hondon', get tier() { return growArtGrade().tier; }, get pq() { return growArtGrade().pq; }, k: 'atk', all: true, m: 4.2, cd: 3, w: 'kiem', sword: true, peak: true, d: 'Vạn đạo kiếm khí hỗn độn cùng quy về một hướng, xuyên thủng toàn bộ kẻ địch. Tăng phẩm theo Hỗn Nguyên Kinh.' },
   cuuchuyenphathien: { id: 'cuuchuyenphathien', n: 'Cửu Chuyển Phá Thiên Kiếm', el: 'kim', tier: 6, k: 'atk', m: 4.2, cd: 4, w: 'kiem', sword: true, peak: true, d: 'Chín lần chuyển kiếm thế, mỗi lần nặng thêm một tầng trời; kiếm thứ chín hạ xuống thì trời nứt. Chân truyền Cửu Chuyển Huyền Công.' },
   cuuchuyenkimthan: { id: 'cuuchuyenkimthan', n: 'Cửu Chuyển Kim Thân', el: 'kim', tier: 6, k: 'shield', m: 3.2, cd: 4, peak: true, d: 'Nhục thân hóa kim, đao kiếm chém vào chỉ tóe lửa. Chân truyền Cửu Chuyển Huyền Công.' },
   tichhuyettrungsinh: { id: 'tichhuyettrungsinh', n: 'Tích Huyết Trùng Sinh', el: 'moc', tier: 6, k: 'heal', m: 2.2, cd: 5, peak: true, hot: { m: 0.25, turns: 5 }, d: 'Còn một giọt máu là còn sống lại. Hồi máu tức thì, rồi huyết khí tiếp tục tái sinh trong 5 lượt. Chân truyền Cửu Chuyển Huyền Công.' },
@@ -196,7 +203,7 @@ export const SK_KIND: Record<SkillKind, string> = { atk: 'Công kích', multi: '
 /** Mô tả ngắn hiệu ứng của chiêu. */
 export function skillEffect(k: Skill): string {
   switch (k.k) {
-    case 'atk': return `${k.m}× công`;
+    case 'atk': return `${k.m}× công${k.all ? ', toàn bộ kẻ địch' : ''}`;
     case 'multi': return `3 đòn, mỗi đòn ${k.m}× công`;
     case 'dot': return `${k.m}× công + ăn mòn 3 lượt`;
     case 'heal': return `hồi ${Math.round(18 * k.m)}% khí huyết${k.hot ? `, rồi mỗi lượt hồi thêm ${Math.round(18 * k.m * k.hot.m)}% trong ${k.hot.turns} lượt` : ''}`;
@@ -206,6 +213,7 @@ export function skillEffect(k: Skill): string {
 }
 /** Tên hệ và màu của chiêu: đơn hệ một màu, đa hệ (SK_TAG) nhiều màu, vô hệ trả null. */
 export function skHue(sk: Pick<Skill, 'id' | 'el'>): { n: string; c: string[] } | null {
+  if (sk.el === 'hondon') return { n: 'Hỗn Độn', c: SK_TAG.khaithien.c };
   if (sk.el) return { n: EL[sk.el].n, c: [EL[sk.el].c] };
   return SK_TAG[sk.id] ?? null;
 }
@@ -243,7 +251,7 @@ for (const [id, g] of Object.entries({ tutieuloi: 5, vanmaphe: 5, cuuuban: 5, kh
 {
   // phẩm võ công: xếp theo hệ số trong cùng giai và loại
   const groups: Record<string, Skill[]> = {};
-  for (const k of Object.values(SKILLS)) (groups[k.tier + k.k] ||= []).push(k);
+  for (const k of Object.values(SKILLS)) if (k.pq === undefined) (groups[k.tier + k.k] ||= []).push(k);
   for (const arr of Object.values(groups)) {
     arr.sort((a, b) => a.m - b.m);
     arr.forEach((k, i) => (k.pq = arr.length === 1 ? 1 : Math.round((i / (arr.length - 1)) * 3)));
@@ -345,7 +353,7 @@ export const MATS: Record<string, Mat> = {
   yeudan: { id: 'yeudan', n: 'Yêu đan', tier: 2, d: 'Tinh hoa tu vi của yêu thú. Phẩm cấp theo yêu thú.' },
   longlan: { id: 'longlan', n: 'Giao long lân', tier: 4, d: 'Vảy giao long, cứng hơn huyền thiết.' },
   linhmoc: { id: 'linhmoc', n: 'Linh mộc tâm', tier: 4, d: 'Lõi cây ngàn năm, luyện linh bảo cực tốt.' },
-  hondonthach: { id: 'hondonthach', n: 'Hỗn Độn Thạch', tier: 6, d: 'Đá ngưng từ khí hỗn độn trước thuở khai thiên, chỉ có ở Hỗn Độn giới. Dùng để sửa Hỗn Độn Tàn Kiếm.' },
+  hondonthach: { id: 'hondonthach', n: 'Hỗn Độn Thạch', tier: 6, d: 'Đá ngưng từ khí hỗn độn trước thuở khai thiên, chỉ có ở Hỗn Độn giới. Dùng để sửa Hỗn Độn Kiếm (Tàn khuyết).' },
   hukhongthach: { id: 'hukhongthach', n: 'Hư không thạch', tier: 6, d: 'Đá sinh ra trong khe nứt không gian.' },
   huyenthiet: { id: 'huyenthiet', n: 'Huyền thiết', tier: 1, d: 'Sắt đen nặng gấp ba sắt thường.' },
   tinhkim: { id: 'tinhkim', n: 'Tinh kim', tier: 2, d: 'Kim loại tinh luyện, dẫn linh lực tốt.' },
@@ -450,7 +458,7 @@ const BASE_NAMES: string[][] = [
   ['Phù bút'],
   ['Luyện khí đỉnh'],
 ];
-const PREFIX: Record<El, string[]> = {
+const PREFIX: Partial<Record<El, string[]>> = {
   kim: ['Canh Kim', 'Phá Quân', 'Kim Lân', 'Thiết Cốt'],
   moc: ['Thanh Mộc', 'Bích Đằng', 'Xuân Phong', 'Linh Trúc'],
   thuy: ['Huyền Thủy', 'Thu Ba', 'Lưu Ly', 'Hàn Đàm'],
@@ -486,14 +494,17 @@ export interface Gear {
   growMul?: number; // tỷ lệ trưởng thành (mặc định 1; Hỗn Độn Kiếm đã sửa cao hơn)
   gm?: number; // tỷ lệ trưởng thành lúc tính chỉ số
 }
-export const gearLabel = (gr: Gear) => gradeLabel(gr.g, gr.q ?? 1);
+export const gearLabel = (gr: Gear) => {
+  if (gr.grow) { const { g, q } = growTreasureGrade(/\(tàn khuyết\)/i.test(gr.n)); gr.g = g; gr.q = q; }
+  return gradeLabel(gr.g, gr.q ?? 1);
+};
 export function mkGear(lv: number, g: number, slot?: number, el?: El | null, q?: number): Gear {
   g = localTreasureGrade(g);
   const qq = q ?? (() => { const r = Math.random(); return r < 0.4 ? 0 : r < 0.75 ? 1 : r < 0.95 ? 2 : 3; })();
   const sl = slot ?? ri(0, 4);
   if (!Number.isInteger(sl) || sl < 0 || sl >= SLOTS.length) throw new RangeError(`Ô trang bị không hợp lệ: ${sl}`);
   const e: El | null = el !== undefined ? el : g >= 1 && ch(0.75) ? pick(Object.keys(PREFIX) as El[]) : null;
-  const pre = e ? pick(PREFIX[e]) : pick(PLAIN_PREFIX);
+  const pre = e && PREFIX[e] ? pick(PREFIX[e]!) : pick(PLAIN_PREFIX);
   const n = `${pre} ${pick(BASE_NAMES[sl])}`;
   const base = (REALMS[lv].pow * 0.25 * (1 + g * 0.45) + 2) * PQ_MULT[qq] * worldMult();
   const v = (k: number) => Math.round(base * k * rf(0.85, 1.15));

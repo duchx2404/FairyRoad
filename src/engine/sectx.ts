@@ -247,7 +247,7 @@ function roleGift(e: Elder): string {
     return learnSkill(k.id) || ` Sư phụ truyền ${k.n}.`;
   };
   const weaponSkill = () => {
-    const pool = worldDefinitions('sk').filter((k) => k.w === e.w && k.tier <= cap && !s.known.includes(k.id));
+    const pool = worldDefinitions('sk').filter((k) => k.w === e.w && k.el !== 'hondon' && k.tier <= cap && !s.known.includes(k.id));
     if (!pool.length) { s.stats.ngo++; return ` ${WEAPON_N[e.w!]} pháp của sư phụ ngươi đã học hết, sư phụ bèn giảng ${WEAPON_N[e.w!].toLowerCase()} ý — ngộ tính +1.`; }
     const k = pool.sort((x, y) => y.tier - x.tier)[0];
     return ` Sư phụ truyền ${WEAPON_N[e.w!].toLowerCase()} pháp ${k.n}.` + learnSkill(k.id).replace(/^ Lĩnh ngộ [^.]*\./, '');
@@ -293,9 +293,9 @@ export function masterCatchUp(): string | null {
   const e = s.sect ? elderRoster().find(isMyMaster) : undefined;
   if (!e?.w || s.flags.peakGift === e.key) return null;
   s.flags.peakGift = e.key;
-  if (worldDefinitions('sk').some((k) => k.w === e.w && s.known.includes(k.id))) return null;
+  if (worldDefinitions('sk').some((k) => k.w === e.w && k.el !== 'hondon' && s.known.includes(k.id))) return null;
   const cap = clamp(Math.ceil((effRi() + 1) / 1.5), 1, 6);
-  const k = worldDefinitions('sk').filter((x) => x.w === e.w && x.tier <= cap).sort((x, y) => y.tier - x.tier)[0];
+  const k = worldDefinitions('sk').filter((x) => x.w === e.w && x.el !== 'hondon' && x.tier <= cap).sort((x, y) => y.tier - x.tier)[0];
   if (!k) return null;
   learnSkill(k.id);
   return `${e.name} gọi ngươi tới: "Đệ tử ${e.seat.replace(' phong chủ', '')} không thể không biết ${WEAPON_N[e.w].toLowerCase()} pháp." Truyền cho ngươi ${k.n}.`;
