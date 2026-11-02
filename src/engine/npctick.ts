@@ -6,6 +6,7 @@ import { SECTS } from '../data/world';
 import { addLog, mark } from './core';
 import { compCultMul, compAdventure, outfit, inParty } from './party';
 import { slots } from './slots';
+import { allyRealmUp } from './ally';
 import { ch, clamp, pick, rf } from '../core/util';
 /** NPC mang Hỗn Độn Đạo Thai (nữ chính, một số thánh nữ): đột phá luôn thành công như người chơi. */
 const hondonNpc = (n: NPC) => n.bio?.body === 'Hỗn Độn Đạo Thai';
@@ -28,6 +29,7 @@ export function npcTick(n: NPC, y: number) {
           n.life = Math.max(n.life, Math.round(REALMS[n.r].life * rf(0.9, 1.15)));
           if (Math.abs(n.rel) >= 40 || n.tag === 'daolu' || n.tag === 'master') addLog(`${n.name} đột phá ${REALMS[n.r].n}.`);
           if (inParty(n.id)) outfit(n, 'lên cảnh giới');
+          allyRealmUp(n); // người theo ngươi vào thế lực: chức vụ theo cảnh giới
         } else (n as any).p = 0.5;
       }
     }
@@ -36,7 +38,9 @@ export function npcTick(n: NPC, y: number) {
   const a = s.year - n.born;
   const sectTier = n.sect ? (SECTS[n.sect]?.tier ?? 0) : 0;
   const protectedProdigy = sectTier >= 3 && n.talent >= 1.7;
-  if (a > n.life || (!protectedProdigy && ch(0.0015 * y * (n.r === 0 ? 2 : 1) / (1 + (n.luck ?? 0) * 0.05)))) {
+  // nhân vật cốt truyện (hôn thê, người có hồ sơ riêng): không chết vì tai nạn ngẫu nhiên, chỉ thọ tận hoặc do sự kiện / trận đấu
+  const storyNpc = !!n.bio || ((s.flags.dhBrides as string[] | undefined) || []).includes(n.id);
+  if (a > n.life || (!protectedProdigy && !storyNpc && ch(0.0015 * y * (n.r === 0 ? 2 : 1) / (1 + (n.luck ?? 0) * 0.05)))) {
     n.alive = false;
     n.died = s.year;
     n.cause = a > n.life ? 'thọ tận' : pick(['bỏ mạng trong hiểm địa', 'tẩu hỏa nhập ma', 'bị kẻ thù ám sát', ...(hondonNpc(n) ? [] : ['đột phá thất bại'])]);

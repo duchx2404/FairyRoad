@@ -3,12 +3,13 @@ import { RMAX, REALMS } from '../data/core';
 import { EMPIRES, EMPIRE_GUARD, COURT_RANKS, courtReq, type Empire } from '../data/world';
 import { s } from './state';
 import { effRi, M, age, has, addItem, itemName } from './char';
-import { passTime, mark, addLog, mkNpc, mkName, addNpc, holyNpcName } from './core';
+import { passTime, mark, addLog, mkNpc, mkName, addNpc, holyNpcName, missionProg } from './core';
 import { slots } from './slots';
 import { fight, fightSummary, beastFoe, dangerLabel, type FoeSpec } from './combat';
 import { ch, pick, ri, fmt } from '../core/util';
 import { SECTS } from '../data/world';
-import { mkBrideBio, addBetrothal } from './bride';
+import { mkBrideBio, addBetrothal, queueJoinCongrats } from './bride';
+import { allyFollow } from './ally';
 import type { Scene } from './actions';
 import type { Choice, Outcome } from './events';
 
@@ -168,7 +169,9 @@ export function takePost(e: Empire, rank: number): string {
   if (c) c.rank = rank; else s.flags.court = { id: e.id, rank, favor: 10, lastPay: Math.floor(s.year) };
   s.fame += 20 * e.tier * (rank + 1);
   mark(`Được ${e.n} phong làm ${COURT_RANKS[rank]}`);
-  return `Thánh chỉ ban xuống: phong ngươi làm ${COURT_RANKS[rank]} của ${e.n}. Từ nay mỗi năm được hưởng bổng lộc triều đình.`;
+  if (!c && e.tier === 3) queueJoinCongrats(`court:${e.id}`); // Diệp gia trước 16 tuổi: vào đại hoàng triều → thư chúc mừng
+  const follow = !c && !s.sect ? allyFollow() : ''; // chưa có tông môn: đồng hành theo ngươi vào triều
+  return `Thánh chỉ ban xuống: phong ngươi làm ${COURT_RANKS[rank]} của ${e.n}. Từ nay mỗi năm được hưởng bổng lộc triều đình.${follow}`;
 }
 export function resignPost(): string {
   const c = myCourt();
@@ -194,7 +197,8 @@ slots.courtPay = courtPay;
 const TASKS = ['Trấn áp yêu thú phá biên ải', 'Dẹp loạn tà tu ở châu huyện', 'Hộ giá hoàng tộc đi tuần du', 'Truy bắt gián điệp nước địch', 'Trấn thủ long mạch kinh đô'];
 export function courtTask(e: Empire): Scene {
   const name = pick(TASKS);
-  passTime(Math.max(0.25, REALMS[s.r].turn * 0.6));
+  const yrs = Math.max(0.25, REALMS[s.r].turn * 0.6);
+  passTime(yrs);
   const lv = Math.min(RMAX(), Math.max(0, EMPIRE_GUARD[e.tier] - 2 + (ch(0.5) ? 1 : 0)));
   const r = name.includes('yêu') ? fight(beastFoe(lv).spec) : fight({ name: name.includes('gián điệp') ? 'Gián điệp nước địch' : name.includes('tà tu') ? 'Thủ lĩnh tà tu' : 'Thích khách', r: lv, kind: 'cultivator', mult: 1.05 });
   const c = myCourt();
@@ -203,8 +207,8 @@ export function courtTask(e: Empire): Scene {
     s.money += pay;
     s.fame += 5 * e.tier;
     if (c?.id === e.id) c.favor += 12;
-    return { title: name, text: `${fightSummary(r)} Việc thành, triều đình ban thưởng ${fmt(pay)} linh thạch${c?.id === e.id ? ', ân sủng +12' : ''}.` };
+    return { title: name, text: `${fightSummary(r)} Việc thành, triều đình ban thưởng ${fmt(pay)} linh thạch${c?.id === e.id ? ', ân sủng +12' : ''}.` + missionProg(yrs) };
   }
   if (c?.id === e.id) c.favor = Math.max(0, c.favor - 5);
-  return { title: name, text: `${fightSummary(r)} Việc không thành.` };
+  return { title: name, text: `${fightSummary(r)} Việc không thành.` + missionProg(yrs, 0.15) };
 }

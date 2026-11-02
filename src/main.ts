@@ -1,3 +1,4 @@
+import { normalizeWorldItems } from './engine/world-items';
 // Điểm vào: nạp sự kiện, gắn UI với engine.
 import './engine/wire';
 import { kmSyncSkills } from './engine/kinhmach';
@@ -22,6 +23,7 @@ import { resize, draw, centerOn, zoom, setMapHandlers, startAnim } from './ui/ma
 import { h, $ } from './ui/dom';
 
 function refreshAll() {
+  normalizeWorldItems();
   renderHud();
   renderActions();
   renderPanels();
@@ -55,6 +57,7 @@ document.querySelectorAll<HTMLButtonElement>('#zoom button').forEach((b) =>
 setOnStart(() => {
   WORLD.lv = s.world ?? 0;
   applyWorld(s.world ?? 0);
+  normalizeWorldItems();
   // vị trí người chơi luôn là địa điểm đang đứng: bản đồ có thể đã dời địa điểm so với lúc lưu
   { const l = LOCS[s.loc]; if (l) { s.x = l.x; s.y = l.y; } }
   if (!s.flags.mapV14) { s.pins = []; s.flags.mapV14 = true; }
@@ -100,6 +103,7 @@ import './events/life';
 import './events/clan';
 import './events/scion';
 import './events/betrothal';
+import './events/exile';
 import './events/spirit';
 import './events/shj';
 import './events/random';

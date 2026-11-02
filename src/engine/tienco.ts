@@ -6,9 +6,16 @@
 // tuổi linh hồn chỉ tăng, thọ nguyên tính lại từ đầu nên cộng dồn qua các giới. Vì thế các thế lực hàng đầu Hỗn Độn
 // trả đại giá đưa trẻ sơ sinh về Thương Lan tu hành lại từ những bước chân đầu tiên: sống lâu hơn, dễ thành cường giả hơn. Nhiều người cùng giáng lâm,
 // nhưng gặp được họ ở Thương Lan hay không là chuyện ngẫu nhiên. Ngô Thu Phương là suất của Ngô gia Hỗn Độn.
+import { maintainLegacyHolders } from './legacy-holders';
 import { s, type NPC } from './state';
+import { rankedHundred } from './ranking';
+import { rankingPower, compareRankPower } from './ranking-power';
+import { trainArtisan, type ArtisanCraft } from './craft-proficiency';
+import { ensureWorldNames } from './names';
+import { doctrineAccepts, doctrineWeight } from './sect-doctrine';
+import { beastEvolution, type BeastEvolution } from './beast-evolution';
 import { REALMS, STAGES, WORLD_CAP, WORLDS, LAST_WORLD, npcCap, worldLife, BREAK_BASE, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, DAO_HOLDER, DAI_DAO, CLANS, ORIGINS, type El, ALL_EL, holySur, splitName } from '../data/core';
-import { worldPack, daoTitle, SECTS, EMPIRES, LOCS } from '../data/world';
+import { worldPack, daoTitle, SECTS, EMPIRES, LOCS, beastDescendants } from '../data/world';
 import { age, soulAge } from './char';
 import { addLog, mark } from './core';
 import { slots } from './slots';
@@ -18,6 +25,11 @@ import { FENGSHEN_ROSTER } from '../data/fengshen';
 import { CELESTIAL, celestialOffices, type CelestialId } from '../data/celestial';
 
 export interface TcPerson {
+  legacyRole?: string;
+  legacyWorld?: number;
+  treasures?: string[];
+  evolution?: BeastEvolution;
+  craft?: ArtisanCraft;
   id: string;
   name: string;
   g: 'm' | 'f';
@@ -76,9 +88,12 @@ export interface TcPerson {
   pic?: string;
   home?: string;
 }
-interface TcState { v: 1; people: TcPerson[]; rank: { tk: number; cg: number }; y: number; meteorYear?: number; bought?: Record<number, boolean>; beastMig?: 1 | 2; raceMig?: 1; chiefMig?: 1; celMig?: 1 }
+interface TcState { v: 1; people: TcPerson[]; rank: { tk: number; cg: number }; y: number; meteorYear?: number; bought?: Record<number, boolean>; beastMig?: 1 | 2; raceMig?: 1; chiefMig?: 1; celMig?: 1; recruitDiversity?: 1 }
 
 export interface TcRow {
+  power?: number;
+  celestialTier?: number;
+  daoHao?: string;
   id: string;
   name: string;
   g: 'm' | 'f';
@@ -108,11 +123,32 @@ export const tc = (): TcState => {
   if (T.beastMig !== 2) { migrateBeasts(T, !T.beastMig); T.beastMig = 2; } // bản lưu cũ: thêm yêu tu / đổi sang huyết mạch Sơn Hải Kinh & thần thú
   if (!T.raceMig) { migrateRaces(T); T.raceMig = 1; }
   if (!T.chiefMig) { addHonghuangChiefs(T); T.chiefMig = 1; }
+  if (!s.flags.tcDoctrineMigrated) { addHonghuangChiefs(T); s.flags.tcDoctrineMigrated = true; }
   if (!T.celMig) { addCelestialYouth(T.people, s.year); T.celMig = 1; } // bản lưu cũ: thiên kiêu của bốn thần giới
+  if (!T.recruitDiversity) {
+    // Repair ordinary recruits from saves made before recruitment included other species.
+    for (const p of T.people) {
+      if (p.npc || p.ret || p.chief || p.lord || p.fengshen || p.heroine || p.beast || p.race || p.races?.length) continue;
+      if (p.from === `Đệ tử ${p.sect}`) diversifyRecruit(p, seeded(hashStr(p.id + ':diversity')));
+    }
+    T.recruitDiversity = 1;
+  }
   T.meteorYear ??= s.born;
   if (!T.people.some((p) => p.heroine)) T.people.push(makeHeroine(seeded(hashStr(s.id + ':ngo-thu-phuong')), s.year));
   if (s.g === 'f' && !T.people.some((p) => p.ret === 'Diệp gia Hỗn Độn' && p.g === 'm')) T.people.push(makeYeLead(s.year));
   for (const p of T.people) {
+    fitDoctrine(p);
+    const linkedCraft = p.npc ? s.npcs.find(n => n.id === p.npc) : undefined;
+    if (p.alive && linkedCraft?.alive !== false) {
+      const craft = linkedCraft?.craft ?? p.craft;
+      if (craft) { trainArtisan(craft, s.year, linkedCraft?.talent ?? p.talent); p.craft = craft; }
+    }
+    if (p.world === LAST_WORLD && Object.values(CELESTIAL).some(realm => realm.n === p.sect)) {
+      p.from = `Tán tu Hỗn Độn, xuất thân ${p.sect} ở hạ giới`;
+      p.sect = 'Tán tu';
+    }
+    repairBeastSpecies(p);
+    evolvePerson(p);
     if (p.known && !T.bought?.[p.world]) p.known = false;
     if (p.ret) {
       p.soulBorn = s.born;
@@ -144,6 +180,32 @@ export const tc = (): TcState => {
   }
   const lead = T.people.find((p) => p.ret === 'Diệp gia Hỗn Độn' && p.g === 'm' && p.npc);
   if (lead?.npc) s.flags.mainLeadId = lead.npc;
+  const linked = new Set(T.people.map(p => p.npc));
+  for (const n of s.npcs) {
+    if (!n.alive || linked.has(n.id)) continue;
+    const evolved = beastEvolution(n.beast, worldOf(), n.r, n.st, n.evolution);
+    if (evolved) Object.assign(n, evolved);
+  }
+  const playerEvolution = beastEvolution(s.beast, worldOf(), s.r, s.st, s.flags.beastEvolution);
+  if (playerEvolution) {
+    s.beast = playerEvolution.beast;
+    s.flags.beastEvolution = playerEvolution.evolution;
+    s.flags.beastBlood = playerEvolution.blood;
+  }
+  if (!s.flags.tcRecruitAgeFixed) {
+    for (const p of T.people) {
+      if (p.asc || p.ret || p.heroine || p.chief || p.lord || p.fengshen) continue;
+      const minimum = 10 + cultivationYears(p.r, p.st, p.talent);
+      if (s.year - p.born >= minimum) continue;
+      p.born = s.year - Math.ceil(minimum);
+      p.soulBorn = Math.min(p.soulBorn, p.born);
+      const n = p.npc ? s.npcs.find(n => n.id === p.npc) : undefined;
+      if (n) n.born = p.born;
+    }
+    s.flags.tcRecruitAgeFixed = true;
+  }
+  maintainLegacyHolders(T.people);
+  ensureWorldNames(T.people);
   return T;
 };
 export const tcPeople = () => tc().people;
@@ -151,6 +213,24 @@ export const retPeople = () => tcPeople().filter((p) => p.ret);
 export const personOf = (id: string) => tcPeople().find((p) => p.id === id);
 export const realmTxt = (r: number, st: number) => (r === 0 ? 'Phàm nhân' : r >= DAI_DAO ? REALMS[DAI_DAO].n : `${REALMS[r].n} ${STAGES[st]}`);
 export const worldOf = () => s.world ?? 0;
+
+/** All living residents, including unmet people and linked/unlinked acquaintances, exactly once. */
+export function worldResidents(w = worldOf()): { person?: TcPerson; npc?: NPC }[] {
+  const people = tcPeople();
+  const linked = new Set(people.flatMap(p => p.npc ? [p.npc] : []));
+  const npcs = new Map(s.npcs.map(n => [n.id, n]));
+  const residents: { person?: TcPerson; npc?: NPC }[] = [];
+  for (const person of people) {
+    if (!person.alive || person.world !== w) continue;
+    const npc = person.npc ? npcs.get(person.npc) : undefined;
+    if (npc && !npc.alive) continue;
+    residents.push({ person, npc });
+  }
+  if (w === worldOf()) for (const npc of s.npcs) {
+    if (npc.alive && !linked.has(npc.id)) residents.push({ npc });
+  }
+  return residents;
+}
 
 // ---------- Sinh bảng ----------
 /** Cảnh giới một tu sĩ đạt được sau `years` năm tu từ Luyện Khí với tư chất `talent`, trần `cap` (kỳ vọng, có hao hụt vì đột phá thất bại). */
@@ -216,24 +296,68 @@ export const MYTHIC_RACES = ORIGINS.filter((origin) => origin.race && !origin.be
 const MYTHIC_RACE_RATE = 0.06;
 const BLOOD_N = ['thuần huyết', 'huyết mạch đậm', 'huyết mạch loãng'];
 const DILUTE = ['một phần tư', 'một phần tám', 'một phần mười sáu', 'một phần ba mươi hai'];
+function descendantSpecies(ancestor: string, rnd: () => number) {
+  const species = ancestor === 'Tổ Long'
+    ? [{ n: 'Hải Giao', el: 'thuy' as El }, { n: 'Lôi Giao', el: 'loi' as El }]
+    : beastDescendants(ancestor);
+  return species.length ? pkAny(rnd, species) : undefined;
+}
+/** Time budget matching realmAfter, used to repair recruits previously assigned arbitrary realms. */
+export function cultivationYears(r: number, st: number, talent: number): number {
+  let years = 0;
+  for (let realm = 1; realm <= r; realm++) {
+    const stages = realm === r ? st : 4;
+    for (let stage = 0; stage < stages; stage++) years += (REALMS[realm].turn * 12) / Math.max(0.2, talent)
+      * (stage === 3 ? 1 + (1 - (BREAK_BASE[realm + 1] ?? 0.1)) * 1.5 : 1);
+  }
+  return years;
+}
+/** Old saves used the ancestor as the species even for explicitly diluted bloodlines. */
+function repairBeastSpecies(p: TcPerson) {
+  if (!p.beast || !p.blood || p.evolution || p.chief || p.lord || p.fengshen) return;
+  const ancestor = p.beast;
+  if (!p.blood.includes(`không thuần của ${ancestor}`) && !(p.blood.startsWith('hậu duệ') && p.blood.includes(`của ${ancestor} trong Sơn Hải Kinh`))) return;
+  const rnd = seeded(hashStr(p.id + ':species'));
+  const descendants = worldPack(p.world).beasts.filter(b => b.anc === ancestor && b.n.split(' · ')[0] !== ancestor && !b.codexOnly);
+  const species = p.blood.startsWith('hậu duệ') && descendants.length ? pkAny(rnd, descendants) : descendantSpecies(ancestor, rnd);
+  if (!species) return;
+  p.beast = species.n.split(' · ')[0]; p.el = species.el; p.form = beastForm(p.beast, rnd);
+  const npc = p.npc ? s.npcs.find(n => n.id === p.npc) : undefined;
+  if (npc) { npc.beast = p.beast; npc.el = p.el; }
+}
+function evolvePerson(p: TcPerson) {
+  const n = p.npc ? s.npcs.find(n => n.id === p.npc) : undefined;
+  if (!p.alive || n?.alive === false) return;
+  const evolved = beastEvolution(p.beast, p.world, n?.r ?? p.r, n?.st ?? p.st, p.evolution);
+  if (!evolved) return;
+  Object.assign(p, evolved);
+  p.form = beastForm(p.beast!, seeded(hashStr(p.id + ':evolution:' + evolved.evolution.milestone)));
+  if (n) Object.assign(n, evolved);
+}
 /**
  * Biến một người trên bảng thành yêu tu hóa hình. Loài thường không đủ tư chất lên bảng, nên huyết mạch chỉ có ba nguồn:
  * hậu duệ dị thú Sơn Hải Kinh (60%), huyết mạch không thuần của thần thú (30%), hoặc loài thường mang huyết mạch thần thú phản tổ (10%).
  */
-function beastify(p: TcPerson, rnd: () => number, w: number) {
+function beastify(p: TcPerson, rnd: () => number, w: number, includeCommon = false) {
   const all = worldPack(w).beasts;
   const shj = all.filter((b) => b.anc && !b.codexOnly); // hậu duệ dị thú Sơn Hải Kinh (có mức huyết mạch)
   const common = all.filter((b) => !b.home && !b.anc && !b.codexOnly);
   const roll = rnd();
-  if (roll < 0.6 && shj.length) {
+  if (includeCommon && roll < 0.3 && common.length) {
+    const b = pkAny(rnd, common);
+    p.beast = b.n.split(' · ')[0]; p.el = b.el; p.form = beastForm(p.beast, rnd);
+    p.blood = `Yêu thú ${p.beast} tu luyện thành đạo`;
+    p.name = genName(rnd, p.g, beastSur(p.beast));
+  } else if (roll < 0.6 && shj.length) {
     const b = pkAny(rnd, shj);
     const n = b.anc!;
-    p.beast = n; p.el = b.el; p.form = beastForm(n, rnd);
+    p.beast = b.n.split(' · ')[0]; p.el = b.el; p.form = beastForm(p.beast, rnd);
     p.blood = `hậu duệ ${BLOOD_N[b.blood ?? 2]} của ${n} trong Sơn Hải Kinh`;
     p.name = genName(rnd, p.g, beastSur(n));
   } else if (roll < 0.9 || !common.length) {
     const [n, el] = pkAny(rnd, DIVINE);
-    p.beast = n; p.el = el; p.form = beastForm(n, rnd);
+    const species = descendantSpecies(n, rnd);
+    p.beast = species?.n ?? n; p.el = species?.el ?? el; p.form = beastForm(p.beast, rnd);
     p.blood = `mang huyết mạch không thuần của ${n} (${pkAny(rnd, DILUTE)})`;
     p.name = genName(rnd, p.g, beastSur(n));
   } else {
@@ -247,11 +371,11 @@ function beastify(p: TcPerson, rnd: () => number, w: number) {
   beastHome(p);
 }
 /** Long Cung chỉ nhận đúng thủy tộc: Hải Long Cung nhận hải tộc (biển), Long Cung sông nhận thủy tộc giang / hà. */
-export const SEA_TRIBE = ['Giao Long', 'Kình Ngư', 'Hải Xà', 'Lăng Ngư', 'Hải Quy', 'Bạng Tinh', 'Sa Ngư', 'Hà Binh', 'Giải Tướng'];
+export const SEA_TRIBE = ['Giao Long', 'Hải Giao', 'Lôi Giao', 'Kình Ngư', 'Hải Xà', 'Lăng Ngư', 'Hải Quy', 'Bạng Tinh', 'Sa Ngư', 'Hà Binh', 'Giải Tướng'];
 export const RIVER_TRIBE = ['Lý Ngư', 'Thủy Xà', 'Ngoan', 'Ngạc', 'Thủy Quy', 'Văn Diêu Ngư', 'Thủy Hầu', 'Giang Giao'];
 /** Người trên bảng thuộc Long Cung mà không đúng thủy tộc (người thường, phượng, hổ…) → đổi thành thủy tộc hợp với Long Cung ấy. */
 function fitTribe(p: TcPerson, w: number) {
-  if (p.npc || p.lord || p.ret) return;
+  if (p.npc || p.lord || p.ret || p.evolution) return;
   const sc = Object.values(worldPack(w).sects).find((x) => x.n === p.sect);
   if (!sc?.tribe) return;
   const pool = sc.tribe === 'hai' ? SEA_TRIBE : RIVER_TRIBE;
@@ -271,6 +395,32 @@ function beastHome(p: TcPerson) {
   p.sect = tribe;
 }
 const BEAST_RATE = 0.18;
+function diversifyRecruit(p: TcPerson, rnd: () => number) {
+  if (rnd() < BEAST_RATE) beastify(p, rnd, p.world, true);
+  else if (rnd() < MYTHIC_RACE_RATE && MYTHIC_RACES.length) p.race = pkAny(rnd, MYTHIC_RACES).n;
+  fitTribe(p, p.world);
+  beastHome(p);
+  fitDoctrine(p);
+}
+/** Preserve named mythological figures and their exceptional origins; repair generated affiliations. */
+function fitDoctrine(p: TcPerson) {
+  if (p.legacyRole || p.chief || p.fengshen || p.lord || p.ret || p.heroine || doctrineAccepts(p)) return;
+  const former = p.sect;
+  p.sect = 'Tán tu';
+  p.from = 'Tán tu không rõ sư thừa';
+  const n = p.npc ? s.npcs.find(n => n.id === p.npc) : undefined;
+  if (n) {
+    const sc = worldPack(p.world).sects[n.sect ?? ''];
+    if (sc?.n === former) n.sect = null;
+    n.how = n.how.replaceAll(former, 'Tán tu');
+  }
+}
+function pickRecruitSect<T extends { n: string }>(sects: T[], rnd: () => number): T {
+  const total = sects.reduce((sum, sc) => sum + doctrineWeight(sc.n), 0);
+  let pick = rnd() * total;
+  for (const sc of sects) { pick -= doctrineWeight(sc.n); if (pick < 0) return sc; }
+  return sects.find(sc => doctrineWeight(sc.n) > 0)!;
+}
 function migrateBeasts(T: TcState, addNew: boolean) {
   const rnd = seeded(hashStr(s.id + ':yeutu'));
   for (const p of T.people) {
@@ -296,7 +446,7 @@ const CEL_YOUTH: Record<CelestialId, [string, 'm' | 'f', string?][]> = {
 };
 function addCelestialYouth(people: TcPerson[], y: number) {
   const rnd = seeded(hashStr(s.id + ':cel-youth'));
-  for (let w = 0; w <= LAST_WORLD; w++) {
+  for (let w = 0; w < LAST_WORLD; w++) {
     const cap = npcCap(w);
     for (const id of Object.keys(CEL_YOUTH) as CelestialId[]) {
       for (const [from, g, race] of CEL_YOUTH[id]) {
@@ -393,6 +543,7 @@ const HONGHUANG_CHIEFS: { name: string; g?: 'm' | 'f'; race?: string; races?: st
   { name: 'Đạo Hạnh Thiên Tôn', sect: 'Xiển Giáo · Ngọc Hư Cung', from: 'Một trong thập nhị kim tiên Xiển Giáo, đạo tràng Kim Đình Sơn', el: 'phong' },
   { name: 'Thanh Hư Đạo Đức Chân Quân', sect: 'Xiển Giáo · Ngọc Hư Cung', from: 'Một trong thập nhị kim tiên Xiển Giáo, sư phụ Hoàng Thiên Hóa và Dương Nhậm', el: 'quang' },
   { name: 'Nam Cực Tiên Ông', sect: 'Xiển Giáo · Ngọc Hư Cung', from: 'Đệ tử lớn của Nguyên Thủy Thiên Tôn, thường truyền pháp chỉ Ngọc Hư', el: 'tho' },
+  { name: 'Huyền Đô Đại Pháp Sư', race: 'Nhân tộc', sect: 'Đạo Giáo · Bát Cảnh Cung', from: 'Đệ tử đích truyền của Lão Tử, tu hành thanh tĩnh tại Bát Cảnh Cung', el: 'tho' },
 ];
 function addHonghuangChiefs(T: TcState) {
   const y = s.year;
@@ -494,7 +645,7 @@ function gen(): TcState {
       const r = rnd();
       if (r < 0.15) return { n: 'Tán tu', tier: 0 };
       if (r < 0.25) return { n: `Hoàng thất ${WORLDS[w]}`, tier: 2 };
-      return pk(pool.length ? pool : sects);
+      return pickRecruitSect(pool.length ? pool : sects, rnd);
     };
     // Thiên kiêu: trẻ theo tuổi thân thể, tư chất cao
     for (let i = 0; i < N_TK; i++) {
@@ -600,11 +751,13 @@ export function tiencoTick(y: number) {
       if (n) {
         if (!n.alive) { p.alive = false; p.died = n.died; p.cause = n.cause; continue; }
         p.r = n.r; p.st = n.st; p.born = n.born;
+        evolvePerson(p);
         continue;
       }
       delete p.npc; // người chơi đã rời giới / NPC bị quên
     }
     grow(p, y);
+    evolvePerson(p);
   }
   // xếp hạng của người chơi: kiểm mỗi năm
   const yy = Math.floor(s.year);
@@ -664,7 +817,7 @@ function kill(p: TcPerson, cause: string) {
 }
 
 // ---------- Bảng ----------
-const pow = (r: number, st: number) => r * 10 + st;
+
 /** Danh sách đầy đủ một bảng trong giới hiện tại (đã xếp hạng, gồm người chơi). */
 /** Mỗi thánh địa của giới w chỉ có một Thánh tử và một Thánh nữ, mang họ cố định (HOLY_SUR).
  *  Người giữ danh vị trong nhân mạch (vd. vị hôn thê thánh nữ) được ưu tiên; người dư trên bảng thành đệ tử thân truyền. */
@@ -689,46 +842,73 @@ export function board(kind: 'tk' | 'cg', w = worldOf()): TcRow[] {
   fixHolyTitles(w);
   for (const p of tcPeople()) if (p.world === w) { beastHome(p); fitTribe(p, w); } // yêu tu không vào hoàng thất; Long Cung chỉ có đúng thủy tộc
   const rows: TcRow[] = [];
-  const linked = new Set<string>();
-  for (const p of tcPeople()) {
-    if (!p.alive || p.world !== w) continue;
-    if (p.npc) linked.add(p.npc);
-    const n = p.npc ? s.npcs.find((x) => x.id === p.npc && x.alive) : undefined;
-    const r = n ? n.r : p.r, st = n ? n.st : p.st;
+  for (const { person: p, npc: n } of worldResidents(w)) {
+    const r = n?.r ?? p!.r, st = n?.st ?? p!.st;
     if (r === 0) continue;
-    const a = Math.floor(s.year - p.born);
+    const a = Math.floor(s.year - (n?.born ?? p!.born));
     if (kind === 'tk' && a > TK_AGE[w]) continue;
-    rows.push({ id: p.id, name: n ? n.name : p.name, g: p.g, r, st, age: a, soul: Math.floor(s.year - p.soulBorn), note: noteOf(p), npc: n, person: p, role: n ? roleOfNpc(n) : roleOfPerson(p), rank: 0 });
+    rows.push({ id: p?.id ?? 'npc:' + n!.id, name: n?.name ?? p!.name, g: n?.g ?? p!.g, r, st, age: a,
+      soul: p ? Math.floor(s.year - p.soulBorn) : a,
+      note: p ? noteOf(p) : [n!.sect && SECTS[n!.sect] ? SECTS[n!.sect].n : '', n!.how].filter(Boolean).join(' · ') || 'Người quen',
+      npc: n, person: p, role: n ? roleOfNpc(n) : roleOfPerson(p!), rank: 0 });
   }
   // chức vụ bốn thần giới của giới này (Ngọc Hoàng, Phong Đô Đại Đế, Yêu Hoàng, Phật Tổ…): đều là người của giới, không ngoại lệ
-  if (kind === 'cg') {
+  {
     const names = new Set(rows.map((x) => x.name));
     for (const id of Object.keys(CELESTIAL) as CelestialId[]) {
       celestialOffices(id, w).forEach((o, i) => {
-        if (names.has(o.name)) return; // Hồng Hoang: nhân vật truyền thuyết đã có mặt trên bảng
+        if (names.has(o.name)) { const existing = rows.find(row => row.name === o.name)!; existing.celestialTier = Math.min(existing.celestialTier ?? o.tier, o.tier); return; } // Hồng Hoang: nhân vật truyền thuyết đã có mặt trên bảng
         names.add(o.name);
-        const a = Math.round(REALMS[o.r].life * worldLife(w) * (0.4 + ((i * 37) % 40) / 100));
-        rows.push({ id: `cel:${id}:${i}`, name: o.name, g: o.f ? 'f' : 'm', r: o.r, st: o.tier === 0 ? 3 : 2 - (i % 3), age: a, soul: a, note: `${o.title} · ${CELESTIAL[id].n}`, force: CELESTIAL[id].n, role: o.title, rank: 0 });
+        const births: Record<string, number> = (s.flags.celestialBirths ||= {});
+        const birthKey = `${w}:${id}:${o.title}`;
+        if (births[birthKey] === undefined) {
+          const rnd = seeded(hashStr(`${s.id}:celestial-age:${birthKey}`));
+          const initialAge = Math.floor(REALMS[o.r].life * worldLife(w) * (0.4 + rnd() * 0.4));
+          births[birthKey] = s.year - initialAge;
+        }
+        const a = Math.floor(s.year - births[birthKey]);
+        if (kind === 'tk' && a > TK_AGE[w]) return;
+        rows.push({ id: `cel:${id}:${i}`, name: o.name, g: o.f ? 'f' : 'm', r: o.r, st: o.tier === 0 ? 3 : 2 - (i % 3), age: a, soul: a, note: `${o.title} · ${CELESTIAL[id].n}${o.daoHao ? ` · Đạo hiệu: ${o.daoHao}` : ''}`, force: CELESTIAL[id].n, role: o.title, rank: 0, daoHao: o.daoHao, celestialTier: o.tier });
       });
     }
   }
   // người quen trong nhân mạch (luôn cùng giới với người chơi)
   if (w === worldOf()) {
-    for (const n of s.npcs) {
-      if (!n.alive || n.r === 0 || linked.has(n.id)) continue;
-      const a = Math.floor(s.year - n.born);
-      if (kind === 'tk' && a > TK_AGE[w]) continue;
-      rows.push({ id: 'npc:' + n.id, name: n.name, g: n.g, r: n.r, st: n.st, age: a, soul: a, note: [n.sect && SECTS[n.sect] ? SECTS[n.sect].n : '', n.how].filter(Boolean).join(' · ') || 'Người quen', npc: n, role: roleOfNpc(n), rank: 0 });
-    }
     const a = Math.floor(age());
     if (s.r > 0 && (kind === 'cg' || a <= TK_AGE[w])) rows.push({ id: 'me', name: s.name, g: s.g, r: s.r, st: s.st, age: a, soul: Math.floor(soulAge()), note: s.sect && SECTS[s.sect.id] ? SECTS[s.sect.id].n : 'Chính ngươi', mine: true, rank: 0 });
   }
-  rows.sort((x, z) => pow(z.r, z.st) - pow(x.r, x.st) || (kind === 'tk' ? x.age - z.age : z.soul - x.soul));
-  rows.forEach((r, i) => (r.rank = i + 1));
-  return rows;
+  for (const row of rows) row.power = rankingPower(row, w);
+  return rankedHundred<TcRow>(rows, () => {
+    const p = recruitPerson(w, kind === 'tk');
+    const a = Math.floor(s.year - p.born);
+    const row: TcRow = { id: p.id, name: p.name, g: p.g, r: p.r, st: p.st, age: a, soul: a, note: noteOf(p), person: p, role: roleOfPerson(p), rank: 0 };
+    row.power = rankingPower(row, w);
+    return row;
+  }, compareRankPower);
+}
+
+/** New residents persist in the save and follow the normal cultivation lifecycle. */
+export function recruitPerson(w: number, young = false): TcPerson {
+  const T = tc();
+  const rnd = seeded(hashStr(`${s.id}:recruit:${w}:${s.year}:${T.people.length}`));
+  const g = rnd() < 0.5 ? 'm' : 'f';
+  const talent = 1.3 + rnd();
+  const target = Math.max(1, npcCap(w) - Math.floor(rnd() * 4));
+  const bodyAge = young ? Math.floor(18 + rnd() * (TK_AGE[w] - 18))
+    : Math.floor(REALMS[target].life * worldLife(w) * (0.4 + rnd() * 0.4));
+  const grown = realmAfter(Math.max(0, bodyAge - 10), talent, npcCap(w));
+  const r = grown.r;
+  const sect = pickRecruitSect(sectsOf(w), rnd)?.n ?? 'Tán tu';
+  const p: TcPerson = { id: uid(), name: genName(rnd, g), g, world: w, born: s.year - bodyAge, soulBorn: s.year - bodyAge,
+    r, st: grown.st, p: grown.p, talent, el: pkAny(rnd, ALL_EL), sect, from: `Đệ tử ${sect}`, asc: 0, alive: true };
+  diversifyRecruit(p, rnd);
+  T.people.push(p);
+  ensureWorldNames(T.people);
+  return p;
 }
 /** Chức vụ của một người do Thiên Cơ Lâu ghi chép, suy từ lai lịch. */
 export function roleOfPerson(p: TcPerson): string {
+  if (p.legacyRole) return p.legacyRole.slice(p.legacyRole.indexOf(':') + 1);
   if (p.lord) return 'Đạo Chủ';
   const f = p.from, royal = p.sect.startsWith('Hoàng thất');
   if (p.ret && !p.known) return p.clan ? 'Con cháu trong tộc' : p.sect === 'Tán tu' ? 'không chức vụ' : 'Đệ tử';
@@ -786,6 +966,11 @@ function checkRank() {
 export function linkNpc(p: TcPerson, n: NPC) {
   p.npc = n.id;
   n.talent = Math.max(n.talent, p.talent);
+  n.craft ??= p.craft ? { ...p.craft } : undefined;
+  n.beast ??= p.beast;
+  n.race ??= p.race;
+  n.evolution ??= p.evolution;
+  n.blood ??= p.blood;
 }
 /** Mua Thiên Cơ Lục: lộ lai lịch mọi hồi hạ giả đang ở giới này. */
 export function revealAll(w = worldOf()): TcPerson[] {

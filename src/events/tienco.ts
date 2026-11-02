@@ -24,13 +24,14 @@ function spawn(p: TcPerson, tag: NPC['tag'], rel: number, how: string): NPC {
   const clan = p.clan ? CLANS[p.clan] : null;
   const sect = clan?.patron ?? Object.values(SECTS).find((x) => x.n === p.sect)?.id ?? null;
   const home = p.clan ? `thuộc ${clan!.n}` : p.sect;
-  const n = addNpc(mkNpc({ name: p.name, g: p.g, r: p.r, st: p.st, el: p.el, age: Math.max(1, Math.floor(s.year - p.born)), talent: p.talent, tag, rel, how: [how, home].filter(Boolean).join(' · '), sect }));
+  const n = mkNpc({ name: p.name, g: p.g, r: p.r, st: p.st, el: p.el, age: Math.max(1, Math.floor(s.year - p.born)), talent: p.talent, tag, rel, how: [how, home].filter(Boolean).join(' · '), sect });
+  linkNpc(p, n);
+  addNpc(n);
   n.loc = p.loc ?? s.loc;
   if (p.bio) n.bio = { ...p.bio, els: p.bio.els ? [...p.bio.els] : undefined };
   if (p.pic) n.pic = p.pic;
   if (p.heroine) s.flags.heroineId = n.id;
   if (s.g === 'f' && p.ret === 'Diệp gia Hỗn Độn' && p.g === 'm') s.flags.mainLeadId = n.id;
-  linkNpc(p, n);
   return n;
 }
 

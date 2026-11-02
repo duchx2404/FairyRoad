@@ -1,3 +1,6 @@
+import { limitGear } from '../data/local-items';
+import { heldTreasures } from './legacy-holders';
+import { worldTreasureCap } from '../data/treasure-grades';
 // Các bảng xếp hạng của Thiên Cơ Lâu ngoài Thiên Kiêu / Cường Giả:
 // Thế Lực Bảng (tông môn, hoàng triều, thế gia chung một bảng), Pháp Bảo Bảng, ba bảng danh sư (đan / khí / phù)
 // và ba bảng pháp khí luyện chế (đan lô / luyện khí đỉnh / phù bút). Phần sinh ngẫu nhiên dùng hạt giống theo kiếp + giới
@@ -7,8 +10,10 @@ import { seeded, hashStr } from '../core/util';
 import { SECTS, EMPIRES, LOCS, SECT_TIER, SECT_TOP, EMPIRE_TIER, EMPIRE_GUARD, whereOf, worldPack, CRAFT_LABEL } from '../data/world';
 import { CLANS, REALMS, SURN, MALE, FEM, type El } from '../data/core';
 import { TIER_N } from '../data/items';
-import { craftTitle, type CraftK } from './craft';
-import { board, worldOf } from './tienco';
+import { craftTitle, XP_K, type CraftK } from './craft';
+import { craftProficiency, trainArtisan, type ArtisanCraft } from './craft-proficiency';
+import { board, worldOf, worldResidents, recruitPerson, tcPeople } from './tienco';
+import { rankedHundred } from './ranking';
 import { CELESTIAL, CELESTIAL_CRAFT, celestialTop, celestialOffices, type CelestialId } from '../data/celestial';
 import { tbdbOf, TB_KIND_N, type Tbdb } from '../data/tbdb';
 
@@ -76,6 +81,7 @@ export function forceBoard(kind?: ForceKind): ForceRow[] {
     const R = CELESTIAL[id];
     const top = celestialTop(w);
     const head = celestialOffices(id, w)[0];
+    if (!head) return;
     rows.push({ id: 'x:' + id, kind: 'celestial', name: R.n, top, score: top * 1000 + 999 - i, rank: 0, mine: false, mineTxt: '', where: `qua ${g.n}`, els: id === 'thiendinh' ? ['loi'] : id === 'linhson' ? ['quang'] : id === 'diaphu' ? ['am'] : ['moc'], tier: 4,
       sub: `${R.kind} · ${head.title} ${head.name} (${head.realm}) · cổng ở ${LOCS[g.gateHost!]?.n || '?'}`, d: R.intro });
   });
@@ -98,6 +104,7 @@ const genName = (rnd: () => number, g: 'm' | 'f') => `${pk(rnd, SURN)} ${pk(rnd,
 
 // ---------- Pháp bảo ----------
 export interface BaoRow {
+  detail?: string;
   rank: number;
   name: string;
   /** Giai 0 Phàm … 6 Tiên. */
@@ -118,10 +125,14 @@ export function treasureBoard(): BaoRow[] {
   const rows: BaoRow[] = [];
   const holders = board('cg').filter((r) => !r.mine).map((r) => r.name);
   const sects = Object.values(worldPack(w).sects).filter((x) => x.tier >= 3).map((x) => x.n);
+  for (const p of tcPeople().filter(p => p.alive && p.world === w)) {
+    for (const t of heldTreasures(p)) rows.push({ rank: 0, name: t.name, grade: t.grade, q: 3, kind: 'pháp bảo', el: p.el, holder: p.name,
+      score: t.grade * 100 + 60, note: '', detail: [t.role, ...t.functions, t.replica ? 'Uy lực mô phỏng ' + Math.round(t.powerScale * 100) + '%' : 'Bản chính', t.merit ? 'Công đức' : ''].filter(Boolean).join(' · ') });
+  }
   const N = 18;
   for (let i = 0; i < N; i++) {
     const r = rnd();
-    const grade = Math.min(6, (r < 0.15 ? 6 : r < 0.5 ? 5 : 4) + Math.min(1, Math.floor(w / 2)));
+    const grade = Math.min(worldTreasureCap(w), (r < 0.15 ? 6 : r < 0.5 ? 5 : 4) + Math.min(1, Math.floor(w / 2)));
     const q = Math.min(3, Math.floor(rnd() * 3) + (grade >= 6 ? 1 : 0));
     const el = rnd() < 0.85 ? pk(rnd, ELS) : null;
     const [kind, kn] = pk(rnd, BAO_KIND);
@@ -130,16 +141,23 @@ export function treasureBoard(): BaoRow[] {
     rows.push({ rank: 0, name, grade, q, kind, el, holder, score: grade * 100 + q * 20 + rnd() * 10, note: '' });
   }
   for (const g of s.gear) {
-    if (!g || g.g < 4) continue;
+    if (!g) continue;
+    limitGear(g, w);
+    if (g.g < 4) continue;
     rows.push({ rank: 0, name: g.n, grade: g.g, q: g.q ?? 1, kind: BAO_KIND.find(([, kn]) => g.n.endsWith(kn))?.[0] || 'pháp bảo', el: g.el, holder: s.name, mine: true, score: g.g * 100 + (g.q ?? 1) * 20 + (g.grow ? 60 : 0) + g.lv * 2, note: '' });
   }
   rows.sort((a, b) => b.score - a.score);
-  rows.forEach((r, i) => { r.rank = i + 1; r.note = `${TIER_N[r.grade]} · ${Q_N[r.q]} · ${r.kind} · ${r.mine ? 'trong tay ngươi' : 'trong tay ' + r.holder}`; });
+  rows.forEach((r, i) => { r.rank = i + 1; r.note = `${TIER_N[r.grade]} · ${Q_N[r.q]} · ${r.kind} · ${r.mine ? 'trong tay ngươi' : 'trong tay ' + r.holder}${r.detail ? ' · ' + r.detail : ''}`; });
   return rows;
 }
 
 // ---------- Danh sư ----------
 export interface MasterRow {
+  proficiency: number;
+  daoHao?: string;
+  id?: string;
+  beast?: string;
+  race?: string;
   rank: number;
   name: string;
   g: 'm' | 'f';
@@ -154,29 +172,38 @@ export const MASTER_N: Record<CraftK, string> = { alch: 'luyện đan sư', forg
 /** Bảng danh sư một nghề trong giới: cao thủ sinh theo hạt giống + người chơi nếu đã nhập môn. */
 export function masterBoard(k: CraftK): MasterRow[] {
   const w = worldOf();
-  const rnd = seeded(hashStr(s.id + ':su:' + k + ':' + w));
-  const sects = Object.values(worldPack(w).sects).filter((x) => x.craft === k).map((x) => x.n);
   const rows: MasterRow[] = [];
-  const N = 12;
-  for (let i = 0; i < N; i++) {
-    const g: 'm' | 'f' = rnd() < 0.6 ? 'm' : 'f';
-    // danh sư trần thế giỏi nhất cũng chỉ tới bậc 7 (Đan Vương / Khí Vương / Phù Vương); bậc 8 (Đan Thánh / Khí Thánh / Phù Thánh) là tầm của thần giới
-    const lv = Math.max(3, Math.min(7, Math.round(7.4 - i * 0.45 + rnd() * 1.2)));
-    const sect = rnd() < 0.8 && sects.length ? pk(rnd, sects) : 'Tán tu';
-    rows.push({ rank: 0, name: genName(rnd, g), g, lv, sect, note: '' });
+  for (const { person: p, npc: n } of worldResidents(w)) {
+    const craft = n?.craft ?? p?.craft;
+    if (craft?.kind !== k || craft.lv < 1) continue;
+    const proficiency = trainArtisan(craft, s.year, n?.talent ?? p?.talent ?? 1);
+    rows.push({ id: p?.id ?? 'npc:' + n!.id, rank: 0, name: n?.name ?? p!.name, g: n?.g ?? p!.g, lv: craft.lv, proficiency,
+      sect: (n?.sect ? SECTS[n.sect]?.n ?? n.sect : p?.sect) ?? 'Tán tu',
+      beast: n?.beast ?? p?.beast, race: n?.race ?? p?.races?.join(' · ') ?? p?.race, note: '' });
   }
   // danh sư của bốn thần giới trong giới này (Thái Thượng Lão Quân luyện đan…)
   for (const id of Object.keys(CELESTIAL) as CelestialId[]) {
     for (const o of celestialOffices(id, w)) {
       const lv = CELESTIAL_CRAFT[o.title]?.find(([c]) => c === k)?.[1];
-      if (lv) rows.push({ rank: 0, name: o.name, g: o.f ? 'f' : 'm', lv: 8, cel: lv, sect: `${CELESTIAL[id].n} · ${o.title}`, note: '' }); // người thần giới luôn trên mọi danh sư trần thế
+      if (!lv) continue;
+      const key = `${w}:${id}:${o.title}:${k}`;
+      const records: Record<string, ArtisanCraft> = (s.flags.celestialCraft ||= {});
+      const skill = records[key] ||= { kind: k, lv: 8, xp: (lv ?? 0) * 1000, trainedAt: s.year };
+      const proficiency = trainArtisan(skill, s.year, (lv ?? 1) / 2);
+      if (!rows.some(r => r.name === o.name)) rows.push({ id: `cel:${id}:${o.title}`, rank: 0, name: o.name, daoHao: o.daoHao, g: o.f ? 'f' : 'm', lv: 8, proficiency, cel: lv, sect: `${CELESTIAL[id].n} · ${o.title}`, race: id === 'yeugioi' ? 'Yêu tộc' : undefined, note: '' });
     }
   }
   const my = s.craft[k];
-  if (my >= 1) rows.push({ rank: 0, name: s.name, g: s.g, lv: my, sect: s.sect && SECTS[s.sect.id] ? SECTS[s.sect.id].n : 'Tán tu', mine: true, note: '' });
-  rows.sort((a, b) => b.lv - a.lv || (b.cel ?? 0) - (a.cel ?? 0) || (a.mine ? 1 : 0) - (b.mine ? 1 : 0));
-  rows.forEach((r, i) => { r.rank = i + 1; r.note = `${craftTitle(r.lv, k)} · ${r.sect}`; });
-  return rows;
+  if (my >= 1) rows.push({ id: 'me', rank: 0, name: s.name, g: s.g, lv: my, proficiency: craftProficiency(my, s.craft[XP_K[k]]), sect: s.sect && SECTS[s.sect.id] ? SECTS[s.sect.id].n : 'Tán tu', mine: true, beast: s.beast, race: s.race, note: '' });
+  const ranked = rankedHundred<MasterRow>(rows, () => {
+    const p = recruitPerson(w);
+    const rnd = seeded(hashStr(p.id + ':craft:' + k));
+    const lv = 1 + Math.floor(rnd() * 7);
+    p.craft = { kind: k, lv, xp: Math.floor(rnd() * 30), trainedAt: s.year };
+    return { id: p.id, rank: 0, name: p.name, g: p.g, lv, proficiency: craftProficiency(lv, p.craft.xp), sect: p.sect, beast: p.beast, race: p.race, note: '' };
+  }, (a, b) => b.proficiency - a.proficiency || (a.id ?? a.name).localeCompare(b.id ?? b.name));
+  ranked.forEach((r) => { r.note = [craftTitle(r.lv, k), `Thuần thục: ${Math.floor(r.proficiency).toLocaleString('vi-VN')}`, r.sect, r.daoHao ? `Đạo hiệu: ${r.daoHao}` : '', r.beast ? `Yêu tu · ${r.beast}` : '', r.race].filter(Boolean).join(' · '); });
+  return ranked;
 }
 
 // ---------- Pháp khí luyện chế ----------
@@ -190,7 +217,7 @@ export function toolBoard(k: CraftK): BaoRow[] {
   const rows: BaoRow[] = [];
   const N = 10;
   for (let i = 0; i < N; i++) {
-    const grade = Math.min(6, Math.max(3, Math.round(6 - i * 0.35 + rnd() * 0.8)));
+    const grade = Math.min(worldTreasureCap(w), Math.max(3, Math.round(6 - i * 0.35 + rnd() * 0.8)));
     const q = Math.min(3, Math.max(0, Math.round(3 - i * 0.3 + rnd() * 0.8)));
     const el = pk(rnd, ELS);
     const name = `${pk(rnd, PRE)} ${pk(rnd, EL_MID[el])} ${pk(rnd, TOOL_SUFFIX[k])}`;

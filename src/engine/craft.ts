@@ -1,4 +1,7 @@
+import { baseItemKey, localItemId } from '../data/local-items';
 // Luyện đan, chế phù, luyện khí.
+import { worldArtCap } from '../data/treasure-grades';
+import { pillGiai } from '../data/items';
 import { RMAX, REALMS } from '../data/core';
 import { coPaper, PHU_PHAM, PILLS, TALIS, TALIS_REC, HERBS, MATS, mkGear, SLOTS, pillGrade, talisGrade, gearLabel } from '../data/items';
 import { LOCS } from '../data/world';
@@ -9,8 +12,9 @@ import { ch, clamp, ri, rf } from '../core/util';
 
 export const CRAFT_N = { alch: 'Luyện đan', talis: 'Chế phù', forge: 'Luyện khí' } as const;
 export type CraftK = keyof typeof CRAFT_N;
-const XP_K = { alch: 'ax', talis: 'tx', forge: 'fx' } as const;
-export const xpNeed = (lv: number) => Math.round(6 * lv * lv + 4);
+export const XP_K = { alch: 'ax', talis: 'tx', forge: 'fx' } as const;
+import { xpNeed } from './craft-proficiency';
+export { xpNeed, craftProficiency } from './craft-proficiency';
 /** Danh hiệu tay nghề. Bậc 1–6 dùng chung; hai bậc cao nhất riêng từng nghề (đứng đầu: Đan Thánh / Khí Thánh / Phù Thánh). */
 const CRAFT_TOP: Record<CraftK, [string, string]> = { alch: ['Đan Vương', 'Đan Thánh'], forge: ['Khí Vương', 'Khí Thánh'], talis: ['Phù Vương', 'Phù Thánh'] };
 export const craftTitle = (lv: number, k: CraftK) => {
@@ -18,7 +22,7 @@ export const craftTitle = (lv: number, k: CraftK) => {
   return i >= 7 ? CRAFT_TOP[k][Math.min(i, 8) - 7] : ['Chưa nhập môn', 'Học đồ', 'Sơ cấp', 'Trung cấp', 'Cao cấp', 'Đại sư', 'Tông sư'][i];
 };
 
-function gainXp(k: CraftK, n: number): string {
+export function gainXp(k: CraftK, n: number): string {
   const xk = XP_K[k];
   s.craft[xk] += n;
   let up = '';
@@ -49,10 +53,11 @@ export function pillRec(pillId: string): [string, number][] {
 /** Công thức phù kèm số lượng: phù chỉ 1 tờ, chu sa theo phẩm (tối đa 5), vật liệu đặc trưng ⌈phẩm/2⌉. */
 export function talisRec(id: string): [string, number][] {
   const t = TALIS[id];
-  return TALIS_REC[id].map((m) => [m, m === 'phuchi' ? 1 : m === 'chusa' ? Math.min(5, t.p) : Math.max(1, Math.ceil(t.p / 2))]);
+  return TALIS_REC[baseItemKey(id)].map((m) => [m, m === 'phuchi' ? 1 : m === 'chusa' ? Math.min(5, t.p) : Math.max(1, Math.ceil(t.p / 2))]);
 }
 export function canBrew(pillId: string): string | null {
   const p = PILLS[pillId];
+  if (pillGiai(p) > worldArtCap()) return 'Đan dược vượt trần phẩm chất của giới hiện tại.';
   if (s.craft.alch < 1) return 'Chưa biết luyện đan.';
   if (!s.recipes.includes(pillId)) return 'Chưa có đan phương.';
   if (p.tier > s.craft.alch + 1) return `Cần tay nghề ${craftTitle(p.tier - 1, 'alch')}.`;
@@ -93,6 +98,7 @@ export function paperFor(id: string, co: boolean): string | null {
 }
 export function canDraw(id: string, co = false): string | null {
   const t = TALIS[id];
+  if (t.tier > worldArtCap()) return 'Phù lục vượt trần phẩm chất của giới hiện tại.';
   if (s.craft.talis < 1) return 'Chưa biết chế phù.';
   if (!s.recipes.includes(id)) return 'Chưa có phù phương.';
   if (effRi() < t.p - 1) return `${PHU_PHAM[t.p]} phẩm phù cần cảnh giới ${REALMS[t.p - 1].n} mới vẽ nổi.`;
@@ -115,7 +121,7 @@ export function draw(id: string, co = false): string {
   const n = ri(2, 3) + Math.max(0, s.craft.talis - t.tier);
   const qv = s.craft.talis - t.tier + (has('phusu') ? 1 : 0) + rf(-1.2, 1.5);
   const tg = qv >= 2.2 ? 3 : qv >= 1 ? 2 : qv >= -0.3 ? 1 : 0;
-  const out = co ? TALIS['co_' + id] : t;
+  const out = co ? TALIS[localItemId('t:co_' + baseItemKey(id)).slice(2)] : t;
   if (!addItem('t:' + out.id, n, tg)) return 'Vẽ xong mà túi đầy, đành bỏ lại.';
   return `${co ? `Ngươi vẽ theo nét bút trong bí tịch thượng cổ lên ${itemName('m:' + paper)} — phù văn không chìm vào giấy mà như muốn bay ra khỏi giấy. ` : 'Phù văn sáng lên rồi chìm vào giấy. '}Được ${n} lá ${out.n} (${talisGrade(out, tg)}).${gainXp('talis', t.tier * 2)}`;
 }

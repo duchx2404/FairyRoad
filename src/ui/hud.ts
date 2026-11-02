@@ -1,4 +1,4 @@
-import { childScene, tenScene, needTenScene } from '../events/diephd';
+import { childScene, engageScene, needEngageScene, congratsScene, needCongratsScene } from '../events/diephd';
 import { glyphSvg } from './glyph';
 import { courtTitle } from '../engine/court';
 // Mệnh bài góc trái, thanh hành động dưới đáy, popup địa điểm.
@@ -17,12 +17,17 @@ import { turnLen, age, maxLife, rootLabel, cultRate, atBottleneck, powerScore, s
 import { dateStr, realmOpen, nextOpen, passTime, renameNpc } from '../engine/core';
 import { daoScene, cultivate, breakthroughScene, wander, explore, gatherScene, work, rest, travelTo, travelInfo, visitPin, eventScene } from '../engine/actions';
 import { auctionHeld } from '../engine/trade';
-import { run, showScene, toast, setGate, setPrelude } from './modal';
+import { run, showScene, toast, setGate, setPrelude, setFollow } from './modal';
 import { EVENTS } from '../engine/events';
 import { retPeople, worldOf } from '../engine/tienco';
 import { fengshenGateScene } from '../events/fengshen';
-// Tới mười tuổi (Diệp gia Hỗn Độn): dù đang làm gì cũng phải qua ước định hôn ước trước, rồi mới xem kết quả việc đang làm.
-setGate(() => (needTenScene() ? tenScene() : fengshenGateScene()));
+import { exileTalkScene } from '../events/exile';
+import { reviveBrides } from '../engine/bride';
+// Tới mười sáu tuổi (Diệp gia Hỗn Độn): dù đang làm gì cũng phải qua định đoạt hôn ước trước, rồi mới xem kết quả việc đang làm.
+// Cố nhân bị hãm hại rời tông (bản lưu cũ đã đánh xong truy binh): hỏi dự định ở hành động kế tiếp.
+setGate(() => { reviveBrides(); return needEngageScene() ? engageScene() : exileTalkScene() ?? fengshenGateScene(); });
+// Vừa gia nhập tông môn / đại hoàng triều trước 16 tuổi: đóng cảnh gia nhập xong thì hiện thư chúc mừng của các vị hôn thê.
+setFollow(() => (needCongratsScene() ? congratsScene() : null));
 setPrelude(() => {
   if (worldOf() === 0 && s.evSeen.tc_sao_bang === undefined) {
     retPeople();
@@ -76,7 +81,7 @@ function renameBox(n: NPC, onDone: (name: string) => void, onCancel: () => void)
       btn('Lưu', save, 'small prime'), btn('Thôi', onCancel, 'small ghost')),
     err);
 }
-export function openPortrait(name: string, pic: string, g: 'm' | 'f', sub = '', weapon = 'quyen', want: string[] = [pic], npcId?: string) {
+export function openPortrait(name: string, pic: string, g: 'm' | 'f', sub = '', weapon = 'quyen', want: string[] = [pic], npcId?: string, characterAge?: number) {
   const box = h('div', { class: 'por-big' });
   const npc = npcId ? s.npcs.find((x) => x.id === npcId) : undefined;
   let editing = false;
@@ -100,7 +105,7 @@ export function openPortrait(name: string, pic: string, g: 'm' | 'f', sub = '', 
       drawButtons({ want, full: fullBodyWanted(want[0] ?? pic, g), onDone: (k) => { if (!k.startsWith('full_')) pic = k; paint(); } }));
   };
   paint();
-  openModal(name, box, { seal: 'portrait' });
+  openModal(name, box, { seal: 'portrait', characterAge: characterAge ?? (npc ? s.year - npc.born : name === s.name ? age() : null) });
 }
 export function renderHud() {
   const el = $('#hud');
@@ -162,7 +167,7 @@ export function renderActions() {
     add(h('div', { class: 'act-here' }, h('span', {}, 'Đang ở ', h('b', {}, l.n))));
     return;
   }
-  if (needTenScene()) add(btn('Hôn ước năm mười tuổi', () => run(tenScene), 'prime'));
+  if (needEngageScene()) add(btn('Hôn ước năm mười sáu tuổi', () => run(engageScene), 'prime'));
   // tu luyện
   if (atBottleneck()) {
     add(btn(s.r === 0 ? 'Đả thông kinh mạch' : s.r === RMAX() || (s.body === 'thiendo' && s.r === 1) ? ((s.world ?? 0) >= LAST_WORLD ? 'Hợp nhất Đại Đạo' : 'Độ kiếp phi thăng') : 'Đột phá', () => run(breakthroughScene), 'prime'));

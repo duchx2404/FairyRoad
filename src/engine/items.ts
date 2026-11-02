@@ -1,3 +1,4 @@
+import { worldDefinitions } from '../data/local-items';
 import { kmPlaceOne, kmRemove } from './kinhmach';
 import { kmFillNew } from './kinhmach';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
@@ -76,7 +77,7 @@ export function useSpecial(key: string): string {
       s.flags.bagExtra = (s.flags.bagExtra || 0) + 6;
       return 'Túi đồ rộng thêm 6 ô.';
     case 'ngocgian': {
-      const pool = Object.values(SKILLS).filter((k) => !k.peak && k.tier <= Math.ceil((effRi() + 1) / 2) && !s.known.includes(k.id));
+      const pool = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.ceil((effRi() + 1) / 2) && !s.known.includes(k.id));
       if (pool.length && ch(0.55)) { const k = pick(pool); learn(k.id); return `Thần thức chìm vào ngọc giản. Ngươi lĩnh ngộ ${k.n}!`; }
       s.stats.ngo += 1;
       return 'Ngọc giản ghi chép tâm đắc của một tu sĩ vô danh. Đọc xong, ngộ tính +1.';
@@ -260,6 +261,18 @@ export function toggleTam(id: string): string {
   a.push(id);
   kmFillNew();
   return `Vận hành ${TAMPHAP[id].n}.`;
+}
+/** Đổi tọa kỵ (chân linh) giữa xuất chiến và chỉ để cưỡi. Xuất chiến chiếm một suất trong đội; cưỡi thì vẫn đi đường nhanh. */
+export function toggleLinhRide(maxActive: number, activeNow: number): string {
+  const c = myLinh();
+  if (!c) return '';
+  if (c.ride) {
+    if (activeNow >= maxActive) return `Đội xuất trận đã đủ ${maxActive} suất — rút bớt một đồng hành về dự bị trước.`;
+    c.ride = false;
+    return `${c.name} sẽ cùng ngươi xuất chiến.`;
+  }
+  c.ride = true;
+  return `${c.name} chỉ làm tọa kỵ, không vào trận nữa (vẫn chở ngươi đi đường).`;
 }
 export function releaseLinh(): string {
   const c = myLinh();

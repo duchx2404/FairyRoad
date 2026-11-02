@@ -1,3 +1,5 @@
+import { worldDefinitions } from '../data/local-items';
+import { localItemId, limitGear } from '../data/local-items';
 import { PHAM_BONUS } from '../data/core';
 import { slots } from './slots';
 import { PHAPQUYET, CHANLINH, pqGrade, pqPrice } from '../data/spirit';
@@ -71,8 +73,11 @@ export const tamSum = (k: 'tam' | 'ngo' | 'cult' | 'brk' | 'calm') => tamActive(
 export const pqList = (): string[] => (s.flags.phapquyet ||= []);
 export const pqSum = (k: 'cult' | 'herb' | 'speed' | 'flee' | 'hide' | 'atk' | 'def' | 'heal' | 'luck') => pqList().reduce((a, id) => a + (PHAPQUYET[id]?.[k] || 0), 0);
 /** Chân linh đang theo: { id, name, bond 0..100 }. */
-export const myLinh = (): { id: string; name: string; bond: number } | null => s.flags.chanlinh || null;
-export const clSum = (k: 'atk' | 'def' | 'hp' | 'cult' | 'luck' | 'flee') => { const c = myLinh(); if (!c) return 0; const d = CHANLINH[c.id]; return ((d?.[k] || 0) as number) * (0.6 + c.bond / 250); };
+/** Chân linh, cũng là tọa kỵ. ride = chỉ để cưỡi (không xuất chiến). */
+export const myLinh = (): { id: string; name: string; bond: number; ride?: boolean } | null => s.flags.chanlinh || null;
+/** Chân linh đang xuất chiến (mặc định có); chỉ để cưỡi thì không vào trận, không cộng công / thủ / huyết. */
+export const linhFights = () => { const c = myLinh(); return !!c && !c.ride; };
+export const clSum = (k: 'atk' | 'def' | 'hp' | 'cult' | 'luck' | 'flee') => { const c = myLinh(); if (!c) return 0; if (c.ride && (k === 'atk' || k === 'def' || k === 'hp')) return 0; const d = CHANLINH[c.id]; return ((d?.[k] || 0) as number) * (0.6 + c.bond / 250); };
 /** Phẩm đạo cơ hiện tại (chỉ có từ Trúc Cơ). Save cũ mặc định Trung phẩm. */
 export const daoCo = (): number => (s.r >= 2 ? (s.flags.daoCo ?? 1) : -1);
 export const daoCoInfo = () => (daoCo() >= 0 ? DAO_CO[daoCo()] : null);
@@ -159,6 +164,7 @@ export function cultRate(): number {
 // ---------- Chiến lực ----------
 /** Tiên khí tàn khuyết: chỉ số tính lại theo cảnh giới (tương đương) và giới hiện tại. */
 function growGear(g: Gear) {
+  limitGear(g, s.world ?? 0);
   const lv = Math.max(1, effRi());
   const m = g.growMul ?? 1;
   if (g.lv === lv && g.gw === WORLD.lv && (g.gm ?? 1) === m) return;
@@ -198,7 +204,7 @@ export function basePow(): number {
 export function skSource(id: string): Tech | null {
   const seen: string[] = s.flags.techSeen || [];
   const ok = (t: Tech) => (t.blood === 'diep' ? !!s.flags.diepBlood : t.blood === 'diep_hondon' ? !!s.flags.hondonBlood : t.id === s.tech || seen.includes(t.id));
-  const c = Object.values(TECHS).filter((t) => t.skills.includes(id) && ok(t));
+  const c = worldDefinitions('cp').filter((t) => t.skills.includes(id) && ok(t));
   return c.sort((a, b) => b.tier - a.tier || (b.pq ?? 0) - (a.pq ?? 0))[0] || null;
 }
 /** Cùng một võ công, học từ công pháp phẩm càng cao càng mạnh (chênh lệch phẩm chất công pháp). */
@@ -306,6 +312,7 @@ export const count = (id: string, g?: number) =>
 
 /** Thêm vật phẩm. Trả về số lượng thực nhận (túi đầy thì bỏ lại). */
 export function addItem(id: string, n = 1, g?: number): number {
+  id = localItemId(id, s.world ?? 0);
   if ((id.startsWith('p:') || id.startsWith('t:')) && g === undefined) g = 1;
   const ex = s.bag.find((b) => b.id === id && b.g === g);
   if (ex) {
@@ -331,6 +338,7 @@ export function removeItem(id: string, n = 1, g?: number): boolean {
   return true;
 }
 export function addGear(g: Gear): boolean {
+  limitGear(g, s.world ?? 0);
   if (bagFree() <= 0) return false;
   s.gearBag.push(g);
   return true;

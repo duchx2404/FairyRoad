@@ -4,7 +4,7 @@ import { h, btn } from './dom';
 import { glyphSvg } from './glyph';
 import { openModal, closeModal } from './modal';
 import { s } from '../engine/state';
-import { CELESTIAL, celestialOffices, celestialTop, type CelestialId } from '../data/celestial';
+import { CELESTIAL, celestialOffices, celestialTop, hasCelestialRealms, type CelestialId } from '../data/celestial';
 import { SECTS, LOCS } from '../data/world';
 import { REALMS, WORLDS } from '../data/core';
 
@@ -13,6 +13,7 @@ const sel: Record<string, string> = {};
 export function openCelestial(id: CelestialId) {
   const R = CELESTIAL[id];
   const w = s.world ?? 0;
+  if (!hasCelestialRealms(w)) return;
   sel[id] ||= R.places[Math.min(1, R.places.length - 1)].id;
   const draw = () => openModal(`${R.n} · ${WORLDS[w]}`, body(), { wide: true, xBtn: true, noClose: true, sub: `${R.kind} · trần thực lực ${REALMS[celestialTop(w)].n}` });
   const body = (): HTMLElement[] => {
@@ -33,7 +34,7 @@ export function openCelestial(id: CelestialId) {
     const here = offices.filter((o) => o.place === place.id);
     if (!here.length) list.append(h('div', { class: 'empty' }, 'Nơi này không có chức vụ thường trực.'));
     for (const o of here) list.append(h('div', { class: 'item' }, h('div', { class: 'ic', style: { background: 'rgba(0,0,0,.55)' }, html: glyphSvg('crown', 20) }),
-      h('div', { class: 'nm' }, h('b', {}, o.title), ' ', h('span', { class: 'pill' }, o.name), h('span', { class: 'muted small' }, ` · ${o.realm}`), h('small', {}, o.d))));
+      h('div', { class: 'nm' }, h('b', {}, o.name), ' ', h('span', { class: 'pill' }, `Tiên chức: ${o.title}`), h('span', { class: 'muted small' }, ` · ${o.realm}`), o.daoHao ? h('small', {}, `Đạo hiệu: ${o.daoHao}`) : null, h('small', {}, o.d))));
     const out: HTMLElement[] = [h('p', { class: 'small muted' }, R.intro), map, h('h4', {}, place.n), h('p', { class: 'small' }, place.d), list];
     if (id === 'thiendinh' && place.id === 'tuhai') {
       // Long tộc thụ phong: Long Vương bốn biển và các sông của giới này

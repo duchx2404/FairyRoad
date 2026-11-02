@@ -1,3 +1,4 @@
+import { worldDefinitions } from '../data/local-items';
 // Chiến đấu theo lượt kiểu "linh lực": chiêu thức không có hồi chiêu, đủ linh lực là xuất chiêu.
 // Mỗi hiệp ngươi ra tay trước: mỗi chiêu dùng được một lần, còn linh lực bao nhiêu thì tung bấy nhiêu chiêu,
 // cộng một lần dùng đan hoặc phù; hết linh lực thì chỉ còn quyền cước cơ bản. Điều tức (khi chưa ra chiêu)
@@ -31,6 +32,8 @@ export interface Fighter {
   skills: Skill[];
   shield: number;
   dot: { dmg: number; turns: number }[];
+  /** Hồi máu theo lượt (vd. Tích Huyết Trùng Sinh): mỗi lượt hồi v khí huyết, còn turns lượt. Không hồi giáp. */
+  hot?: { v: number; turns: number; n: string }[];
   player?: boolean;
   /** Đồng hành: id NPC hoặc 'cl' (chân linh); địch không có. */
   id?: string;
@@ -124,7 +127,7 @@ export function mkFoe(spec: FoeSpec, rng: Rng = Math.random): Fighter {
       if (spec.r >= 1 && el) skills.push(SKILLS[ELEM_BEAST_SKILL[el]]);
       if (spec.r >= 3) skills.push(BEAST_SKILLS.gam);
     } else if (kind !== 'mortal') {
-      const pool = Object.values(SKILLS).filter((k) => !k.peak && k.tier <= Math.ceil(spec.r / 2) + 1 && (k.el === el || k.el === null));
+      const pool = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.ceil(spec.r / 2) + 1 && (k.el === el || k.el === null));
       for (let i = 0; i < Math.min(3, 1 + Math.floor(spec.r / 2)) && pool.length; i++) {
         const sk = P(pool);
         if (!skills.includes(sk)) skills.push(sk);
@@ -290,7 +293,7 @@ export class Battle {
     return clamp(fp, 0.05, 0.97);
   }
   fleeTalis() {
-    return Object.values(TALIS).filter((t) => t.k === 'flee' && count('t:' + t.id) > 0).sort((a, b) => b.tier - a.tier)[0];
+    return worldDefinitions('t').filter((t) => t.k === 'flee' && count('t:' + t.id) > 0).sort((a, b) => b.tier - a.tier)[0];
   }
   /** Ước lượng sát thương đòn kế của địch lên ngươi. */
   estIntent(): number { return this.estMove(this.intent); }
@@ -366,7 +369,16 @@ export class Battle {
       case 'atk': this.hit(a, d, m, sk.el, sk.n); break;
       case 'multi': for (let i = 0; i < 3 && d.hp > 0; i++) this.hit(a, d, m, sk.el, `${sk.n} (${i + 1})`); break;
       case 'dot': { const dm = this.hit(a, d, m, sk.el, sk.n); d.dot.push({ dmg: Math.max(1, Math.round(dm * 0.6)), turns: 3 }); break; }
-      case 'heal': { const h = Math.round(a.maxHp * 0.18 * m); a.hp = Math.min(a.maxHp, a.hp + h); this.log.push(`${a.name} thi triển ${sk.n}, hồi ${h} khí huyết.`); break; }
+      case 'heal': {
+        const h = Math.round(a.maxHp * 0.18 * m);
+        a.hp = Math.min(a.maxHp, a.hp + h);
+        if (sk.hot) { // hồi tiếp theo lượt; dùng lại thì làm mới chứ không cộng chồng
+          const v = Math.max(1, Math.round(h * sk.hot.m));
+          a.hot = [...(a.hot || []).filter((x) => x.n !== sk.n), { v, turns: sk.hot.turns, n: sk.n }];
+          this.log.push(`${a.name} thi triển ${sk.n}, hồi ${h} khí huyết; ${sk.hot.turns} lượt tới mỗi lượt hồi thêm ${v}.`);
+        } else this.log.push(`${a.name} thi triển ${sk.n}, hồi ${h} khí huyết.`);
+        break;
+      }
       case 'shield': { a.shield = Math.round(a.def * 2 * m + a.maxHp * 0.08 * m); this.log.push(`${a.name} thi triển ${sk.n}, dựng hộ thuẫn ${a.shield}.`); break; }
     }
   }
@@ -520,7 +532,7 @@ export class Battle {
       const sk = al.skills.length && this.ch(0.5) ? al.skills[Math.floor(this.rng() * al.skills.length)] : null;
       if (sk) this.cast(al, d, sk); else this.hit(al, d, 1, al.el, al.id === 'cl' ? 'vồ cắn' : 'đòn thường');
     }
-    for (const f of this.foeSide()) { for (const tk of f.dot) { f.hp -= tk.dmg; tk.turns--; this.log.push(`${f.name} trúng độc/trói, mất ${tk.dmg} khí huyết.`); } f.dot = f.dot.filter((tk) => tk.turns > 0); }
+    for (const f of this.foeSide()) { for (const tk of f.dot) { f.hp -= tk.dmg; tk.turns--; this.log.push(`${f.name} trúng độc/trói, mất ${tk.dmg} khí huyết.`); } f.dot = f.dot.filter((tk) => tk.turns > 0); this.tickHot(f); }
     if (this.checkOver()) return;
     this.foeQueue = this.foeSide();
     this.runFoes();
@@ -560,6 +572,17 @@ export class Battle {
       if (this.checkOver()) return;
     }
   }
+  /** Hồi máu theo lượt: chỉ hồi khí huyết (tối đa tới máu tối đa), không đụng tới giáp. */
+  private tickHot(x: Fighter) {
+    if (!x.hot?.length || x.hp <= 0) return;
+    for (const t of x.hot) {
+      const got = Math.min(t.v, Math.max(0, x.maxHp - x.hp));
+      x.hp += got;
+      t.turns--;
+      this.log.push(`${x.name} được ${t.n} tái sinh huyết khí, hồi ${got} khí huyết (còn ${t.turns} lượt).`);
+    }
+    x.hot = x.hot.filter((t) => t.turns > 0);
+  }
   /** Đòn của một kẻ địch trong nhóm (kẻ chính dùng intent đã lộ). */
   private moveFor(f: Fighter): Intent {
     const opts: Intent[] = [{ sk: null, n: 'đòn thường', m: 1, k: 'atk' }, ...f.skills.filter((k) => !(k.k === 'shield' && f.shield > 0) && !(k.k === 'heal' && f.hp / f.maxHp > 0.6)).map((k) => ({ sk: k, n: k.n, m: k.m, k: k.k }))];
@@ -570,6 +593,7 @@ export class Battle {
     const p = this.p, f = this.foe;
     for (const x of this.meSide()) { for (const tk of x.dot) { x.hp -= tk.dmg; tk.turns--; this.log.push(`${x.name} trúng độc/trói, mất ${tk.dmg} khí huyết.`); } x.dot = x.dot.filter((tk) => tk.turns > 0); }
     if (this.checkOver()) return;
+    for (const x of this.meSide()) this.tickHot(x); // còn sống qua hiệp thì mới được hồi theo lượt
     this.round++;
     this.used = [];
     this.itemUsed = false;
@@ -713,7 +737,7 @@ export function fightSummary(r: FightResult) {
 function allyFighters(p: Fighter, rng: Rng): Fighter[] {
   const out: Fighter[] = [];
   const cl = myLinh();
-  if (cl && CHANLINH[cl.id]) {
+  if (cl && CHANLINH[cl.id] && !cl.ride) { // chỉ để cưỡi thì không vào trận
     const d = CHANLINH[cl.id];
     const hp = Math.round(p.maxHp * 0.35);
     out.push({ id: 'cl', name: cl.name, r: p.r, st: 0, el: d.el, hp, maxHp: hp, atk: Math.round(p.atk * (0.25 + cl.bond / 400)), def: Math.round(p.def * 0.5), skills: [], shield: 0, dot: [], kind: 'beast' });

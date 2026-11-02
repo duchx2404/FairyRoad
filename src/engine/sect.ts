@@ -1,3 +1,8 @@
+import { worldDefinitions } from '../data/local-items';
+import { itemName } from './char';
+import { localItemId, limitGear } from '../data/local-items';
+import { branchSchool } from '../data/declining-schools';
+import { worldArtCap } from '../data/treasure-grades';
 import { kmSyncSkills } from './kinhmach';
 import { PHAPQUYET } from '../data/spirit';
 // Tông môn: khảo hạch, gia nhập, thăng cấp, rời tông, nhiệm vụ, đổi cống hiến.
@@ -9,6 +14,8 @@ import { s, codexAdd } from './state';
 import { effRi, seenRoot as root, root as trueRoot, thapHidden } from './char';
 import { mark, addLog, setLoc, mkNpc, addNpc } from './core';
 import { ch, pick } from '../core/util';
+import { queueJoinCongrats } from './bride';
+import { allyFollow } from './ally';
 
 // ---------- Công pháp độc môn ----------
 /** Công pháp phổ thông: dù có tông dùng làm nhập môn, nơi khác vẫn truyền. */
@@ -16,11 +23,11 @@ const COMMON_TECH = new Set(['thanhtam', 'kimcuongquyet', 'thanhmocquyet', 'nhuo
 export const techOwners = (id: string) => Object.values(SECTS).filter((x) => x.tech === id).map((x) => x.id);
 /** Công pháp trấn tông: chỉ tông sở hữu mới truyền. */
 export const isExclusiveTech = (id: string) => !COMMON_TECH.has(id) && techOwners(id).length > 0;
-const commonSkills = new Set(Object.values(TECHS).filter((t) => !isExclusiveTech(t.id)).flatMap((t) => t.skills));
+const commonSkills = () => new Set(worldDefinitions('cp').filter((t) => !isExclusiveTech(t.id)).flatMap((t) => t.skills));
 /** Thuật pháp đi kèm công pháp độc môn → cũng độc môn. Trả về danh sách tông sở hữu (rỗng = phổ thông). */
 export function skillOwners(id: string): string[] {
-  if (commonSkills.has(id)) return [];
-  return Object.values(TECHS).filter((t) => isExclusiveTech(t.id) && t.skills.includes(id)).flatMap((t) => techOwners(t.id));
+  if (commonSkills().has(id)) return [];
+  return worldDefinitions('cp').filter((t) => isExclusiveTech(t.id) && t.skills.includes(id)).flatMap((t) => techOwners(t.id));
 }
 export const sectCanTeachTech = (techId: string, sectId: string) => !isExclusiveTech(techId) || techOwners(techId).includes(sectId);
 export const sectCanTeachSkill = (skId: string, sectId: string) => { const o = skillOwners(skId); return !o.length || o.includes(sectId); };
@@ -72,6 +79,8 @@ export function joinSect(id: string, rank = -1): string {
   addNpc(mkNpc({ dr: 1, sect: id, tag: 'senior', rel: 20, how: `Sư ${ch(0.5) ? 'huynh' : 'tỷ'} đồng môn ở ${sc.n}` }));
   if (startRank >= RK.NOI) txt += ' Mấy vị trưởng lão đã để mắt tới ngươi — tới Bái sư mà chọn lấy một người.';
   mark(`Gia nhập ${sc.n}`);
+  queueJoinCongrats(`sect:${id}`); // Diệp gia trước 16 tuổi: các vị hôn thê gửi thư chúc mừng
+  txt += allyFollow(); // đồng hành đã mất tông môn: theo ngươi gia nhập
   return txt;
 }
 
@@ -136,13 +145,13 @@ export function sectWares(): SectWare[] {
   const sc = sect();
   if (!sc) return [];
   const out: SectWare[] = [];
-  const techs = Object.values(TECHS).filter((t) => !t.blood && (t.id === sc.tech || (t.tier <= Math.min(6, sc.tier + 1) && !t.evil === !sc.evil && (t.el.length === 0 || t.el.some((e) => sc.el.includes(e)) || sc.el.length === 0))) && sectCanTeachTech(t.id, sc.id));
+  const techs = worldDefinitions('cp').filter((t) => !t.blood && (t.id === sc.tech || (t.tier <= Math.min(6, sc.tier + 1) && !t.evil === !sc.evil && (t.el.length === 0 || t.el.some((e) => sc.el.includes(e)) || sc.el.length === 0))) && sectCanTeachTech(t.id, sc.id));
   for (const t of techs) out.push({ id: 'cp:' + t.id, n: t.n, cost: 40 * Math.pow(4, t.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU, RK.CHU][t.tier] });
-  const sks = Object.values(SKILLS).filter((k) => !k.peak && ((k.tier <= sc.tier + 1 && (!k.el || sc.el.includes(k.el) || sc.el.length === 0)) || skillOwners(k.id).includes(sc.id)) && sectCanTeachSkill(k.id, sc.id));
+  const sks = worldDefinitions('sk').filter((k) => !k.peak && ((k.tier <= sc.tier + 1 && (!k.el || sc.el.includes(k.el) || sc.el.length === 0)) || skillOwners(k.id).includes(sc.id)) && sectCanTeachSkill(k.id, sc.id));
   for (const k of sks) out.push({ id: 'sk:' + k.id, n: k.n, cost: 25 * Math.pow(3.5, k.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][Math.min(6, k.tier)] });
-  for (const x of Object.values(TAMPHAP)) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
-  for (const x of Object.values(PHAPQUYET)) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
-  for (const p of Object.values(PILLS)) {
+  for (const x of worldDefinitions('tp')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+  for (const x of worldDefinitions('fq')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+  for (const p of worldDefinitions('p')) {
     if (p.tier > effRi() + 1 || p.tier < effRi() - 1) continue;
     out.push({ id: 'p:' + p.id, n: p.n, cost: Math.round(8 * Math.pow(3, p.tier - 1) * (p.k === 'break' ? 4 : p.k === 'root' ? 6 : 1)), minRank: p.k === 'break' ? RK.NOI : RK.NGOAI });
   }
@@ -164,11 +173,17 @@ export function sectWares(): SectWare[] {
     gr.uid = `v${key}${yk}`;
     out.push({ id: 'gear', n: gr.n, cost: Math.round(gearPrice(gr) / 6), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][g], gear: gr });
   }
-  for (const tl of Object.values(TALIS)) if (!tl.co && tl.tier <= giaiCap && (sc.craft === 'talis' || tl.tier <= Math.max(1, sc.tier))) out.push({ id: 't:' + tl.id, n: tl.n, cost: Math.round(6 * Math.pow(3.2, tl.tier - 1)), minRank: tl.tier >= 3 ? RK.NOI : RK.NGOAI, g: sc.craft === 'talis' ? 2 : 1 });
+  for (const tl of worldDefinitions('t')) if (!tl.co && tl.tier <= giaiCap && (sc.craft === 'talis' || tl.tier <= Math.max(1, sc.tier))) out.push({ id: 't:' + tl.id, n: tl.n, cost: Math.round(6 * Math.pow(3.2, tl.tier - 1)), minRank: tl.tier >= 3 ? RK.NOI : RK.NGOAI, g: sc.craft === 'talis' ? 2 : 1 });
   const herbCap = Math.min(6, sc.tier + 2);
   for (const hb of Object.values(HERBS)) if (hb.tier <= herbCap && (sc.craft === 'alch' || hb.tier <= sc.tier + 1)) out.push({ id: 'h:' + hb.id, n: hb.n, cost: Math.round(3 * Math.pow(3, hb.tier - 1)), minRank: hb.tier >= 4 ? RK.NOI : RK.NGOAI });
   for (const m of Object.values(MATS)) if (m.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'm:' + m.id, n: m.n, cost: Math.round(4 * Math.pow(3, m.tier - 1)), minRank: m.tier >= 4 ? RK.NOI : RK.NGOAI });
-  return out.map((w) => ({ ...w, cost: Math.max(1, Math.round(w.cost)) }));
+  const cap = branchSchool(sc.n) ? Math.min(4, worldArtCap()) : worldArtCap();
+  const seen = new Set<string>();
+  return out.map(w => {
+    if (w.gear) limitGear(w.gear, s.world ?? 0, cap);
+    const id = localItemId(w.id, s.world ?? 0, cap);
+    return { ...w, id, n: id === w.id ? w.n : itemName(id), cost: Math.max(1, Math.round(w.cost)) };
+  }).filter(w => { if (w.id === 'gear') return true; if (seen.has(w.id)) return false; seen.add(w.id); return true; });
 }
 
 export function missionPool(): { n: string; d: string; y: number; danger: number; reward: number }[] {

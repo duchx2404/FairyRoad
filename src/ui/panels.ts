@@ -1,3 +1,4 @@
+import { worldDefinitions } from '../data/local-items';
 // Cửa sổ trang kéo thả được.
 import { skEff, skGradeOf } from '../engine/char';
 import { glyphSvg, SLOT_GLYPH, SECT_GLYPH } from './glyph';
@@ -13,7 +14,7 @@ import { kmPanel, confirmStow } from './kmpanel';
 import { askConfirm } from './dialog';
 import { h, $, btn, bar } from './dom';
 import { s, meta } from '../engine/state';
-import { daoluTitle } from '../engine/relationships';
+import { daoluTitle, isPrimaryDaolu } from '../engine/relationships';
 import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO, ORIGINS, originName, CLANS, BODIES, ROOTS, ALL_EL, VARIANT_EL, khacOf } from '../data/core';
 import { CHAU, whereOf, ownerTxt, LOC_TYPE, EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, VUC, LOCS, LOC_LIST, SECTS, BEASTS, beastRoot, REGIONS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, rankLabel } from '../data/world';
 import { courtTitle } from '../engine/court';
@@ -23,17 +24,19 @@ import { phamProbs } from '../engine/core';
 import { laws, daos, daoOf, daoPow, R_CHUANTHANH } from '../engine/dao';
 import type { NPC } from '../engine/state';
 import { party, canInvite, invite, setActive, dismiss, activeNpcs, reserveNpcs, activeCount, MAX_ACTIVE, kit, kitSkills, kitSum, compMul, giftGear, giftItem, outfit } from '../engine/party';
+import { exiles, exileMigrate } from '../engine/ally';
+import { bioDesc } from '../engine/bride';
 import { npcPow } from '../engine/char';
 import { myLinh as linhOf } from '../engine/char';
 import { npcAge, npcRealm, relLabel, MERIDIANS, merMax, openMeridian, dateStr } from '../engine/core';
-import { toggleTam, releaseLinh, usePill, useSpecial, readScroll, toggleSkill, stowSkill, knownByGrade, isChaosBroken, repairChaosSword, startRefine, equip, unequip, gearLine, discard, discardGear } from '../engine/items';
-import { npcActions } from '../engine/actions';
+import { toggleTam, releaseLinh, toggleLinhRide, usePill, useSpecial, readScroll, toggleSkill, stowSkill, knownByGrade, isChaosBroken, repairChaosSword, startRefine, equip, unequip, gearLine, discard, discardGear } from '../engine/items';
+import { npcActions, songTuWith } from '../engine/actions';
 import { ACH } from '../engine/life';
 import { icon } from './menus';
 import { isExclusiveTech, techOwners } from '../engine/sect';
 import { itemArtSvg, gearArtSvg } from './art';
 import { skillIconSvg, techIconSvg, tamIconSvg, pqIconSvg, linhIconSvg } from './icons';
-import { PHAPQUYET, CHANLINH, pqGrade, clEffect } from '../data/spirit';
+import { PHAPQUYET, CHANLINH, pqGrade, clEffect, MOUNT_GRADE, mountEffect } from '../data/spirit';
 import { xpNeed, craftTitle, CRAFT_N, type CraftK } from '../engine/craft';
 import { forceBoard, treasureBoard, masterBoard, toolBoard, tbdbBoard, FORCE_KIND_N, MASTER_N, TOOL_N, type ForceKind, type BaoRow } from '../engine/bang';
 import { TB_KIND_N, TB_KIND_C } from '../data/tbdb';
@@ -50,6 +53,8 @@ export const NAV: [string, string][] = [
   ['char', 'Nhân vật'],
   ['bag', 'Kho đồ'],
   ['km', 'Kinh mạch'],
+  ['daolu', 'Đạo lữ'],
+  ['party', 'Đồng hành'],
   ['rel', 'Nhân mạch'],
   ['tienco', 'Thiên Cơ Lâu'],
   ['log', 'Nhật ký'],
@@ -60,7 +65,7 @@ export const NAV: [string, string][] = [
   ['help', 'Cách chơi'],
 ];
 const NAV_GLYPH: Record<string, string> = {
-  char: 'navChar', bag: 'navBag', km: 'navKm', rel: 'navRel', tienco: 'navTower',
+  char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower',
   log: 'navLog', hist: 'navHist', ach: 'navAch', set: 'navSet', help: 'navHelp',
 };
 const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : TAG_N[n.tag];
@@ -152,6 +157,8 @@ function build(id: string): HTMLElement[] {
     case 'char': return charPanel();
     case 'bag': return bagPanel();
     case 'km': return kmPanel(() => refresh(), (m) => { if (m) toast(m); });
+    case 'daolu': return daoluPanel();
+    case 'party': return companionPanel();
     case 'rel': return relPanel();
     case 'tienco': return tiencoPanel();
     case 'log': return logPanel();
@@ -263,7 +270,7 @@ function charPanel(): HTMLElement[] {
   else {
     const d = CHANLINH[cl.id];
     out.push(h('div', { class: 'cp-row' }, h('div', { class: 'cp-ic', html: linhIconSvg(d.ic, d.el, 36, 'cl_' + cl.id) }),
-      h('div', { class: 'cp-rt' }, h('b', {}, cl.name), h('small', {}, `${EL[d.el].n} hệ · ${d.d} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)}`)),
+      h('div', { class: 'cp-rt' }, h('b', {}, cl.name), h('small', {}, `${EL[d.el].n} hệ · ${d.d} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}`)),
       btn('Thả đi', () => askConfirm(`Thả ${cl.name} về rừng? Chân linh đã đi sẽ không quay lại.`, () => act(releaseLinh()), { title: 'Thả chân linh', ok: 'Thả đi' }), 'small ghost')));
   }
   // ---- kỹ nghệ ----
@@ -286,6 +293,15 @@ function charPanel(): HTMLElement[] {
 }
 
 // ---------- Kho đồ ----------
+/** Ô Tọa kỵ trong tab Trang bị: chân linh đang theo ngươi, phẩm tọa kỵ, tốc độ, xuất chiến hay chỉ để cưỡi. */
+function mountSlot(act: (m: string) => void): HTMLElement {
+  const cl = myLinh();
+  const d = cl ? CHANLINH[cl.id] : null;
+  if (!cl || !d) return h('div', { class: 'slot' }, h('div', { class: 'ic', html: glyphSvg('paw', 18) }), h('div', { class: 'nm', style: { flex: '1' } }, h('span', { class: 'muted' }, 'Tọa kỵ: trống — thuần phục chân linh ở hoang dã để làm tọa kỵ')));
+  return h('div', { class: 'slot' }, h('div', { class: 'ic ic-svg', html: linhIconSvg(d.ic, d.el, 30, 'cl_' + cl.id) }),
+    h('div', { class: 'nm', style: { flex: '1' } }, h('b', {}, `${cl.name}`), h('div', { class: 'small muted' }, `Tọa kỵ ${MOUNT_GRADE[d.mount]} · ${mountEffect(d)} · ${cl.ride ? 'chỉ để cưỡi' : 'đang xuất chiến'}`)),
+    btn(cl.ride ? 'Cho xuất chiến' : 'Chỉ cưỡi', () => act(toggleLinhRide(MAX_ACTIVE, activeCount())), 'small'));
+}
 function bagPanel(): HTMLElement[] {
   const out: HTMLElement[] = [tabsEl('bag', ['Trang bị', `Túi (${bagUsed()}/${bagCap()})`, 'Công pháp & Thuật'])];
   const tab = open.get('bag')!.tab;
@@ -298,6 +314,7 @@ function bagPanel(): HTMLElement[] {
         g && isChaosBroken(g) ? repairBtn(g.uid, act) : null,
         g ? btn('Tháo', () => act(unequip(i)), 'small') : null));
     }
+    out.push(mountSlot(act));
     out.push(h('h4', {}, 'Trang bị trong túi'));
     if (s.refining) {
       const g = s.gearBag.find((x) => x.uid === s.refining!.uid);
@@ -407,22 +424,92 @@ function confirmTech(key: string) {
 // ---------- Nhân mạch ----------
 const TAG_N: Record<string, string> = { friend: 'Bằng hữu', enemy: 'Kẻ thù', master: 'Sư phụ', disciple: 'Đồ đệ', daolu: 'Đạo lữ', rival: 'Đối thủ', kin: 'Người thân', acq: 'Quen biết', senior: 'Đồng môn', peer: 'Đồng đạo' };
 function relPanel(): HTMLElement[] {
-  const out: HTMLElement[] = [tabsEl('rel', ['Còn sống', 'Đã mất', `Đồng hành ${activeCount()}/${MAX_ACTIVE}`])];
-  if (open.get('rel')!.tab === 2) return [...out, ...partyPanel()];
-  const alive = open.get('rel')!.tab === 0;
+  const out: HTMLElement[] = [tabsEl('rel', ['Còn sống', 'Đã mất'])];
+  const tab = open.get('rel')!.tab;
+  const alive = tab === 0;
   const list = h('div', { class: 'list' });
   const order = ['daolu', 'master', 'kin', 'disciple', 'friend', 'senior', 'peer', 'rival', 'enemy', 'acq'];
   const ns = s.npcs.filter((n) => n.alive === alive).sort((a, b) => order.indexOf(a.tag) - order.indexOf(b.tag) || b.rel - a.rel);
   if (!ns.length) list.append(h('div', { class: 'empty' }, alive ? 'Ngươi chưa quen ai.' : 'Chưa ai qua đời.'));
-  for (const n of ns) {
-    const c = n.rel >= 40 ? '#4f7a55' : n.rel <= -40 ? '#9b2a1f' : '#6e6253';
-    list.append(h('div', { class: 'item' }, h('div', { class: 'ic ic-svg rel-av click', style: { borderColor: c, color: c }, title: 'Xem tranh',     onclick: () => openPortrait(n.name, npcPic(n), n.g, `${npcRealm(n)} · ${npcTagName(n)}`, 'quyen', npcPicWanted(n), n.id), html: avatarSvg(n.g, n.r, n.el, 34, npcPic(n)) }),
-    h('div', { class: 'nm' }, h('b', {}, n.name), ' ', h('span', { class: 'pill', style: { color: c } }, npcTagName(n)),
-        h('small', {}, alive ? `${npcRealm(n)} · ${npcAge(n)} tuổi · ${relLabel(n.rel)} (${Math.round(n.rel)}) · ${n.trait}${n.sect ? ' · ' + SECTS[n.sect]?.n : ''}${n.how ? ' · ' + n.how : ''}${n.bio ? ` · ${n.bio.root} · ${n.bio.body} · thiên phú ${n.bio.perk}, Khuynh quốc khuynh thành` : ''}` : `${npcRealm(n)} · ${n.cause || 'qua đời'} năm ${Math.floor(n.died || 0)}${n.how ? ' · ' + n.how : ''}`)),
-      alive ? h('div', { class: 'acts' }, btn('Gặp', () => meetNpc(n.id), 'small'),
-        canInvite(n) === null ? btn('Mời đồng hành', () => { toast(invite(n.id)); refresh(); }, 'small prime', { title: 'Mời đi theo cùng ngươi; vào đội dự bị, xếp xuất trận ở tab Đồng hành' }) : null) : null));
-  }
+  for (const n of ns) list.append(relRow(n));
   out.push(list);
+  return out;
+}
+/** Đồng hành có đội xuất trận và danh sách đồ đệ riêng. */
+function companionPanel(): HTMLElement[] {
+  const disciples = s.npcs.filter(n => n.tag === 'disciple');
+  const tabs = tabsEl('party', [`Đội hình ${activeCount()}/${MAX_ACTIVE}`, `Đồ đệ ${disciples.filter(n => n.alive).length}`]);
+  return [tabs, ...(open.get('party')!.tab === 1 ? disciplePanel(disciples) : partyPanel())];
+}
+function chooseSongTu() {
+  const selected = new Set<string>();
+  const body = h('div', {}, h('p', {}, 'Chọn một hoặc nhiều đạo lữ cùng tu luyện.'));
+  const start = btn('Song tu (0)', () => {
+    const ids = [...selected];
+    closeModal();
+    showScene({ title: 'Song tu', text: 'Cùng đạo lữ điều hòa linh khí, nhập định tu luyện.', choices: [
+      { t: 'Bắt đầu song tu', cls: 'prime', fn: () => songTuWith(ids) },
+      { t: 'Thôi', fn: () => 'Ngươi quyết định để dịp khác.' },
+    ] });
+  }, 'prime', { dis: true });
+  for (const n of s.npcs.filter(n => n.alive && n.tag === 'daolu')) {
+    const eligible = npcActions(n.id).find(c => c.t === 'Song tu');
+    const disabled = !eligible || !!eligible.dis;
+    const input = h('input', { type: 'checkbox', disabled, onchange: () => {
+      if (input.checked) selected.add(n.id); else selected.delete(n.id);
+      start.disabled = selected.size === 0;
+      start.textContent = `Song tu (${selected.size})`;
+    } });
+    body.append(h('label', { class: 'item' }, input, h('span', {}, n.name + ' · ' + daoluTitle(n) + (disabled ? ' · Chưa đủ điều kiện hoặc cần chờ sang năm' : ''))));
+  }
+  body.append(start);
+  openModal('Chọn đạo lữ song tu', body);
+}
+/** Đạo lữ chia theo vai vế; người đã mất được giữ riêng để tưởng nhớ. */
+function daoluPanel(): HTMLElement[] {
+  const spouses = s.npcs.filter(n => n.tag === 'daolu');
+  const out: HTMLElement[] = [];
+  out.push(btn('Song tu', () => chooseSongTu(), 'prime', { dis: !spouses.some(n => n.alive) }));
+  const groups = [
+    { title: 'Chính thất', people: spouses.filter(n => n.alive && isPrimaryDaolu(n)), empty: 'Chưa có chính thất.' },
+    { title: 'Thê thiếp', people: spouses.filter(n => n.alive && !isPrimaryDaolu(n)), empty: 'Chưa có thê thiếp.' },
+    { title: 'Đã mất', people: spouses.filter(n => !n.alive), empty: '' },
+  ];
+  for (const group of groups) {
+    if (!group.people.length && !group.empty) continue;
+    out.push(h('h4', {}, `${group.title} (${group.people.length})`));
+    const list = h('div', { class: 'list' });
+    for (const n of group.people.sort((a, b) => b.rel - a.rel)) list.append(relRow(n));
+    if (!group.people.length) list.append(h('div', { class: 'empty' }, group.empty));
+    out.push(list);
+  }
+  return out;
+}
+/** Một dòng người trong Nhân mạch: chân dung, danh xưng, lai lịch; còn sống thì có nút Gặp / Mời đồng hành. */
+function relRow(n: NPC): HTMLElement {
+  const alive = n.alive;
+  const c = n.rel >= 40 ? '#4f7a55' : n.rel <= -40 ? '#9b2a1f' : '#6e6253';
+  return h('div', { class: 'item' }, h('div', { class: 'ic ic-svg rel-av click', style: { borderColor: c, color: c }, title: 'Xem tranh',     onclick: () => openPortrait(n.name, npcPic(n), n.g, `${npcRealm(n)} · ${npcTagName(n)}`, 'quyen', npcPicWanted(n), n.id), html: avatarSvg(n.g, n.r, n.el, 34, npcPic(n)) }),
+    h('div', { class: 'nm' }, h('b', {}, n.name), ' ', h('span', { class: 'pill', style: { color: c } }, npcTagName(n)),
+      h('small', {}, alive ? `${npcRealm(n)} · ${npcAge(n)} tuổi · ${relLabel(n.rel)} (${Math.round(n.rel)}) · ${n.trait}${n.sect ? ' · ' + SECTS[n.sect]?.n : ''}${n.how ? ' · ' + n.how : ''}${n.bio ? ` · ${n.bio.root} · ${n.bio.body} · thiên phú ${n.bio.perk}, Khuynh quốc khuynh thành` : ''}` : `${npcRealm(n)} · ${n.cause || 'qua đời'} năm ${Math.floor(n.died || 0)}${n.how ? ' · ' + n.how : ''}`)),
+    alive ? h('div', { class: 'acts' }, btn('Gặp', () => meetNpc(n.id), 'small'),
+      canInvite(n) === null ? btn('Mời đồng hành', () => { toast(invite(n.id)); refresh(); }, 'small prime', { title: 'Mời đi theo cùng ngươi; vào đội dự bị, xếp xuất trận ở Đồng hành › Đội hình' }) : null) : null);
+}
+/** Tab Đồ đệ: đồ đệ còn sống (cảnh giới cao trước), rồi đồ đệ đã mất. */
+function disciplePanel(all: NPC[]): HTMLElement[] {
+  const live = all.filter((n) => n.alive).sort((a, b) => b.r - a.r || b.st - a.st || b.rel - a.rel);
+  const dead = all.filter((n) => !n.alive);
+  const out: HTMLElement[] = [h('div', { class: 'small muted' }, 'Người ngươi đã nhận làm đồ đệ. Đồ đệ luôn nhận lời đi theo làm đồng hành.')];
+  const list = h('div', { class: 'list' });
+  for (const n of live) list.append(relRow(n));
+  if (!live.length) list.append(h('div', { class: 'empty' }, 'Ngươi chưa nhận đồ đệ nào.'));
+  out.push(list);
+  if (dead.length) {
+    out.push(h('h4', {}, `Đã mất (${dead.length})`));
+    const dl = h('div', { class: 'list' });
+    for (const n of dead) dl.append(relRow(n));
+    out.push(dl);
+  }
   return out;
 }
 /** Tab Đồng hành: chân linh (luôn xuất trận), đội xuất trận (tối đa 9) và dự bị. */
@@ -433,16 +520,21 @@ function partyPanel(): HTMLElement[] {
   const list = h('div', { class: 'list' });
   const cl = linhOf();
   out.push(h('h4', {}, `Xuất trận (${activeCount()}/${MAX_ACTIVE})`));
-  if (cl) list.append(h('div', { class: 'item' }, h('div', { class: 'ic rel-av linh-av', html: glyphSvg('paw', 20) }), h('div', { class: 'nm' }, h('b', {}, cl.name), h('small', {}, `Chân linh · luôn theo ngươi · gắn bó ${Math.round(cl.bond)}`))));
+  const fights = !!cl && !cl.ride;
+  const clRow = () => h('div', { class: 'item' }, h('div', { class: 'ic rel-av linh-av', html: glyphSvg('paw', 20) }),
+    h('div', { class: 'nm' }, h('b', {}, cl!.name), h('small', {}, `Tọa kỵ ${MOUNT_GRADE[CHANLINH[cl!.id]?.mount ?? 1]} · ${fights ? 'xuất chiến' : 'chỉ để cưỡi'} · gắn bó ${Math.round(cl!.bond)}`)),
+    h('div', { class: 'acts' }, btn(fights ? 'Chỉ cưỡi' : 'Xuất chiến', () => act(toggleLinhRide(MAX_ACTIVE, activeCount())), 'small' + (fights ? '' : ' prime'), { dis: !fights && activeCount() >= MAX_ACTIVE })));
+  if (fights) list.append(clRow());
   for (const n of activeNpcs()) list.append(npcRow(n, [btn('Chi tiết', () => openCompanion(n.id), 'small prime'), btn('Dự bị', () => act(setActive(n.id, false)), 'small'), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')]));
   const hurt = party().active.map((id) => s.npcs.find((x) => x.id === id)).filter((n) => n && n.alive && n.injuredUntil && s.year < n.injuredUntil) as NPC[];
   for (const n of hurt) list.append(npcRow(n, [btn('Chi tiết', () => openCompanion(n.id), 'small prime'), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')], `Trọng thương, nghỉ tới ${Math.ceil(n.injuredUntil! - s.born)} tuổi (tặng đan hồi phục để lành ngay)`));
-  if (!cl && !activeNpcs().length && !hurt.length) list.append(h('div', { class: 'empty' }, 'Chưa ai xuất trận.'));
+  if (!fights && !activeNpcs().length && !hurt.length) list.append(h('div', { class: 'empty' }, 'Chưa ai xuất trận.'));
   out.push(list);
   out.push(h('h4', {}, `Dự bị (${reserveNpcs().length})`));
   const res = h('div', { class: 'list' });
+  if (cl && !fights) res.append(clRow()); // tọa kỵ chỉ để cưỡi: nằm ở dự bị, bấm Xuất chiến để vào đội
   for (const n of reserveNpcs()) res.append(npcRow(n, [btn('Chi tiết', () => openCompanion(n.id), 'small'), btn('Xuất trận', () => act(setActive(n.id, true)), 'small prime', { dis: activeCount() >= MAX_ACTIVE }), btn('Cho về', () => act(dismiss(n.id)), 'small ghost')]));
-  if (!reserveNpcs().length) res.append(h('div', { class: 'empty' }, 'Chưa có. Mời ở tab Còn sống: đạo lữ, đệ tử, hôn thê luôn nhận lời; người khác cần thiện cảm từ 60.'));
+  if (!reserveNpcs().length) res.append(h('div', { class: 'empty' }, 'Chưa có. Mời ở Nhân mạch hoặc Đạo lữ: đạo lữ, đệ tử, hôn thê luôn nhận lời; người khác cần thiện cảm từ 60.'));
   out.push(res);
   return out;
 }
@@ -453,6 +545,8 @@ function openCompanion(id: string) {
   const n = s.npcs.find((x) => x.id === id);
   if (!n) return;
   if (!n.kit) outfit(n);
+  exileMigrate();
+  const ex = exiles()[n.id]; // đã bị trục xuất: gia thế gắn với tông cũ, không ghép tên tông đang ở
   const K = kit(n);
   const draw = () => {
     const ks = kitSum(n);
@@ -464,13 +558,13 @@ function openCompanion(id: string) {
         h('div', {}, h('div', { class: 'cp-name' }, n.name), h('div', { class: 'cp-realm' }, `${npcRealm(n)} · ${EL[n.el].n} hệ · ${npcAge(n)} tuổi · ${npcTagName(n)} · ${relLabel(n.rel)} (${Math.round(n.rel)})`),
           h('div', { class: 'small muted' }, n.how || ''))),
       sec('Hồ sơ'),
-      kv('Gia thế', n.bio?.family ? `${n.sect && SECTS[n.sect] ? SECTS[n.sect].n + ' · ' : ''}${n.bio.family}` : n.sect && SECTS[n.sect] ? SECTS[n.sect].n : n.how || '—'),
+      kv('Gia thế', ex ? (n.bio?.family || `Xuất thân ${SECTS[ex.from]?.n ?? ''}`) : n.bio?.family ? `${n.sect && SECTS[n.sect] ? SECTS[n.sect].n + ' · ' : ''}${n.bio.family}` : n.sect && SECTS[n.sect] ? SECTS[n.sect].n : n.how || '—'),
       n.bio ? kv('Ngoại hình', n.bio.look) : null,
       kv('Tính cách', n.bio?.traits ?? n.trait),
       n.bio?.hobby ? kv('Sở thích', n.bio.hobby) : null,
       kv('Linh căn', n.bio?.root ?? `${EL[n.el].n} hệ`),
-      n.bio ? kv('Thể chất', `${n.bio.body}${n.bio.bodyD ? ' — ' + n.bio.bodyD : ''}`) : null,
-      n.bio ? kv('Thiên phú', `${n.bio.perk}${n.bio.perkD ? ' — ' + n.bio.perkD : ''}`) : null,
+      n.bio ? kv('Thể chất', `${n.bio.body}${bioDesc(n.bio, 'body') ? ' — ' + bioDesc(n.bio, 'body') : ''}`) : null,
+      n.bio ? kv('Thiên phú', `${n.bio.perk}${bioDesc(n.bio, 'perk') ? ' — ' + bioDesc(n.bio, 'perk') : ''}`) : null,
       kv('Tư chất', `${talentLabel(n.talent)} (${n.talent.toFixed(1)})`),
       kv('Cảnh giới', `${npcRealm(n)} · tiến độ ${Math.round(((n as any).p || 0) * 100)}%${n.injuredUntil && s.year < n.injuredUntil ? ' · đang trọng thương' : ''}`),
       sec('Sức mạnh'), kv('Công', fmt(atk)), kv('Thủ', fmt(def)), kv('Khí huyết', fmt(hp)),
@@ -549,7 +643,7 @@ function codexBody(t: 'root' | 'loc' | 'beast' | 'item', query = ''): HTMLElemen
     for (const e of ALL_EL) {
       const k = khacOf(e);
       const bi = ALL_EL.filter((x) => khacOf(x).includes(e));
-      const techN = Object.values(TECHS).filter((x) => !x.blood && x.el.includes(e)).length;
+      const techN = worldDefinitions('cp').filter((x) => !x.blood && x.el.includes(e)).length;
       list.append(h('div', { class: 'item' }, h('div', { class: 'ic', style: { background: EL[e].c }, html: glyphSvg(e, 18) }),
         h('div', { class: 'nm' }, h('b', {}, EL[e].n), VARIANT_EL.includes(e) ? h('span', { class: 'muted small' }, ' · biến dị') : null,
           h('small', {}, 'Khắc: ', ...k.map(elTag), ' · Bị khắc: ', ...bi.map(elTag), ` · ${techN} công pháp`))));
@@ -675,7 +769,7 @@ function lawBoard(kind: 'tech' | 'skill'): HTMLElement[] {
   const c = meta.codex;
   const list = h('div', { class: 'list' });
   if (kind === 'tech') {
-    const ts = Object.values(TECHS).filter((x) => !x.blood).sort((a, b) => b.tier - a.tier || a.n.localeCompare(b.n));
+    const ts = worldDefinitions('cp').filter((x) => !x.blood).sort((a, b) => b.tier - a.tier || a.n.localeCompare(b.n));
     ts.forEach((tc, i) => {
       const known = c.tech.includes(tc.id);
       const mine = s.tech === tc.id;
@@ -685,7 +779,7 @@ function lawBoard(kind: 'tech' | 'skill'): HTMLElement[] {
     });
     return [h('div', { class: 'small muted' }, `Công Pháp Bảng: ${ts.length} công pháp lưu truyền, xếp theo phẩm cấp. Công pháp huyết mạch không lên bảng.`), list];
   }
-  const sk = Object.values(SKILLS).sort((a, b) => b.tier - a.tier || b.m - a.m);
+  const sk = worldDefinitions('sk').sort((a, b) => b.tier - a.tier || b.m - a.m);
   sk.forEach((k, i) => {
     const known = !!s?.known.includes(k.id);
     list.append(h('div', { class: 'item' + (known ? ' mine' : '') }, h('div', { class: 'rk-i' }, String(i + 1)), h('div', { class: 'ic ic-svg', html: skillIconSvg(k, 30, !known) }),
@@ -739,7 +833,7 @@ function masterRows(k: CraftK): HTMLElement[] {
   for (const r of rows) list.append(h('div', { class: 'item' + (r.mine ? ' mine' : '') }, h('div', { class: 'rk-i' }, String(r.rank)),
     h('div', { class: 'ic ic-svg rel-av', html: avatarSvg(r.g, 5, null, 34, r.mine ? playerPortrait(s.g, age()) : npcPortrait(r.g, 5)) }),
     h('div', { class: 'nm' }, h('b', {}, r.name), ' ', r.rank === 1 ? h('span', { class: 'pill' }, `Đệ nhất ${MASTER_N[k]}`) : null, r.mine ? h('span', { class: 'pill' }, 'Ngươi') : null, h('small', {}, r.note))));
-  return [h('div', { class: 'small muted' }, `Bảng ${MASTER_N[k]} ${worldName(s.world ?? 0)}: xếp theo tay nghề ${CRAFT_N[k].toLowerCase()}. ${me ? `Ngươi hạng ${me.rank}/${rows.length} (${craftTitle(me.lv, k)}).` : `Ngươi chưa nhập môn ${CRAFT_N[k].toLowerCase()}, chưa có tên.`}`), list];
+  return [h('div', { class: 'small muted' }, `Bảng ${MASTER_N[k]} ${worldName(s.world ?? 0)}: xếp theo tổng độ thuần thục ${CRAFT_N[k].toLowerCase()}, tiếp tục tăng sau bậc tối đa. Xét toàn giới, mọi chủng tộc; chỉ lấy top 100. ${me ? `Ngươi hạng ${me.rank}/${rows.length} (${craftTitle(me.lv, k)}).` : s.craft[k] >= 1 ? 'Ngươi chưa lọt top 100.' : `Ngươi chưa nhập môn ${CRAFT_N[k].toLowerCase()}, chưa có tên.`}`), list];
 }
 
 // ---------- Sử ký ----------
@@ -1007,26 +1101,26 @@ function peopleBoard(kind: 'tk' | 'cg'): HTMLElement[] {
   const out: HTMLElement[] = [];
   const rows: TcRow[] = board(kind);
   const me = rows.find((r) => r.mine);
-  const nBeast = rows.filter((r) => r.person?.beast).length;
+  const nBeast = rows.filter((r) => r.person?.beast || r.npc?.beast || (r.mine && s.beast)).length;
   const nRace = rows.filter((r) => r.person?.race || r.person?.races?.length).length;
   out.push(h('div', { class: 'small muted' }, (kind === 'tk'
-    ? `Thiên Kiêu Bảng ${worldName(w)}: tu sĩ có thân thể không quá ${fmt(TK_AGE[w])} tuổi, xếp theo cảnh giới rồi tới tuổi. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : s.r === 0 ? 'Phàm nhân không có tên trên bảng.' : `Ngươi đã quá ${fmt(TK_AGE[w])} tuổi, không còn trên bảng.`}`
-    : `Cường Giả Bảng ${worldName(w)}: những kẻ mạnh nhất đang đứng trong giới. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : 'Ngươi chưa có tên.'}`) + (nBeast ? ` Trên bảng có ${nBeast} yêu tu hóa hình.` : '')));
+    ? `Thiên Kiêu Bảng ${worldName(w)}: tu sĩ có thân thể không quá ${fmt(TK_AGE[w])} tuổi, xếp theo thực lực tổng hợp; bằng điểm thì người trẻ hơn đứng trước. Xét toàn giới, mọi chủng tộc; chỉ lấy top 100. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : s.r === 0 ? 'Phàm nhân không có tên trên bảng.' : age() > TK_AGE[w] ? `Ngươi đã quá ${fmt(TK_AGE[w])} tuổi, không còn trên bảng.` : 'Ngươi chưa lọt top 100.'}`
+    : `Cường Giả Bảng ${worldName(w)}: xếp theo thực lực tổng hợp trên toàn giới; bằng điểm thì người trẻ hơn đứng trước. Chỉ lấy top 100. ${me ? `Ngươi hạng ${me.rank}/${rows.length}.` : 'Ngươi chưa có tên.'}`) + (nBeast ? ` Trên bảng có ${nBeast} yêu tu hóa hình.` : '')));
   if (nRace) out.push(h('div', { class: 'small muted' }, `Trong bảng còn có ${nRace} người thuộc dị tộc cổ.`));
   const list = h('div', { class: 'list' });
-  const shown = rows.slice(0, 30);
-  if (me && me.rank > 30) shown.push(me);
-  const visible = new Set(shown.map((row) => row.id));
-  shown.push(...rows.filter((row) => row.person?.chief && !visible.has(row.id)));
+  const shown = rows;
   if (!shown.length) list.append(h('div', { class: 'empty' }, 'Bảng trống.'));
   for (const r of shown) {
+    const beast = r.person?.beast ?? r.npc?.beast ?? (r.mine ? s.beast : undefined);
+    const race = r.person?.race ?? r.npc?.race ?? (r.mine ? s.race : undefined);
+    const races = r.person?.races ?? (race ? [race] : []);
     const el = r.npc?.el ?? r.person?.el ?? null;
     const pic = r.mine ? playerPortrait(s.g, age()) : r.npc ? npcPic(r.npc) : undefined;
     const hiddenRet = !!r.person?.ret && !r.person.known;
     list.append(h('div', { class: 'item' + (r.mine ? ' mine' : '') }, h('div', { class: 'rk-i' }, String(r.rank)),
-      h('div', { class: 'ic ic-svg rel-av' + (r.npc || r.mine ? ' click' : ''), title: r.npc || r.mine ? 'Xem tranh' : '', onclick: r.mine ? () => openPortrait(s.name, pic!, s.g, stageName(), weaponKind()) : r.npc ? () => openPortrait(r.npc!.name, npcPic(r.npc!), r.npc!.g, npcRealm(r.npc!), 'quyen', npcPicWanted(r.npc!)) : undefined, html: avatarSvg(r.g, r.r, hiddenRet ? null : el, 34, pic) }),
-      h('div', { class: 'nm' }, h('b', {}, r.name), ' ', r.mine ? h('span', { class: 'pill' }, 'Ngươi') : null, r.person?.beast ? h('span', { class: 'pill', title: `${r.person.beast} hóa hình` }, 'Yêu tu') : null, ...(r.person?.races || (r.person?.race ? [r.person.race] : [])).map((race) => h('span', { class: 'pill', title: MYTHIC_RACES.find((entry) => entry.n === race)?.d || race }, race)), r.person?.ret && r.person.known ? h('span', { class: 'pill', title: r.person.ret }, 'Hồi hạ giả') : null, r.person?.asc ? h('span', { class: 'pill' }, `Phi thăng ${r.person.asc}`) : null,
-        h('small', {}, `${realmTxt(r.r, r.st)} · ${fmt(r.age)} tuổi${r.soul !== r.age ? ` (linh hồn ${fmt(r.soul)})` : ''} · ${forceOf(r)} · ${roleOf(r)}${r.person?.beast ? ` · yêu tu loài ${r.person.beast}${r.person.blood ? ' — ' + r.person.blood : ''}` : ''}${r.person?.races?.length ? ` · ${r.person.races.join(' · ')}` : r.person?.race ? ` · ${r.person.race}` : ''}`)),
+      h('div', { class: 'ic ic-svg rel-av' + (r.npc || r.mine ? ' click' : ''), title: r.npc || r.mine ? 'Xem tranh' : '', onclick: r.mine ? () => openPortrait(s.name, pic!, s.g, stageName(), weaponKind()) : r.npc ? () => openPortrait(r.npc!.name, npcPic(r.npc!), r.npc!.g, npcRealm(r.npc!), 'quyen', npcPicWanted(r.npc!), r.npc!.id, r.age) : undefined, html: avatarSvg(r.g, r.r, hiddenRet ? null : el, 34, pic) }),
+      h('div', { class: 'nm' }, h('b', {}, r.name), ' ', r.mine ? h('span', { class: 'pill' }, 'Ngươi') : null, beast ? h('span', { class: 'pill', title: `${beast} hóa hình` }, 'Yêu tu') : null, ...races.map((race) => h('span', { class: 'pill', title: MYTHIC_RACES.find((entry) => entry.n === race)?.d || race }, race)), r.person?.ret && r.person.known ? h('span', { class: 'pill', title: r.person.ret }, 'Hồi hạ giả') : null, r.person?.asc ? h('span', { class: 'pill' }, `Phi thăng ${r.person.asc}`) : null,
+        h('small', {}, `${realmTxt(r.r, r.st)} · Thực lực ${fmt(r.power ?? 0)} · ${fmt(r.age)} tuổi${r.soul !== r.age ? ` (linh hồn ${fmt(r.soul)})` : ''} · ${forceOf(r)} · ${roleOf(r)}${r.daoHao ? ` · Đạo hiệu: ${r.daoHao}` : ''}${beast ? ` · ${beast}${r.person?.blood ? ' — ' + r.person?.blood : ''}` : ''}${r.person?.races?.length ? ` · ${r.person.races.join(' · ')}` : r.person?.race ? ` · ${r.person.race}` : ''}`)),
       r.npc && r.npc.alive ? h('div', { class: 'acts' }, btn('Gặp', () => meetNpc(r.npc!.id), 'small')) : null));
   }
   out.push(list);

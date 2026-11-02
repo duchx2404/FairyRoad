@@ -209,7 +209,7 @@ export interface Body {
 export const BODIES: Body[] = [
   { id: 'pham', n: 'Phàm thể', w: 60, d: 'Thân thể bình thường, không có gì đặc biệt.' },
   { id: 'kimcuong', n: 'Kim Cương Cốt', w: 6, d: 'Xương cứng như sắt, khí huyết dồi dào.', hp: 1.4, pow: 1.1 },
-  { id: 'thanhlinh', n: 'Thanh Linh Thể', w: 5, d: 'Lỗ chân lông tự hút linh khí cả khi ngủ.', cult: 1.3 },
+  { id: 'thanhlinh', n: 'Thanh Linh Thể', w: 5, d: 'Có thể tu luyện khi đang ngủ.', cult: 1.3 },
   { id: 'thaiam', n: 'Thái Âm Huyền Mạch', w: 3, g: 'f', d: 'Âm mạch thuần khiết, song tu cực lợi, tâm tĩnh như trăng.', cult: 1.15, life: 1.1 },
   { id: 'cuuduong', n: 'Cửu Dương Chân Thể', w: 3, g: 'm', d: 'Dương khí sôi trào, đánh đâu thắng đó nhưng dễ hỏa vượng.', pow: 1.25, hp: 1.15 },
   { id: 'linhlung', n: 'Linh Lung Tâm', w: 4, d: 'Tâm khiếu thông suốt, nhìn một hiểu mười.', cult: 1.1 },
@@ -402,7 +402,7 @@ ORIGINS.push({
   loc: 'diepgia',
   clan: 'Diệp',
   clanId: 'diep',
-  d: 'Đêm ngươi ra đời, Hư Không Liệt Cốc nứt toác, một chiếc nôi gỗ Hỗn Độn rơi xuống Thương Lan. Diệp thị Hoang Cổ nhặt về nuôi; ngọc bội trong nôi cho thấy ngươi là dòng chính Diệp gia ở Hỗn Độn, gốc của mọi người mang họ Diệp. Gia chủ nhận ngươi làm con nuôi, chỉ định làm người kế thừa, định sẵn hôn ước với thánh nữ của ít nhất ba thánh địa — có khi là tất cả thánh địa và thế gia Trung Vực. Bắt đầu từ năm một tuổi: tới sáu tuổi chưa thể tu luyện, chỉ lớn lên cùng các thánh nữ. Sáu tuổi thức tỉnh linh căn; mười tuổi các hôn ước được định đoạt. Mang theo Cửu Chuyển Huyền Công (Tiên giai), Bát Cửu Huyền Công, cổ phù, một thanh tiên kiếm tàn khuyết lớn theo tu vi, và bổng lộc hằng tháng của gia tộc.',
+  d: 'Đêm ngươi ra đời, Hư Không Liệt Cốc nứt toác, một chiếc nôi gỗ Hỗn Độn rơi xuống Thương Lan. Diệp thị Hoang Cổ nhặt về nuôi; ngọc bội trong nôi cho thấy ngươi là dòng chính Diệp gia ở Hỗn Độn, gốc của mọi người mang họ Diệp. Gia chủ nhận ngươi làm con nuôi, chỉ định làm người kế thừa, định sẵn hôn ước với thánh nữ của ít nhất ba thánh địa — có khi là tất cả thánh địa và thế gia Trung Vực. Bắt đầu từ năm một tuổi: tới sáu tuổi chưa thể tu luyện, chỉ lớn lên cùng các thánh nữ. Sáu tuổi thức tỉnh linh căn; gia nhập tông môn / đại hoàng triều thì các vị hôn thê gửi thư chúc mừng; mười sáu tuổi các hôn ước được định đoạt. Mang theo Cửu Chuyển Huyền Công (Tiên giai), Bát Cửu Huyền Công, cổ phù, một thanh tiên kiếm tàn khuyết lớn theo tu vi, và bổng lộc hằng tháng của gia tộc.',
   money: 10500,
   stat: { ngo: 5, can: 5, van: 10, tam: 5 },
   karma: 300,
@@ -410,7 +410,7 @@ ORIGINS.push({
 ORIGINS.sort((a, b) => a.money - b.money);
 
 // ---------- Tên ----------
-export const SURN = ['Lục', 'Tạ', 'Cố', 'Thẩm', 'Tô', 'Diệp', 'Phó', 'Hứa', 'Mạnh', 'Kỷ', 'Ôn', 'Văn', 'Hoắc', 'Tiết', 'Bùi', 'Lam', 'Mục', 'Khương', 'Đoan Mộc', 'Hạ Hầu', 'Tư Đồ', 'Công Tôn', 'Lãnh', 'Nhạc', 'Sở'];
+export const SURN = ['Trương', 'Vương', 'Lý', 'Triệu', 'Trần', 'Dương', 'Tống', 'Tần', 'Chu', 'Hàn', 'Ngụy', 'Tôn', 'Hà', 'Lâm', 'Tiêu', 'Giang', 'Bạch', 'Đào', 'Liễu', 'Đường', 'Cao', 'La', 'Đỗ', 'Quách', 'Phùng', 'Trịnh', 'Tào', 'Phan', 'Từ', 'Lữ', 'Lưu', 'Lương', 'Thái', 'Vệ', 'Tưởng', 'Khang', 'Đinh', 'Nhậm', 'Viên', 'Dư', 'Bách Lý', 'Âu Dương', 'Thượng Quan', 'Đông Phương', 'Nam Cung', 'Tư Mã', 'Gia Cát', 'Mộ Dung', 'Hoàng Phủ', 'Lục', 'Tạ', 'Cố', 'Thẩm', 'Tô', 'Diệp', 'Phó', 'Hứa', 'Mạnh', 'Kỷ', 'Ôn', 'Văn', 'Hoắc', 'Tiết', 'Bùi', 'Lam', 'Mục', 'Khương', 'Đoan Mộc', 'Hạ Hầu', 'Tư Đồ', 'Công Tôn', 'Lãnh', 'Nhạc', 'Sở'];
 /** Tách họ và tên riêng; nhận đúng cả họ kép (Công Tôn, Đoan Mộc, Tư Đồ…). */
 export function splitName(name: string): { sur: string; given: string } {
   const all = [...new Set([...SURN, ...Object.values(CLANS).map((c) => c.sur), 'Hoàng Phủ', 'Mộ Dung', ...HOLY_SURS])].sort((a, b) => b.length - a.length);
@@ -426,7 +426,7 @@ export function setSurname(name: string, sur: string): string {
   const given = cur ? n.slice(cur.length + 1) : n.split(' ').slice(1).join(' ') || n;
   return `${sur} ${given}`;
 }
-export const MALE = ['Trầm', 'Hành Chu', 'Kinh Hồng', 'Minh Viễn', 'Thừa Ân', 'Tử Mặc', 'Vô Kỵ', 'Thiên Sách', 'Dật', 'Hoài', 'Cảnh', 'Lâm Xuyên', 'Bách Lý', 'Trí', 'Tranh', 'Nguyên', 'Diễn', 'Khải'];
+export const MALE = ['Trường Phong', 'Thanh Huyền', 'Vân Đình', 'Dật Trần', 'Tinh Hà', 'Mặc Ngôn', 'Tử Kỳ', 'Quân Lâm', 'Hạo Nhiên', 'Tu Viễn', 'Cảnh Du', 'Thiên Hành', 'Vân Thâm', 'Tử Hiên', 'Hoài Cẩn', 'Minh Triết', 'Trường Khanh', 'Dịch An', 'Thanh Dương', 'Vân Tiêu', 'Cảnh Thần', 'Thiếu Khanh', 'Ngọc Hành', 'Thiên Hựu', 'Hạo Vũ', 'Tư Viễn', 'Nhược Trần', 'Bác Văn', 'Tĩnh Chi', 'Trọng Minh', 'Tử Khiêm', 'Vĩnh An', 'Hoài Sơn', 'Kiến Nguyên', 'Thanh Hoài', 'Vân Sinh', 'Lăng Tiêu', 'Thiên Dật', 'Huyền Chi', 'Cẩn Du', 'Vô Trần', 'Trường Sinh', 'Tử Hằng', 'Mộ Bạch', 'Cảnh Dương', 'Huyền Minh', 'Hoằng Văn', 'Đình Phong', 'Vũ Hiên', 'Văn Hiên', 'Thiên Trạch', 'Tử Du', 'Minh Châu', 'Hạo Thiên', 'Khải Phong', 'Tu Trúc', 'Ngọc Thư', 'Hoài Nam', 'Hàn Giang', 'Thiên Lãng', 'Trầm', 'Hành Chu', 'Kinh Hồng', 'Minh Viễn', 'Thừa Ân', 'Tử Mặc', 'Vô Kỵ', 'Thiên Sách', 'Dật', 'Hoài', 'Cảnh', 'Lâm Xuyên', 'Trí', 'Tranh', 'Nguyên', 'Diễn', 'Khải'];
 /** Họ cố định của Thánh nữ (f) và Thánh tử (m) theo từng thánh địa (bậc 4), mọi giới; tên riêng ngẫu nhiên.
  *  Mỗi họ chỉ thuộc một thánh địa; Thánh tử và Thánh nữ cùng tông là hai gia tộc khác nhau tranh vị trí trong tông.
  *  Không dùng họ của 8 thế gia, họ Diệp, họ Ngô (Ngô gia Hỗn Độn). Kiểm tra: tools/test_holy_names.ts. */
@@ -478,7 +478,7 @@ export const HOLY_SURS = new Set(Object.values(HOLY_SUR).flatMap((x) => [x.f, x.
 /** Kho tên riêng hai chữ cho thánh nữ / thánh tử và nút "Ngẫu nhiên" khi đổi tên. */
 export const GIVEN_F = ['Thanh Tuyết', 'Ngưng Sương', 'Nguyệt Hoa', 'Tịch Dao', 'Linh Lung', 'Tố Y', 'Khinh Vũ', 'Lộng Ảnh', 'Băng Tâm', 'Tịch Nhan', 'Uyển Nhi', 'Thiên Tuyết', 'Như Mộng', 'Vân Khê', 'Thanh Ca', 'Ngọc Dao', 'Mạn Thanh', 'Tử Yên', 'Như Yên', 'Mộng Dao', 'Vũ Hi', 'Sơ Ảnh', 'Thu Thủy', 'Hàm Yên', 'Bích Dao', 'Tịch Nguyệt', 'Vân Thường', 'Khuynh Thành', 'Tuyết Kiến', 'Nhược Thủy'];
 export const GIVEN_M = ['Hành Chu', 'Kinh Hồng', 'Minh Viễn', 'Thừa Ân', 'Tử Mặc', 'Vô Kỵ', 'Thiên Sách', 'Lâm Xuyên', 'Trường Phong', 'Vân Đình', 'Thanh Huyền', 'Dật Trần', 'Cảnh Hành', 'Tinh Hà', 'Lạc Trần', 'Mặc Ngôn', 'Tử Kỳ', 'Quân Lâm'];
-export const FEM = ['Thanh Ca', 'Vân Thường', 'Như Ý', 'Tố Tâm', 'Lạc Anh', 'Tịch Nguyệt', 'Uyển', 'Ngưng Sương', 'Diệu', 'Tri Âm', 'Hàm Yên', 'Linh Lung', 'Bích Dao', 'Thu Thủy', 'Mộ Tuyết', 'Nhược'];
+export const FEM = ['Thanh Tuyết', 'Nguyệt Hoa', 'Tịch Dao', 'Tố Y', 'Khinh Vũ', 'Lộng Ảnh', 'Băng Tâm', 'Tịch Nhan', 'Uyển Nhi', 'Thiên Tuyết', 'Như Mộng', 'Vân Khê', 'Ngọc Dao', 'Mạn Thanh', 'Tử Yên', 'Như Yên', 'Mộng Dao', 'Vũ Hi', 'Sơ Ảnh', 'Khuynh Thành', 'Tuyết Kiến', 'Nhược Thủy', 'Cẩm Tú', 'An Nhiên', 'Thanh Trúc', 'Nguyệt Cầm', 'Tĩnh Xu', 'Diệu Âm', 'Lưu Ly', 'Tuyết Liên', 'Uyển Thanh', 'Ngọc Tâm', 'Bích Hà', 'Yên Chi', 'Tử Hà', 'Vân Y', 'Hạ Lan', 'Xuân Hi', 'Thu Nguyệt', 'Hàn Mai', 'Thanh Liên', 'Tố Nguyệt', 'Ngưng Hương', 'Mộc Lan', 'Ngọc Châu', 'Linh San', 'Tịch Lam', 'Vân Cẩm', 'Hàm Chương', 'Thiên Hương', 'Thanh Uyển', 'Tâm Nghi', 'Tuyết Ninh', 'Mộng Điệp', 'Khinh La', 'Nhược Lan', 'Uyển Dung', 'Tịnh Y', 'Tư Vũ', 'Nguyệt Anh', 'Thanh Ca', 'Vân Thường', 'Như Ý', 'Tố Tâm', 'Lạc Anh', 'Tịch Nguyệt', 'Uyển', 'Ngưng Sương', 'Diệu', 'Tri Âm', 'Hàm Yên', 'Linh Lung', 'Bích Dao', 'Thu Thủy', 'Mộ Tuyết', 'Nhược'];
 /** Đạo hiệu nữ tu. */
 export const DAO_HAO_F = ['Thanh Tuyết', 'Tố Nguyệt', 'Lăng Ba', 'Băng Tâm', 'Tử Yên', 'Ngọc Hoa', 'Lạc Hà', 'Bích Lạc', 'Hàn Mai', 'Lưu Ly', 'Thanh Liên', 'Vân Thường', 'Diệu Âm', 'Nghê Thường'];
 export const DAO_HAO = ['Thanh Phong', 'Huyền Cơ', 'Tử Dương', 'Bạch Thạch', 'Cô Vân', 'Tàng Kiếm', 'Vọng Nguyệt', 'Hàn Sơn', 'Lưu Thủy', 'Thiết Tâm', 'Ngọc Hư', 'Xích Hà'];

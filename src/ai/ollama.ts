@@ -183,3 +183,6 @@ export function setAi(patch: Partial<typeof meta.settings>) {
   Object.assign(meta.settings, patch);
   saveMeta();
 }
+
+/** Prompt riêng cho một tính năng chủ động gọi AI, dùng model đã chọn trong Cài đặt. */
+export const writeCustomNarration = (prompt: string) => chat(prompt, 1100, 0.7);

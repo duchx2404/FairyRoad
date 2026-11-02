@@ -1,8 +1,10 @@
+import { localItemId } from './local-items';
+import { installDecliningSchools } from './declining-schools';
 // Các giới phía trên Thương Lan: Linh Giới, Tiên Giới, Thần Giới, Hồng Hoang, Hỗn Độn.
 // Mỗi giới một bản đồ (vực, châu, vùng, địa điểm), tông môn, hoàng triều, yêu thú riêng.
 // Thánh thú / thần thú: tổ chỉ ở Hỗn Độn (Tổ Long, Chân Phượng, Thủy Kỳ Lân…); giới thấp hơn chỉ còn huyết mạch thấp dần
 // (Hồng Hoang: Long sinh cửu tử, Loan, Côn Bằng… — không có Chân Long hay thứ tương đương).
-import { registerWorld, DIA_THE, MAP_W, MAP_H, mkDragons, mkGates, majorRivers, makeFormationLocations, linkBeastFamilies, RIVER_N0, RIVER_MAJOR_N0, type WorldPack, type Loc, type Sect, type Region, type Beast, type Empire, type Vuc, type LocType, type Chau } from './world';
+import { registerWorld, worldPack, DIA_THE, MAP_W, MAP_H, mkDragons, mkGates, majorRivers, makeFormationLocations, linkBeastFamilies, RIVER_N0, RIVER_MAJOR_N0, type WorldPack, type Loc, type Sect, type Region, type Beast, type Empire, type Vuc, type LocType, type Chau } from './world';
 import { WORLD_CAP, LAST_WORLD, type El } from './core';
 import type { CelestialId } from './celestial';
 import { TECHS } from './items';
@@ -672,9 +674,9 @@ const HONGHOANG: Theme = {
     bac: [['Hải Ngoại Bắc Kinh', 'Các nước bên kia Bắc Hải: Nhất Mục, Chung Bắc, đất chư hầu Bắc Hải.'], ['Đại Hoang Bắc Kinh', 'Rìa bắc giá lạnh, U Đô và Chung Sơn của Chúc Long.']],
   },
   sects: [
-    ['Xiển Giáo · Ngọc Hư Cung', 'trung', 4, ['quang', 'kim', 'thuy', 'tho'], 'Ngọc Hư Cung trên Côn Lôn, sau Kỳ Lân Nhai. Nguyên Thủy Thiên Tôn chưởng Xiển Giáo; thập nhị kim tiên chia nhau động phủ khắp danh sơn.', 'Thuận thiên mà hành.', 'alch'],
-    ['Đạo Giáo · Bát Cảnh Cung', 'trung', 4, ['tho', 'thuy', 'moc'], 'Bát Cảnh Cung trong Đại La Cung, Huyền Đô Động, nơi Thái Thượng Lão Quân ngự; phải cưỡi mây mới tới. Tổ đình Đạo Giáo: Xiển Giáo và Tiệt Giáo là hai nhánh do hai sư đệ của Lão Quân chưởng quản. Vô vi mà trị, đệ tử cực ít.', 'Đạo pháp tự nhiên.', 'alch'],
-    ['Tiệt Giáo · Bích Du Cung', 'dong', 4, ['kim', 'moc', 'thuy', 'hoa', 'tho', 'loi'], 'Bích Du Cung trên Kim Ngao Đảo giữa Đông Hải, Tử Chi Nhai dưới chân cung. Thông Thiên Giáo Chủ hữu giáo vô loại, vạn tiên lai triều.', 'Tiệt lấy một tia sinh cơ.', 'talis', false, false, true],
+    ['Xiển Giáo · Ngọc Hư Cung', 'trung', 4, ['quang', 'kim', 'thuy', 'tho'], 'Ngọc Hư Cung trên Côn Lôn, sau Kỳ Lân Nhai. Nguyên Thủy Thiên Tôn chưởng Xiển Giáo; coi trọng căn cơ, đạo hạnh và truyền thừa, tuyển môn nhân có chọn lọc. Thập nhị kim tiên chia nhau động phủ khắp danh sơn.', 'Thuận thiên mà hành.', 'alch'],
+    ['Đạo Giáo · Bát Cảnh Cung', 'trung', 4, ['tho', 'thuy', 'moc'], 'Bát Cảnh Cung trong Đại La Cung, Huyền Đô Động, nơi Thái Thượng Lão Quân ngự; phải cưỡi mây mới tới. Đây là dòng truyền thừa Bát Cảnh Cung của Lão Tử trong tam giáo, không đồng nhất với toàn bộ Đạo giáo. Thanh tĩnh vô vi, không mở rộng thu đồ; đích truyền có Huyền Đô Đại Pháp Sư.', 'Đạo pháp tự nhiên.', 'alch'],
+    ['Tiệt Giáo · Bích Du Cung', 'dong', 4, ['kim', 'moc', 'thuy', 'hoa', 'tho', 'loi'], 'Bích Du Cung trên Kim Ngao Đảo giữa Đông Hải, Tử Chi Nhai dưới chân cung. Thông Thiên Giáo Chủ hữu giáo vô loại: truyền dạy không phân biệt xuất thân hay chủng loài, nhân tộc và muôn loài thành đạo đều có thể nhập môn; vạn tiên lai triều.', 'Tiệt lấy một tia sinh cơ.', 'talis', false, false, true],
     ['Tây Phương Giáo', 'tay', 4, ['quang', 'tho'], 'Tây Phương Cực Lạc ở tận cùng phía tây, có Bát Đức Trì và Thất Bảo Lâm. Tiếp Dẫn, Chuẩn Đề độ người hữu duyên.', 'Tâm tịnh thì đất tịnh.', 'alch'],
     ['Hỏa Vân Động', 'trung', 3, ['hoa', 'moc', 'tho'], 'Đạo tràng của Tam Thánh nhân hoàng Phục Hy, Thần Nông, Hiên Viên; thế núi liền với thiên giới, bên cạnh có Tử Vân Nhai.', 'Nhân tộc tự cường.', 'alch'],
     ['Yêu Đình', 'bac', 3, ['am', 'phong', 'hoa'], 'Triều đình yêu tộc của Yêu Đế Đế Tuấn và Đông Hoàng Thái Nhất. Đại chiến Vu Yêu, hai vị tử trận, Yêu Đình tan; tàn dư theo Yêu Sư Côn Bằng về gần Bắc Minh.', 'Yêu tộc vi tôn.', 'talis', true],
@@ -1104,3 +1106,6 @@ const HONDON: Theme = {
 };
 
 [LINH, TIEN, THAN, HONGHOANG, HONDON].forEach((t, i) => registerWorld(i + 1, build(i + 1, t)));
+
+installDecliningSchools();
+for (let w = 0; w <= LAST_WORLD; w++) for (const sc of Object.values(worldPack(w).sects)) sc.tech = localItemId('cp:' + sc.tech, w).slice(3);

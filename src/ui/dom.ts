@@ -26,3 +26,23 @@ export function btn(label: Kid | Kid[], onClick: () => void, cls = '', opts: { d
 export function bar(pct: number, cls = '') {
   return h('div', { class: 'bar ' + cls }, h('i', { style: { width: Math.max(0, Math.min(100, pct)) + '%' } }));
 }
+/** Màu các tầng giáp, lặp vòng: xám → lam → vàng → tím → lục → ngọc → nâu nhạt → xám… (không dùng đỏ — đỏ là máu). */
+export const SHIELD_COLORS = ['#b4bec8', '#5f9fd6', '#e2b64a', '#9a7ed2', '#5cb487', '#45b0bb', '#c4a47c'];
+/** Các tầng giáp phủ lên thanh máu, tính theo đơn vị máu tối đa: tầng 1 (xám) phủ từ trái sang;
+ *  giáp vượt một lần máu tối đa thì tầng đó phủ kín, tầng kế (màu khác) phủ tiếp phần dư. Chỉ vẽ hai tầng trên cùng. */
+export function shieldLayers(shield: number, max: number): { w: number; c: string }[] {
+  const m = max > 0 ? max : 1, sh = Math.max(0, shield);
+  if (sh <= 0) return [];
+  const full = Math.floor(sh / m), rem = sh - full * m, n = SHIELD_COLORS.length;
+  const out: { w: number; c: string }[] = [];
+  if (full >= 1) out.push({ w: 100, c: SHIELD_COLORS[(full - 1) % n] });
+  if (rem > 0) out.push({ w: (rem / m) * 100, c: SHIELD_COLORS[full % n] });
+  return out;
+}
+/** Thanh khí huyết: phần máu đỏ, các tầng giáp phủ đè lên từ trái sang (xem shieldLayers). */
+export function hpBar(hp: number, max: number, shield = 0, cls = 'hp') {
+  const m = max > 0 ? max : 1;
+  return h('div', { class: `bar ${cls} layered` },
+    h('i', { style: { width: Math.max(0, Math.min(100, (hp / m) * 100)) + '%' } }),
+    ...shieldLayers(shield, m).map((l) => h('i', { class: 'sh', style: { width: l.w + '%', background: l.c } })));
+}

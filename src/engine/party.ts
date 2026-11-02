@@ -1,7 +1,10 @@
+import { npcTreasureBonus } from './legacy-holders';
+import { worldDefinitions } from '../data/local-items';
+import { normalizeNpcItems } from './world-items';
 // Đồng hành: chân linh (luôn theo), đạo lữ, đệ tử, thánh nữ còn giữ hôn ước, người quen thân thiết chịu đi theo.
 // Mời ở bảng Nhân mạch; xuất trận tối đa 9 (tính cả chân linh), dự bị không giới hạn. Đồng hành tự đánh trong trận.
 import { s, type NPC } from './state';
-import { myLinh, removeItem, count, itemName, pillMult } from './char';
+import { linhFights, removeItem, count, itemName, pillMult } from './char';
 import { relChange, findNpc, addLog } from './core';
 import { ch, ri, pick } from '../core/util';
 import { SKILLS, TECHS, PILLS, SLOTS, mkGear, learnReq, gearLabel, type Gear } from '../data/items';
@@ -41,10 +44,10 @@ export function invite(id: string): string {
   party().reserve.push(id);
   outfit(n);
   relChange(n, 3);
-  return `${n.name} nhận lời đi theo ngươi. Đã vào danh sách dự bị — vào Nhân mạch › Đồng hành để cho xuất trận.`;
+  return `${n.name} nhận lời đi theo ngươi. Đã vào danh sách dự bị — vào Đồng hành › Đội hình để cho xuất trận.`;
 }
 /** Chân linh có tính một suất xuất trận. */
-export const activeCount = () => activeNpcs().length + (myLinh() ? 1 : 0);
+export const activeCount = () => activeNpcs().length + (linhFights() ? 1 : 0); // chân linh chỉ để cưỡi thì không chiếm suất
 /** Đồng hành đang xuất trận còn sống (bỏ người trọng thương), theo thứ tự đã xếp. */
 export function activeNpcs(): NPC[] {
   party().active = party().active.filter((id) => findNpc(id)?.alive);
@@ -102,13 +105,13 @@ export function outfit(n: NPC, why = 'gia nhập') {
   const cur = K.tech ? TECHS[K.tech] : null;
   let want = sc && TECHS[sc.tech] ? TECHS[sc.tech] : null;
   if (!want && !sc) {
-    const pool = Object.values(TECHS).filter((x) => !x.blood && !x.evil && !isExclusiveTech(x.id) && x.tier <= Math.max(1, Math.ceil((n.r + 1) / 2)) && (x.el.includes(n.el) || !x.el.length));
+    const pool = worldDefinitions('cp').filter((x) => !x.blood && !x.evil && !isExclusiveTech(x.id) && x.tier <= Math.max(1, Math.ceil((n.r + 1) / 2)) && (x.el.includes(n.el) || !x.el.length));
     want = pool.sort((a, b) => b.tier - a.tier || (b.pq ?? 0) - (a.pq ?? 0))[0] || null;
   }
   if (want && (!cur || want.tier > cur.tier)) { K.tech = want.id; for (const sid of want.skills) if (!K.known.includes(sid)) K.known.push(sid); }
   // chiêu: đủ số chiêu theo cảnh giới (Luyện Khí 2, Trúc Cơ 3, Kết Đan trở lên 4); chỉ chiêu thế lực mình truyền được (độc môn của tông khác thì không)
   const need = Math.min(4, 1 + Math.min(3, n.r));
-  const pool = Object.values(SKILLS).filter((k) => !k.peak && k.tier <= Math.max(1, Math.ceil(n.r / 2)) && n.r >= learnReq(k.tier) && !K.known.includes(k.id) && (k.el === n.el || k.el === null) && (sc ? sectCanTeachSkill(k.id, sc.id) : !skillOwners(k.id).length));
+  const pool = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.max(1, Math.ceil(n.r / 2)) && n.r >= learnReq(k.tier) && !K.known.includes(k.id) && (k.el === n.el || k.el === null) && (sc ? sectCanTeachSkill(k.id, sc.id) : !skillOwners(k.id).length));
   pool.sort((a, b) => b.tier - a.tier || b.m - a.m);
   while (K.known.filter((k) => SKILLS[k]).length < need && pool.length) K.known.push(pool.shift()!.id);
   // pháp khí: đủ 5 ô, cấp theo cảnh giới, phẩm theo gia thế; chỉ thay khi mạnh hơn
@@ -119,6 +122,7 @@ export function outfit(n: NPC, why = 'gia nhập') {
     const old = K.gear[slot];
     if (!old || gearScore(old) < gearScore(gear)) { K.gear[slot] = gear; got++; }
   }
+  normalizeNpcItems(n);
   if (got || why !== 'lên cảnh giới') addLog(`${n.name} được ${sc ? sc.n : 'gia tộc'} cấp ${got ? `${got} món pháp khí` : 'thêm hành trang'} (${why}).`);
 }
 /** Điểm một món trang bị để so "mạnh nhất". */
@@ -129,8 +133,9 @@ const skPower = (id: string) => { const k = SKILLS[id]; return k ? k.m * (k.k ==
 export const kitSkills = (n: NPC) => [...kit(n).known].filter((k) => SKILLS[k]).sort((a, b) => skPower(b) - skPower(a)).slice(0, 4);
 /** Hệ số sức mạnh của đồng hành ngoài cảnh giới: tư chất, công pháp. */
 export function compMul(n: NPC): number {
+  normalizeNpcItems(n);
   const t = kit(n).tech ? TECHS[kit(n).tech!] : null;
-  return (0.75 + n.talent * 0.25) * (t ? 0.9 + 0.1 * t.tier : 0.85) * (t?.pw || 1);
+  return (0.75 + n.talent * 0.25) * (t ? 0.9 + 0.1 * t.tier : 0.85) * (t?.pw || 1) * (1 + npcTreasureBonus(n.id));
 }
 /** Cộng thêm từ trang bị đồng hành đang mang. */
 export function kitSum(n: NPC): { atk: number; def: number; hp: number } {
@@ -219,13 +224,13 @@ export function compAdventure(n: NPC, y: number) {
     return;
   }
   if (roll <= 6) {
-    const pool = Object.values(SKILLS).filter((k) => !k.peak && k.tier <= Math.ceil((n.r + 1) / 2) && (k.el === n.el || k.el === null) && !K.known.includes(k.id));
+    const pool = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.ceil((n.r + 1) / 2) && (k.el === n.el || k.el === null) && !K.known.includes(k.id));
     if (pool.length) { const k = pick(pool); K.known.push(k.id); addLog(`${n.name} lĩnh ngộ ${k.n} trong một lần kỳ ngộ.`); }
     return;
   }
   if (roll <= 7) {
     const cur = K.tech ? TECHS[K.tech] : null;
-    const pool = Object.values(TECHS).filter((t) => !t.blood && !t.evil && t.tier <= Math.ceil((n.r + 1) / 2) && (!cur || t.tier > cur.tier) && t.el.some((e) => e === n.el));
+    const pool = worldDefinitions('cp').filter((t) => !t.blood && !t.evil && t.tier <= Math.ceil((n.r + 1) / 2) && (!cur || t.tier > cur.tier) && t.el.some((e) => e === n.el));
     if (pool.length) { const t = pick(pool); K.tech = t.id; for (const sid of t.skills) if (!K.known.includes(sid)) K.known.push(sid); addLog(`${n.name} tìm được ${t.n}, chuyển tu.`); }
     return;
   }

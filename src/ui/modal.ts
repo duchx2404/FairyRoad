@@ -1,3 +1,4 @@
+import { songTuPanel } from './songtu';
 // Khung giấy giữa màn hình: sự kiện, kết quả, và các bảng menu (tiệm, luyện chế, tông môn...).
 import { h, $, btn } from './dom';
 import { glyphSvg } from './glyph';
@@ -22,12 +23,12 @@ export const setToast = (f: typeof toastFn) => (toastFn = f);
 
 export const modalOpen = () => !modal.hidden;
 
-export function openModal(title: string, body: HTMLElement | HTMLElement[], opts: { wide?: boolean; seal?: string; onClose?: () => void; noClose?: boolean; sub?: string; xBtn?: boolean } = {}) {
+export function openModal(title: string, body: HTMLElement | HTMLElement[], opts: { characterAge?: number | null; wide?: boolean; seal?: string; onClose?: () => void; noClose?: boolean; sub?: string; xBtn?: boolean } = {}) {
   modal.innerHTML = '';
   modal.className = opts.wide ? 'wide' : '';
   const head = h('h2', {}, opts.seal ? h('span', { class: 'seal', html: glyphSvg(opts.seal, 16, 2) }) : h('span', { class: 'pl-dia' }, '◆'), title, opts.sub ? h('small', { class: 'pl-sub' }, opts.sub) : null, opts.xBtn ? h('button', { class: 'pl-x', title: 'Đóng (Esc)', onclick: () => closeModal() }, '✕') : null);
   modal.append(head);
-  if (s) modal.append(h('div', { class: 'date' }, `${dateStr()} · ${Math.floor(s.year - s.born)} tuổi`));
+  if (s) modal.append(h('div', { class: 'date' }, `${dateStr()}${opts.characterAge === null ? '' : ` · ${Math.floor(opts.characterAge ?? (s.year - s.born)).toLocaleString('vi-VN')} tuổi`}`));
   const wrap = h('div', {});
   wrap.append(...(Array.isArray(body) ? body : [body]));
   modal.append(wrap);
@@ -38,9 +39,13 @@ export function openModal(title: string, body: HTMLElement | HTMLElement[], opts
   modal.scrollTop = 0;
 }
 
-/** Cảnh bắt buộc chen trước kết quả hành động (vd. ước định hôn ước năm mười tuổi); hud đăng ký. */
+/** Cảnh bắt buộc chen trước kết quả hành động (vd. định đoạt hôn ước năm mười sáu tuổi); hud đăng ký. */
 let gate: () => Scene | null = () => null;
 export const setGate = (f: () => Scene | null) => (gate = f);
+/** Cảnh hiện tiếp ngay sau khi đóng cảnh hiện tại (vd. thư chúc mừng sau khi gia nhập tông môn); hud đăng ký.
+ *  Chỉ hiện khi không có cửa sổ nào khác vừa được mở thay chỗ — nếu có thì chờ lần đóng sau. */
+let follow: () => Scene | null = () => null;
+export const setFollow = (f: () => Scene | null) => (follow = f);
 let prelude: () => Scene | null = () => null;
 export const setPrelude = (f: () => Scene | null) => (prelude = f);
 let queued: Scene | null = null;
@@ -56,6 +61,7 @@ export function closeModal() {
   cb?.();
   if (queued && s && !s.dead) { const q = queued; queued = null; showScene(q); }
   else if (action && s && !s.dead) action();
+  else setTimeout(() => { if (!modal.hidden || !s || s.dead) return; const f = follow(); if (f) showScene(f); }, 0);
 }
 veil.addEventListener('click', () => {
   // không cho bấm ra ngoài để bỏ qua sự kiện có lựa chọn
@@ -194,7 +200,8 @@ function showOutcome(c: Choice, box: HTMLElement, sc: Scene, out: Outcome) {
     if (t) t.lastChild!.textContent = out.title;
   }
   void prev;
-  if (aiOn() && (sc.kind === 'event' ? text.length > 0 : text.length > 25 && !s?.dead)) {
+  if (typeof out !== 'string' && out.songTu) box.before(songTuPanel(out.songTu));
+  else if (aiOn() && (sc.kind === 'event' ? text.length > 0 : text.length > 25 && !s?.dead)) {
     addAiNarration(res, text, () => rewriteOutcome(sc.title, sc.text.slice(-600), c.t, text, sc.aiContext, sc.aiCast));
   }
   if (typeof out !== 'string' && out.pick && !pendingDeath()) renderPick(box, out.pick, { ...sc, text: text });

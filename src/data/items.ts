@@ -1,16 +1,18 @@
 // Công pháp, thuật pháp, đan dược, linh thảo, vật liệu, phù lục, trang bị.
+import { TREASURE_TIERS, ART_TIERS, localTreasureGrade } from './treasure-grades';
 import { REALMS, EL, worldMult, type El } from './core';
 import { pick, ri, rf, ch } from '../core/util';
 
 // ---------- Giai & phẩm ----------
 // Sáu giai: Hoàng, Huyền, Địa, Thiên, Thần, Tiên; mỗi giai bốn phẩm Hạ/Trung/Thượng/Cực.
 // Phàm phẩm (giai 0) chỉ có ở đan dược và pháp khí.
-export const TIER_N = ['Phàm phẩm', 'Hoàng giai', 'Huyền giai', 'Địa giai', 'Thiên giai', 'Thần giai', 'Tiên giai'];
-export const TIER_C = ['#7a6e60', '#8a7650', '#35627e', '#6a4f98', '#a8862f', '#b0392b', '#b8558f'];
+export const TIER_N = [...TREASURE_TIERS];
+export const TIER_C = ['#7a6e60', '#8a7650', '#35627e', '#6a4f98', '#a8862f', '#b0392b', '#b8558f', '#ad792c', '#b75c2a', '#8b57b8', '#ba7440', '#8053a7', '#d19638'];
 export const PHAM = ['Hạ phẩm', 'Trung phẩm', 'Thượng phẩm', 'Cực phẩm'];
-export const MAX_GIAI = 6;
+export const MAX_GIAI = TREASURE_TIERS.length - 1;
 /** "Hoàng giai hạ phẩm" · "Phàm phẩm". */
 export const gradeLabel = (giai: number, pq = 0) => (giai <= 0 ? 'Phàm phẩm' : `${TIER_N[Math.min(MAX_GIAI, giai)]} ${PHAM[Math.max(0, Math.min(3, pq))].toLowerCase()}`);
+export const artGradeLabel = (g: number, q = 0) => g <= 6 ? gradeLabel(g, q) : `${ART_TIERS[Math.min(g, ART_TIERS.length - 1)]} ${PHAM[Math.max(0, Math.min(3, q))].toLowerCase()}`;
 /** Hệ số hiệu lực theo phẩm trong cùng một giai. */
 export const PQ_MULT = [0.88, 1, 1.15, 1.35];
 
@@ -105,7 +107,7 @@ const TECH_GRADE: Record<string, [number, number]> = {
 for (const [id, [g, q]] of Object.entries(TECH_GRADE)) if (TECHS[id]) { TECHS[id].tier = g; TECHS[id].pq = q; }
 export const techSpeed = (t: Tech) => TECH_SPEED[t.tier] * (1 + (t.pq ?? 0) * 0.06);
 export const techPow = (t: Tech) => TECH_POW[t.tier] * (1 + (t.pq ?? 0) * 0.05);
-export const techGrade = (t: Tech) => gradeLabel(t.tier, t.pq ?? 0);
+export const techGrade = (t: Tech) => artGradeLabel(t.tier, t.pq ?? 0);
 
 // ---------- Thuật pháp ----------
 export type SkillKind = 'atk' | 'heal' | 'shield' | 'dot' | 'multi';
@@ -121,6 +123,8 @@ export interface Skill {
   sword?: boolean;
   w?: Weapon; // loại vũ khí / quyền cước
   peak?: boolean; // chân truyền của phong chủ, không bán, không rơi
+  /** Chiêu hồi phục có thêm hồi máu theo lượt: mỗi lượt hồi m × lượng hồi tức thời, trong `turns` lượt. Chỉ hồi máu, không hồi giáp. */
+  hot?: { m: number; turns: number };
   d: string;
 }
 export type Weapon = 'kiem' | 'dao' | 'thuong' | 'quyen' | 'chuong' | 'cung' | 'kich';
@@ -160,7 +164,7 @@ export const SKILLS: Record<string, Skill> = {
   liemloi: { id: 'liemloi', n: 'Liên Hoàn Lôi Kích', el: 'loi', tier: 3, k: 'multi', m: 1, cd: 3, d: 'Sét giật liên tiếp.' },
   cuuchuyenphathien: { id: 'cuuchuyenphathien', n: 'Cửu Chuyển Phá Thiên Kiếm', el: 'kim', tier: 6, k: 'atk', m: 4.2, cd: 4, w: 'kiem', sword: true, peak: true, d: 'Chín lần chuyển kiếm thế, mỗi lần nặng thêm một tầng trời; kiếm thứ chín hạ xuống thì trời nứt. Chân truyền Cửu Chuyển Huyền Công.' },
   cuuchuyenkimthan: { id: 'cuuchuyenkimthan', n: 'Cửu Chuyển Kim Thân', el: 'kim', tier: 6, k: 'shield', m: 3.2, cd: 4, peak: true, d: 'Nhục thân hóa kim, đao kiếm chém vào chỉ tóe lửa. Chân truyền Cửu Chuyển Huyền Công.' },
-  tichhuyettrungsinh: { id: 'tichhuyettrungsinh', n: 'Tích Huyết Trùng Sinh', el: 'moc', tier: 6, k: 'heal', m: 2.2, cd: 5, peak: true, d: 'Còn một giọt máu là còn sống lại. Chân truyền Cửu Chuyển Huyền Công.' },
+  tichhuyettrungsinh: { id: 'tichhuyettrungsinh', n: 'Tích Huyết Trùng Sinh', el: 'moc', tier: 6, k: 'heal', m: 2.2, cd: 5, peak: true, hot: { m: 0.25, turns: 5 }, d: 'Còn một giọt máu là còn sống lại. Hồi máu tức thì, rồi huyết khí tiếp tục tái sinh trong 5 lượt. Chân truyền Cửu Chuyển Huyền Công.' },
   phapthientuongdia: { id: 'phapthientuongdia', n: 'Pháp Thiên Tượng Địa', el: 'tho', tier: 5, k: 'atk', m: 3.4, cd: 4, peak: true, d: 'Thân hóa cao vạn trượng, đầu đội trời chân đạp đất, một chưởng giáng xuống như trời sập. Uy lực tùy công pháp truyền thụ: Bát Cửu Huyền Công mạnh, Cửu Chuyển Huyền Công càng mạnh hơn.' },
   thatthapnhibien: { id: 'thatthapnhibien', n: 'Thất Thập Nhị Biến', el: 'phong', tier: 5, k: 'shield', m: 2.4, cd: 4, peak: true, d: 'Thân hóa thành vật khác trong một ý niệm, đòn đánh tới chỉ trúng ảo ảnh. Chân truyền Bát Cửu Huyền Công.' },
   sontrung: { id: 'sontrung', n: 'Di Sơn Thuật', el: 'tho', tier: 3, k: 'atk', m: 2.5, cd: 3, d: 'Dời núi đè địch.' },
@@ -195,7 +199,7 @@ export function skillEffect(k: Skill): string {
     case 'atk': return `${k.m}× công`;
     case 'multi': return `3 đòn, mỗi đòn ${k.m}× công`;
     case 'dot': return `${k.m}× công + ăn mòn 3 lượt`;
-    case 'heal': return `hồi ${Math.round(18 * k.m)}% khí huyết`;
+    case 'heal': return `hồi ${Math.round(18 * k.m)}% khí huyết${k.hot ? `, rồi mỗi lượt hồi thêm ${Math.round(18 * k.m * k.hot.m)}% trong ${k.hot.turns} lượt` : ''}`;
     case 'shield': return `hộ thuẫn ${k.m}×`;
   }
   return '';
@@ -245,7 +249,7 @@ for (const [id, g] of Object.entries({ tutieuloi: 5, vanmaphe: 5, cuuuban: 5, kh
     arr.forEach((k, i) => (k.pq = arr.length === 1 ? 1 : Math.round((i / (arr.length - 1)) * 3)));
   }
 }
-export const skillGrade = (k: Skill) => gradeLabel(k.tier, k.pq ?? 0);
+export const skillGrade = (k: Skill) => artGradeLabel(k.tier, k.pq ?? 0);
 
 // ---------- Linh thảo ----------
 export interface Herb {
@@ -283,6 +287,7 @@ export const HERBS: Record<string, Herb> = {
 // ---------- Đan dược ----------
 export type PillKind = 'cult' | 'heal' | 'break' | 'life' | 'stat' | 'detox' | 'root';
 export interface Pill {
+  giai?: number;
   id: string;
   n: string;
   k: PillKind;
@@ -320,8 +325,8 @@ export const PILL_GRADE = PHAM;
 /** Giai của đan theo cảnh giới dùng; đan phàm tục (chữa thương nhẹ, giải độc) là Phàm phẩm. */
 const PILL_GIAI_OF_TIER = [0, 1, 2, 2, 3, 4, 5, 5, 6];
 const PILL_PHAM = new Set(['hoixuandan', 'giaidoc']);
-export const pillGiai = (p: Pill) => (PILL_PHAM.has(p.id) ? 0 : PILL_GIAI_OF_TIER[Math.min(8, p.tier)]);
-export const pillGrade = (p: Pill, g = 1) => gradeLabel(pillGiai(p), g);
+export const pillGiai = (p: Pill) => p.giai ?? (PILL_PHAM.has(p.id) ? 0 : PILL_GIAI_OF_TIER[Math.min(8, p.tier)]);
+export const pillGrade = (p: Pill, g = 1) => artGradeLabel(pillGiai(p), g);
 export const GRADE_MULT = [0.8, 1, 1.3, 1.7];
 
 // ---------- Vật liệu ----------
@@ -434,7 +439,7 @@ export const SLOTS = ['Vũ khí', 'Hộ giáp', 'Linh bảo', 'Giới chỉ', 'N
 export const GEAR_GRADE = TIER_N;
 export const GEAR_GRADE_C = TIER_C;
 /** Thời gian luyện hóa (năm) theo phẩm. */
-export const REFINE_Y = [0.1, 0.5, 2, 6, 15, 30, 60];
+export const REFINE_Y = [0.1, 0.5, 2, 6, 15, 30, 60, 120, 240, 480, 960, 1920, 3840];
 const BASE_NAMES: string[][] = [
   ['Kiếm', 'Đao', 'Thương', 'Phiến', 'Tiêu', 'Châm', 'Câu', 'Phất trần'],
   ['Giáp', 'Bào', 'Y', 'Hộ tâm kính', 'Lân giáp'],
@@ -483,6 +488,7 @@ export interface Gear {
 }
 export const gearLabel = (gr: Gear) => gradeLabel(gr.g, gr.q ?? 1);
 export function mkGear(lv: number, g: number, slot?: number, el?: El | null, q?: number): Gear {
+  g = localTreasureGrade(g);
   const qq = q ?? (() => { const r = Math.random(); return r < 0.4 ? 0 : r < 0.75 ? 1 : r < 0.95 ? 2 : 3; })();
   const sl = slot ?? ri(0, 4);
   if (!Number.isInteger(sl) || sl < 0 || sl >= SLOTS.length) throw new RangeError(`Ô trang bị không hợp lệ: ${sl}`);
@@ -555,7 +561,7 @@ export const TAMPHAP: Record<string, TamPhap> = {
   honnguyentam: { id: 'honnguyentam', n: 'Hỗn Nguyên Tâm Kinh', tier: 5, pq: 2, cult: 12, ngo: 2, d: 'Thần thức và chân nguyên hợp làm một, tu một được hai.' },
   vouluongtam: { id: 'vouluongtam', n: 'Vô Lượng Tâm Kinh', tier: 6, pq: 3, cult: 18, brk: 0.06, tam: 3, ngo: 2, d: 'Tâm kinh không biết ai viết, không biết từ đâu tới. Đọc xong, cả đời không quên được.' },
 };
-export const tamGrade = (x: TamPhap) => gradeLabel(x.tier, x.pq);
+export const tamGrade = (x: TamPhap) => artGradeLabel(x.tier, x.pq);
 export const tamPrice = (x: TamPhap) => Math.round(50 * Math.pow(4.2, x.tier - 1) * (1 + x.pq * 0.3));
 /** Cảnh giới phù hợp theo giai: Hoàng→Luyện Khí, Huyền→Trúc Cơ, Địa→Kết Đan, Thiên→Nguyên Anh, Thần→Hóa Thần, Tiên→Luyện Hư. */
 export const realmForGiai = (giai: number) => Math.max(1, Math.min(6, giai));

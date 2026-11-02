@@ -1,3 +1,4 @@
+import { worldDefinitions } from '../data/local-items';
 // Đầu thai, cái chết, điểm số, luân hồi và thành tựu.
 import { kmSyncSkills } from './kinhmach';
 import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, ORIGINS, PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, REALMS, STAGES, type El, type StatKey } from '../data/core';
@@ -373,7 +374,7 @@ export function newLife(o: NewLifeOpts) {
     }
     if (clan.patron) s.bag.push({ id: 'x:kiemlenh', n: 1 });
     // công pháp gia truyền: phẩm Hoàng/Huyền hợp linh căn, ưu tiên hệ của tộc
-    const fit = Object.values(TECHS).filter((x) => !x.blood && x.tier <= 2 && !x.evil && x.el.some((e) => s.root.els.includes(e)))
+    const fit = worldDefinitions('cp').filter((x) => !x.blood && x.tier <= 2 && !x.evil && x.el.some((e) => s.root.els.includes(e)))
       .sort((a, b) => b.tier - a.tier || Number(b.el.some((e) => clan.el.includes(e))) - Number(a.el.some((e) => clan.el.includes(e))));
     if (fit.length) {
       s.tech = fit[0].id;

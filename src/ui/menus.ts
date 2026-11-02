@@ -12,7 +12,7 @@ import { PILLS, TALIS, HERBS, SLOTS, TECHS, GEAR_GRADE_C, TIER_C, TIER_N, gearLa
 import { RMAX, REALMS } from '../data/core';
 import { effRi, itemName, itemDesc, itemTier, count } from '../engine/char';
 import { stock, buy, sellPrice, sellItem, unsellable, sellGear, sellGearPrice, lots, winLot, consign, consignGear, auctionHeld, nextAuction, type Ware, type Lot } from '../engine/trade';
-import { brew, canBrew, alchChance, draw as drawTalis, canDraw, talisChance, makePaper, PAPER_REC, forge, canForge, forgeMats, craftTitle, xpNeed, itemIdOf, pillRec, talisRec } from '../engine/craft';
+import { brew, canBrew, alchChance, draw as drawTalis, canDraw, talisChance, makePaper, PAPER_REC, forge, canForge, forgeMats, craftTitle, craftProficiency, xpNeed, itemIdOf, pillRec, talisRec } from '../engine/craft';
 import { missionPool, sectWares, promoInfo, promote, leaveSect, rankName, retire } from '../engine/sect';
 import { doMission } from '../engine/actions';
 import { gearLine } from '../engine/items';
@@ -78,7 +78,7 @@ export function openCraft(tab = -1) {
     const k = ks[t];
     const lv = s.craft[k];
     const xk = ({ alch: 'ax', talis: 'tx', forge: 'fx' } as const)[k];
-    body.append(h('div', { class: 'small muted', style: { marginBottom: '8px' } }, `Tay nghề: ${craftTitle(lv, k)} (cấp ${lv}) · kinh nghiệm ${s.craft[xk]}/${xpNeed(lv)}${s.flags.flame ? ' · có linh hỏa' : ''}`));
+    body.append(h('div', { class: 'small muted', style: { marginBottom: '8px' } }, `Tay nghề: ${craftTitle(lv, k)} (cấp ${lv}) · thuần thục ${Math.floor(craftProficiency(lv, s.craft[xk])).toLocaleString('vi-VN')}${lv < 8 ? ` · tiến độ ${s.craft[xk]}/${xpNeed(lv)}` : ' · bậc tối đa, thuần thục không giới hạn'}${s.flags.flame ? ' · có linh hỏa' : ''}`));
     const list = h('div', { class: 'list' });
     const out = h('div', { class: 'story res', style: { minHeight: '1em' } });
     if (!lv) {
@@ -89,7 +89,7 @@ export function openCraft(tab = -1) {
     const say = (m: string) => { out.textContent = m; draw2(); };
     const draw2 = () => { refresh(); const keep = out.textContent; draw(t); body.querySelector('.story')!.textContent = keep; };
     if (k === 'alch') {
-      const known = Object.values(PILLS).filter((p) => s.recipes.includes(p.id)).sort((a, b) => a.tier - b.tier);
+      const known = s.recipes.map(id => PILLS[id]).filter(Boolean).sort((a, b) => a.tier - b.tier);
       if (!known.length) list.append(h('div', { class: 'empty' }, 'Chưa có đan phương nào. Mua ở phường thị hoặc tìm trong kỳ ngộ.'));
       for (const p of known) {
         const err = canBrew(p.id);
@@ -98,7 +98,7 @@ export function openCraft(tab = -1) {
           h('div', { class: 'acts' }, btn('Luyện', () => say(brew(p.id)), 'small', { dis: !!err, title: err || '' }))));
       }
     } else if (k === 'talis') {
-      const known = Object.values(TALIS).filter((x) => !x.co && s.recipes.includes(x.id)).sort((a, b) => a.p - b.p);
+      const known = s.recipes.map(id => TALIS[id]).filter(x => x && !x.co).sort((a, b) => a.p - b.p);
       const co = !!s.flags.coPhu;
       if (co) {
         body.append(h('div', { class: 'small muted', style: { marginBottom: '6px' } }, 'Bí tịch chế phù thượng cổ: cổ phù mạnh gấp mười, nhưng phải vẽ trên giấy da yêu thú (tới Tứ phẩm) hoặc giấy linh mộc (mọi phẩm).'));

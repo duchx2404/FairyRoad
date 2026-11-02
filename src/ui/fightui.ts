@@ -2,7 +2,7 @@
 // để sự kiện chạy lại trận y hệt và áp kết quả (xem withFights).
 import { skSource, skSrcMul } from '../engine/char';
 import { glyphSvg } from './glyph';
-import { h, btn, bar } from './dom';
+import { h, btn, bar, hpBar, shieldLayers } from './dom';
 import { s, meta } from '../engine/state';
 import { Battle, BASIC, FightPending, fightLogs, setFightCtx, manualFights, skCost, type Script } from '../engine/combat';
 import { REALMS, STAGES, EL } from '../data/core';
@@ -31,8 +31,14 @@ function slots(side: 'me' | 'foe', list: Fighter[], giant: { giant: string | nul
     return h('div', { class: 'fa-slot' + (ps.depth >= 1 ? ' back' : '') + (ps.depth >= 2.4 ? ' far' : '') + (i === 0 ? ' lead' : '') + (dead ? ' dead' : '') + (f.fled ? ' fled' : ''), style, title: `${f.name} · ${Math.max(0, Math.round(f.hp))}/${f.maxHp}` },
       i === 0 && giant?.giant ? h('div', { class: 'fa-giant', style: { maskImage: `url(${giant.giant})`, webkitMaskImage: `url(${giant.giant})`, background: giant.col, filter: `drop-shadow(0 0 10px ${giant.glow}) drop-shadow(0 0 28px ${giant.glow})` } }) : null,
       sl ? h('img', { class: 'fa-sprite' + (sl.beast ? ' beast' : '') + (sl.mirror ? ' mir' : ''), src: sl.src, alt: '' }) : h('div', { class: 'fa-ghost' }, f.name.slice(0, 2)),
-      h('div', { class: 'fa-hp' }, h('i', { style: { width: `${Math.max(0, Math.min(100, (f.hp / f.maxHp) * 100))}%` } })));
+      miniHp(f));
   });
+}
+/** Thanh máu nhỏ dưới chân mỗi ô, có phần giáp nối sau máu. */
+function miniHp(f: Fighter): HTMLElement {
+  const m = f.maxHp || 1;
+  return h('div', { class: 'fa-hp' }, h('i', { style: { width: `${Math.max(0, Math.min(100, (f.hp / m) * 100))}%` } }),
+    ...shieldLayers(f.shield || 0, m).map((l) => h('i', { style: { width: `${l.w}%`, background: l.c } })));
 }
 
 function openFight(p: FightPending, done: (sc: Script) => void) {
@@ -82,14 +88,14 @@ function openFight(p: FightPending, done: (sc: Script) => void) {
       h('div', { class: 'fa-side foe' }, ...slots('foe', [f, ...b.foes], null)),
       h('div', { class: 'fb-me fa-card' },
         h('div', { class: 'fb-por sm', html: avatarSvg(s.g, s.r, me.el, 40, playerPortrait(s.g, age())) }),
-        h('div', { class: 'fb-name' }, h('b', {}, me.name), ` · ${stageName()}${me.shield > 0 ? ' · hộ thuẫn ' + me.shield : ''}${b.burns ? ` · đã thiêu đốt ${b.burns}/3` : ''}${b.guard ? ' · thủ thế' : ''}${b.pttd ? ' · Pháp Thiên Tượng Địa' : ''}`),
-        h('div', { class: 'fb-row' }, h('span', {}, 'Khí huyết'), bar((me.hp / me.maxHp) * 100, 'hp'), h('span', {}, `${Math.max(0, Math.round(me.hp))} / ${me.maxHp}`)),
+        h('div', { class: 'fb-name' }, h('b', {}, me.name), ` · ${stageName()}${me.hot?.length ? ` · ${me.hot.map((t) => `${t.n} hồi ${fmt(t.v)}/lượt, còn ${t.turns} lượt`).join(' · ')}` : ''}${b.burns ? ` · đã thiêu đốt ${b.burns}/3` : ''}${b.guard ? ' · thủ thế' : ''}${b.pttd ? ' · Pháp Thiên Tượng Địa' : ''}`),
+        h('div', { class: 'fb-row' }, h('span', {}, 'Khí huyết'), hpBar(me.hp, me.maxHp, me.shield), h('span', {}, `${fmt(Math.max(0, Math.round(me.hp)))} / ${fmt(me.maxHp)}`, me.shield > 0 ? h('span', { class: 'fb-sh' }, ` +${fmt(Math.round(me.shield))} giáp`) : null)),
         h('div', { class: 'fb-row' }, h('span', {}, 'Linh lực'), bar((b.mp / b.mpMax) * 100, 'mp'), h('span', {}, `${b.mp.toFixed(1)} / ${Math.round(b.mpMax)} · +${b.regen.toFixed(1)}`))),
       h('div', { class: 'fb-foe fa-card' },
         h('div', { class: 'fb-por', html: linhIconSvg(b.spec?.kind === 'beast' ? 'paw' : b.spec?.kind === 'demon' ? 'demon' : b.spec?.kind === 'mortal' ? 'mortal' : 'cultivator', f.el || 'tho', 52, foePortrait(b.spec?.kind, f.el, f.name)) }),
         h('div', { class: 'fb-body' },
-          h('div', { class: 'fb-name' }, f.el ? h('span', { class: 'fb-el', style: { background: EL[f.el].c } }, EL[f.el].n) : null, h('b', {}, f.name), h('span', { class: 'fb-realm' }, foeRealm), f.shield > 0 ? h('span', { class: 'small muted' }, ` · hộ thuẫn ${fmt(f.shield)}`) : null),
-          h('div', { class: 'fb-row' }, h('span', {}, 'Khí huyết'), bar((f.hp / f.maxHp) * 100, 'hp'), h('span', {}, `${fmt(Math.max(0, Math.round(f.hp)))} / ${fmt(f.maxHp)}`)),
+          h('div', { class: 'fb-name' }, f.el ? h('span', { class: 'fb-el', style: { background: EL[f.el].c } }, EL[f.el].n) : null, h('b', {}, f.name), h('span', { class: 'fb-realm' }, foeRealm)),
+          h('div', { class: 'fb-row' }, h('span', {}, 'Khí huyết'), hpBar(f.hp, f.maxHp, f.shield), h('span', {}, `${fmt(Math.max(0, Math.round(f.hp)))} / ${fmt(f.maxHp)}`, f.shield > 0 ? h('span', { class: 'fb-sh' }, ` +${fmt(Math.round(f.shield))} giáp`) : null)),
           intentTxt ? h('div', { class: 'fb-intent' }, intentTxt) : null,
           h('div', { class: 'fb-moves' }, h('span', { class: 'small muted' }, 'Chiêu thức:'), ...b.foeMoves().map((m) => h('span', { class: 'fb-mv' + (!b.over && m.n === b.intent.n ? ' next' : '') },
             m.k === 'shield' ? `${m.n} · hộ thuẫn` : m.k === 'heal' ? `${m.n} · hồi máu` : `${m.n} ~${fmt(b.estMove(m))}`))))));
@@ -138,7 +144,7 @@ function openFight(p: FightPending, done: (sc: Script) => void) {
       const basic = k.id === 'quyen';
       const ok = basic ? !b.used.includes('quyen') : b.canUse(k);
       const e = b.estSkill(k);
-      const eff = e.k === 'heal' ? `hồi ${fmt(e.v)} khí huyết` : e.k === 'shield' ? `hộ thuẫn ${fmt(e.v)}` : `${fmt(e.v)} sát thương${k.k === 'multi' ? ' (3 đòn)' : k.k === 'dot' ? ' + ăn mòn' : ''}`;
+      const eff = e.k === 'heal' ? `hồi ${fmt(e.v)} khí huyết${k.hot ? ` + ${fmt(Math.round(e.v * k.hot.m))}/lượt × ${k.hot.turns} lượt` : ''}` : e.k === 'shield' ? `hộ thuẫn ${fmt(e.v)}` : `${fmt(e.v)} sát thương${k.k === 'multi' ? ' (3 đòn)' : k.k === 'dot' ? ' + ăn mòn' : ''}`;
       const cost = b.used.includes(k.id) ? 'đã dùng lượt này' : basic ? 'không tốn' : `${skCost(k)} linh lực`;
       const tag = e.em > 1 ? h('span', { class: 'fb-tag up' }, 'khắc') : e.em < 1 ? h('span', { class: 'fb-tag dn' }, 'bị khắc') : null;
       return h('button', { class: 'fb-sk' + (ok ? '' : ' off'), disabled: !myT || !ok, title: `${k.n} · ${KIND_N[k.k]}${skSource(k.id) ? ` · truyền từ ${skSource(k.id)!.n} (×${skSrcMul(k.id).toFixed(2)})` : ''}${k.d ? ' · ' + k.d : ''}`, onclick: () => act(basic ? { t: 'basic' } : { t: 'sk', id: k.id }) },

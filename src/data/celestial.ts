@@ -2,8 +2,9 @@
 // Yêu Giới (Yêu Hoàng, Thất Đại Thánh), Linh Sơn (Phật Tổ, Bồ Tát). Mỗi giới tu chân có bốn nơi này riêng: bản đồ và
 // chức vụ giống nhau, người giữ chức khác nhau, trần thực lực tăng theo giới (giới cao chứa được sức mạnh lớn hơn).
 // Chức vụ là chức vụ; Hồng Hoang dùng tên trong truyền thuyết, các giới thấp có người đương nhiệm riêng.
-import { REALMS, npcCap, DAO_HAO, DAO_HAO_F, SURN, MALE, FEM, WORLDS } from './core';
+import { REALMS, npcCap, DAO_HAO, DAO_HAO_F, MALE, FEM, WORLDS, LAST_WORLD, splitName } from './core';
 import { seeded, hashStr } from '../core/util';
+import { nameKey, uniquePersonalName } from '../core/names';
 
 export type CelestialId = 'thiendinh' | 'diaphu' | 'yeugioi' | 'linhson';
 export interface CPlace { id: string; n: string; x: number; y: number; d: string }
@@ -170,18 +171,30 @@ const HONGHUANG_FIGURES = new Set([
   'Đạo Hạnh Thiên Tôn', 'Thanh Hư Đạo Đức Chân Quân', 'Nam Cực Tiên Ông',
 ]);
 /** Hồng Hoang dùng người trong truyền thuyết; chức vụ tương ứng ở giới thấp có người khác đảm nhận. */
+export const hasCelestialRealms = (w: number) => w >= 0 && w < LAST_WORLD;
+let holderNames: Map<string, string> | undefined;
 function holderName(id: CelestialId, o: COffice, w: number, i: number): string {
-  if (w === 4 || (w === 0 && !HONGHUANG_FIGURES.has(o.holder))) return o.holder;
+  if (w === 4) return o.holder;
+  if (!holderNames) {
+    holderNames = new Map();
+    const used = new Set([...HONGHUANG_FIGURES, ...Object.values(CELESTIAL).flatMap(realm => realm.offices.map(office => office.holder))].map(nameKey));
+    for (let world = 0; world < 4; world++) for (const realm of Object.values(CELESTIAL)) {
+      realm.offices.forEach((office, index) => {
+        const key = `${realm.id}:${world}:${index}`;
+        const surname = office.holder === 'Lão Tử' || office.holder === 'Na Tra' ? 'Lý' : splitName(office.holder).sur;
+        const name = uniquePersonalName(office.f ? 'f' : 'm', surname, used, 'celestial:' + key);
+        holderNames!.set(key, name);
+        used.add(nameKey(name));
+      });
+    }
+  }
+  return holderNames.get(`${id}:${w}:${i}`)!;
+}
+function holderDaoHao(id: CelestialId, o: COffice, w: number, i: number): string | undefined {
+  if (w === 4) return undefined;
   const rnd = seeded(hashStr(`celestial:${id}:${w}:${i}:${o.title}`));
-  const makeName = () => {
-    if (id === 'thiendinh') return o.f ? `${pk(rnd, DAO_HAO_F)} ${pk(rnd, ['Tiên Tử', 'Nguyên Quân', 'Thánh Mẫu'])}` : `${pk(rnd, DAO_HAO)} ${pk(rnd, ['Chân Quân', 'Tinh Quân', 'Đế Quân', 'Thiên Tôn'])}`;
-    if (id === 'yeugioi') return `${pk(rnd, ['Hồ', 'Long', 'Ngưu', 'Sư', 'Bằng', 'Viên', 'Xà', 'Hổ', 'Lang', 'Điêu', 'Quy', 'Lộc'])} ${pk(rnd, o.f ? FEM : MALE)}`;
-    if (id === 'linhson') return `${pk(rnd, ['Giác', 'Huệ', 'Tuệ', 'Pháp', 'Tịnh', 'Minh', 'Vô', 'Viên', 'Đạo', 'Như'])} ${pk(rnd, ['Chân', 'Hải', 'Không', 'Ngộ', 'Nhiên', 'Quang', 'Tâm', 'Thiện', 'Tịch', 'Viễn'])}`;
-    return `${pk(rnd, SURN)} ${pk(rnd, o.f ? FEM : MALE)}`;
-  };
-  let name = makeName();
-  while (HONGHUANG_FIGURES.has(name)) name = makeName();
-  return name;
+  return o.f ? `${pk(rnd, DAO_HAO_F)} ${pk(rnd, ['Tiên Tử', 'Nguyên Quân', 'Thánh Mẫu'])}`
+    : `${pk(rnd, DAO_HAO)} ${pk(rnd, ['Chân Quân', 'Tinh Quân', 'Đế Quân', 'Thiên Tôn'])}`;
 }
 /** Chức vụ thần giới tinh thông nghề luyện chế (theo truyền thuyết): lên bảng danh sư của Thiên Cơ Lâu. lv 3..8 như cấp nghề. */
 export const CELESTIAL_CRAFT: Record<string, ['alch' | 'forge' | 'talis', number][]> = {
@@ -202,9 +215,10 @@ export const CELESTIAL_CRAFT: Record<string, ['alch' | 'forge' | 'talis', number
 export const celestialTop = (w: number) => npcCap(w);
 /** Cảnh giới của một chức vụ ở giới w: bậc 0 đứng ở trần, mỗi bậc thấp hơn một đại cảnh giới. */
 export const officeRealm = (tier: number, w: number) => Math.max(1, celestialTop(w) - tier);
-export interface COfficeView extends COffice { name: string; r: number; realm: string }
+export interface COfficeView extends COffice { name: string; daoHao?: string; r: number; realm: string }
 /** Danh sách chức vụ kèm người đương nhiệm và cảnh giới cho giới w. */
 export function celestialOffices(id: CelestialId, w: number): COfficeView[] {
-  return CELESTIAL[id].offices.map((o, i) => { const r = officeRealm(o.tier, w); return { ...o, name: holderName(id, o, w, i), r, realm: REALMS[r].n }; });
+  if (!hasCelestialRealms(w)) return [];
+  return CELESTIAL[id].offices.map((o, i) => { const r = officeRealm(o.tier, w); return { ...o, name: holderName(id, o, w, i), daoHao: holderDaoHao(id, o, w, i), r, realm: REALMS[r].n }; });
 }
 export const celestialWorldName = (id: CelestialId, w: number) => `${CELESTIAL[id].n} ${WORLDS[w]}`;

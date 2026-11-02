@@ -19,7 +19,7 @@ export interface Choice {
 export interface PickItem { id: string; label: string; head?: string; info: string[] }
 export interface PickSpec { items: PickItem[]; min?: number; confirm: string; done: (ids: string[]) => Outcome; /** Nhãn lựa chọn trước đó, ghép vào đầu dòng "▸" khi hiện kết quả. */ head?: string }
 /** quiet: văn bản chỉ là câu hỏi dẫn tới bước chọn tiếp theo — không kể lại, không ghi nhật ký, không AI viết lại. */
-export type Outcome = string | { text: string; choices?: Choice[]; title?: string; pick?: PickSpec; quiet?: boolean };
+export type Outcome = string | { text: string; choices?: Choice[]; title?: string; pick?: PickSpec; quiet?: boolean; songTu?: import('./songtu').SongTuContext };
 
 export interface GameEvent {
   id: string;

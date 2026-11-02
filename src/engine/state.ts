@@ -10,6 +10,11 @@ export interface BagItem {
 
 export type NpcTag = 'friend' | 'enemy' | 'master' | 'disciple' | 'daolu' | 'rival' | 'kin' | 'acq' | 'senior' | 'peer';
 export interface NPC {
+  evolution?: { from: string; milestone: number };
+  blood?: string;
+  craft?: import('./craft-proficiency').ArtisanCraft;
+  beast?: string;
+  race?: string;
   id: string;
   name: string;
   g: 'm' | 'f';

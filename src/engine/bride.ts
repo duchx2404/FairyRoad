@@ -3,7 +3,8 @@
 import { s, type NPC } from './state';
 import { BODIES, PERKS, ROOTS, EL, type El } from '../data/core';
 import { pick, ri, shuffle } from '../core/util';
-import { mark } from './core';
+import { mark, addLog } from './core';
+import { HEROINE } from '../data/heroine';
 
 // hồ sơ: ngoại hình tả lúc 18 tuổi, luôn đẹp; tính cách có thể xấu; luôn có thiên phú Khuynh quốc khuynh thành
 const LOOK_A = ['Dung nhan khuynh quốc khuynh thành', 'Tuyệt sắc giai nhân, nhìn một lần khó quên', 'Đẹp như tiên nữ giáng trần', 'Đẹp lạnh lùng như hoa mai trong tuyết', 'Đẹp rực rỡ như nắng sớm', 'Đẹp thanh khiết như sen trắng giữa hồ'];
@@ -58,9 +59,39 @@ export function mkBrideBio(kind: BrideKind, g: 'm' | 'f' = 'f'): NonNullable<NPC
   };
 }
 
+/** Mô tả thể chất / thiên phú theo dữ liệu hiện tại (sửa BODIES / PERKS là hiện ngay, kể cả bản lưu cũ đã chép mô tả cũ).
+ *  Hồ sơ viết riêng (nữ chính) giữ mô tả của mình. */
+export function bioDesc(b: NonNullable<NPC['bio']>, k: 'body' | 'perk'): string | undefined {
+  const saved = k === 'body' ? b.bodyD : b.perkD;
+  if (b.family === HEROINE.bio.family) return saved;
+  const cur = k === 'body' ? BODIES.find((x) => x.n === b.body)?.d : PERKS.find((x) => x.n === b.perk)?.d;
+  return cur ?? saved;
+}
+/** Nguyên nhân chết ngẫu nhiên hằng năm (npctick.ts) — trước đây hôn thê tư chất dưới 1.7 vẫn dính. */
+const RANDOM_DEATH = ['bỏ mạng trong hiểm địa', 'tẩu hỏa nhập ma', 'bị kẻ thù ám sát', 'đột phá thất bại'];
+/** Bản lưu cũ: hôn thê đã chết vì tai nạn ngẫu nhiên (không do sự kiện, trận đấu hay thọ tận) thì sống lại — tin dữ năm ấy là tin đồn sai. */
+export function reviveBrides() {
+  for (const id of (s.flags.dhBrides as string[] | undefined) || []) {
+    const n = s.npcs.find((x) => x.id === id);
+    if (!n || n.alive || !RANDOM_DEATH.includes(n.cause || '') || s.year - n.born > n.life) continue;
+    n.alive = true;
+    delete n.died;
+    delete n.cause;
+    addLog(`Tin ${n.name} qua đời năm trước hóa ra là tin đồn sai — nàng chỉ bế quan dưỡng thương, nay đã xuất quan.`, 'good');
+  }
+}
 /** Danh sách mọi hôn ước (còn sống). */
 export const betrothed = (): NPC[] => ((s.flags.dhBrides as string[] | undefined) || []).map((id) => s.npcs.find((n) => n.id === id)).filter((n): n is NPC => !!n && n.alive);
-/** Thêm một hôn ước mới. Diệp gia trước mốc mười tuổi: vào danh sách chờ định đoạt; còn lại coi như hôn ước đã giữ
+/** Diệp gia, sau tuổi thơ và trước mốc mười sáu tuổi: vừa gia nhập tông môn / đại hoàng triều → hẹn cảnh thư chúc mừng
+ *  (hiện ngay sau khi đóng cảnh đang mở). `key` = 'sect:<id>' | 'court:<id>'; mỗi nơi chỉ chúc mừng một lần. */
+export function queueJoinCongrats(key: string) {
+  if (s.origin !== 'diep_hondon' || s.flags.childhood || s.flags.dhDecided || !betrothed().length) return;
+  const done = (s.flags.dhCongratsDone ||= []) as string[];
+  if (done.includes(key)) return;
+  done.push(key);
+  s.flags.dhCongrats = key;
+}
+/** Thêm một hôn ước mới. Diệp gia trước mốc mười sáu tuổi: vào danh sách chờ định đoạt; còn lại coi như hôn ước đã giữ
  *  (vào Nhân mạch như thánh nữ còn giữ ước: luôn chịu đi theo làm đồng hành). */
 export function addBetrothal(n: NPC, why: string) {
   const ids = (s.flags.dhBrides ||= []) as string[];

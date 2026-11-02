@@ -1,3 +1,4 @@
+import { canSongTu, songTuOutcome } from '../engine/songtu';
 // Sự kiện đời sống: tông môn, nhân mạch, bế quan, đại sự thế giới cho cảnh giới cao.
 //
 // Quy ước chọn NPC: chọn trong text() và lưu id vào s.flags._evNpc; ch() đọc lại bằng the(F).
@@ -114,6 +115,8 @@ const curTier = () => (s.tech ? TECHS[s.tech].tier : 0);
 
 // người nhà, đạo lữ
 const plain: NF = (n) => !['master', 'disciple', 'kin', 'daolu', 'enemy', 'rival'].includes(n.tag);
+/** Không có tông môn riêng (tán tu, hoặc cùng tông với ngươi). */
+const noOwnSect: NF = (n) => !n.sect || n.sect === s.sect?.id;
 const childIds = (): string[] => (s.flags.lifeChildren ||= []);
 const isChild: NF = (n) => childIds().includes(n.id);
 const surname = () => s.name.split(' ')[0];
@@ -878,15 +881,16 @@ register([
 
 register([
   // ----- Bạn cũ tới nhờ giúp (chuỗi) -----
+  // Người có tông môn riêng (không phải tông của ngươi) thì đi chuỗi "bị hãm hại phải rời tông" ở events/exile.ts.
   {
     id: 'life_friend_help',
     where: ['any'],
     w: 5,
     cd: 8,
-    cond: () => exists((n) => plain(n) && n.rel >= 40),
+    cond: () => exists((n) => plain(n) && n.rel >= 40 && noOwnSect(n)),
     title: 'Cố nhân tìm tới',
     text: () => {
-      const n = choose((x) => plain(x) && x.rel >= 40);
+      const n = choose((x) => plain(x) && x.rel >= 40 && noOwnSect(x));
       return `${npcTitle(n)} tìm tới, áo dính bụi đường, mắt thâm quầng. "Ta không còn ai để nhờ. Một bọn tán tu cướp mất di vật sư phụ để lại cho ta, chúng đóng ở hẻm núi phía bắc."`;
     },
     ch: () => {
@@ -1092,7 +1096,7 @@ register([
     w: 5,
     minR: 1,
     cd: 6,
-    cond: () => !!daolu() && daolu()!.r >= 1,
+    cond: () => !!daolu() && daolu()!.r >= 1 && canSongTu(daolu()!),
     title: 'Song tu',
     text: () => {
       const n = daolu()!;
@@ -1106,10 +1110,11 @@ register([
           t: 'Song tu',
           cls: 'prime',
           fn: () => {
+            if (!canSongTu(n)) return 'Hai người chưa đủ điều kiện cùng song tu.';
             setFlag('daolu_bonus');
             relChange(n, 5);
             if (n.st < 3 && ch(0.4)) n.st++;
-            return 'Chân nguyên hai người tuần hoàn như âm dương xoay vần. Từ nay mỗi lần nhập định, ngươi đều cảm thấy một hơi thở khác hòa cùng mình.' + cult(ri(20, 35)) + tamma(-10);
+            return songTuOutcome(n, 'Chân nguyên hai người tuần hoàn như âm dương xoay vần. Từ nay mỗi lần nhập định, ngươi đều cảm thấy một hơi thở khác hòa cùng mình.' + cult(ri(20, 35)) + tamma(-10));
           },
         },
         { t: 'Ngồi luận đạo', fn: () => { relChange(n, 5); return `${n.name} nói, ngươi nghe. Có chỗ ${he(n)} sai, ngươi chỉ ra; có chỗ ngươi mù mờ, ${he(n)} vẽ ra bằng một cành cây trên đất.` + cult(15) + (ch(0.2) ? statUp('ngo', 1) : ''); } },

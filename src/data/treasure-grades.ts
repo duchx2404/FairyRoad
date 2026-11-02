@@ -1,0 +1,52 @@
+import { WORLD } from './core';
+
+/** Quy ước của game theo dòng tiểu thuyết Hồng Hoang hiện đại, không phải một thang cổ điển thống nhất. */
+export const TREASURE_TIERS = [
+  'Phàm phẩm', 'Hoàng giai', 'Huyền giai', 'Địa giai', 'Thiên giai', 'Thần giai', 'Tiên giai',
+  'Hậu Thiên Linh Bảo', 'Tiên Thiên Linh Bảo', 'Hậu Thiên Chí Bảo', 'Tiên Thiên Chí Bảo',
+  'Hỗn Độn Linh Bảo', 'Hỗn Độn Chí Bảo',
+] as const;
+/** Thứ tự tăng dần theo thiết lập người chơi: Hậu Thiên Chí Bảo cao hơn Tiên Thiên Linh Bảo. */
+export const TREASURE_GRADE = { acquiredSpirit: 7, innateSpirit: 8, acquiredSupreme: 9, innateSupreme: 10, chaosSpirit: 11, chaosSupreme: 12 } as const;
+/** Trần phẩm chất đang phát huy được tại mỗi giới. */
+export const WORLD_TREASURE_CAP = [4, 5, 6, 9, 10, 12] as const;
+export const worldTreasureCap = (w = WORLD.lv) => WORLD_TREASURE_CAP[Math.max(0, Math.min(5, w))];
+/** Công pháp, đan, phù dùng hệ giai riêng; không gọi đan dược là Tiên Thiên Linh Bảo. */
+export const ART_TIERS = [...TREASURE_TIERS.slice(0, 7), 'Thánh phẩm', 'Hỗn Nguyên phẩm', 'Hỗn Độn phẩm'];
+export const WORLD_ART_CAP = [4, 5, 6, 7, 8, 9] as const;
+export const worldArtCap = (w = WORLD.lv): number => WORLD_ART_CAP[Math.max(0, Math.min(5, w))];
+export const localTreasureGrade = (g: number, w = WORLD.lv) => Math.max(0, Math.min(g, worldTreasureCap(w)));
+
+export interface LegendaryTreasure {
+  id: string;
+  name: string;
+  owner: string;
+  role: string;
+  school: 'chan' | 'jie' | 'laozi' | 'buddhist';
+  grade: number;
+  merit?: boolean;
+  functions: readonly string[];
+}
+/** Chủ sở hữu theo thiết lập Phong Thần/Hồng Hoang; phẩm cấp là quy ước hiện đại của game. */
+export const LEGENDARY_TREASURES: readonly LegendaryTreasure[] = [
+  { id: 'dashen', name: 'Đả Thần Tiên', owner: 'Khương Tử Nha', role: 'Chấp chưởng Phong Thần', school: 'chan', grade: TREASURE_GRADE.innateSpirit, functions: ['Đả thần', 'Trấn áp thần vị', 'Ứng Phong Thần Bảng'] },
+  { id: 'taiji', name: 'Thái Cực Đồ', owner: 'Lão Tử', role: 'Giáo chủ Đạo Giáo', school: 'laozi', grade: TREASURE_GRADE.innateSupreme, functions: ['Hộ thân', 'Định địa thủy hỏa phong', 'Trấn áp khí vận'] },
+  { id: 'pagoda', name: 'Thiên Địa Huyền Hoàng Linh Lung Tháp', owner: 'Lão Tử', role: 'Giáo chủ Đạo Giáo', school: 'laozi', grade: TREASURE_GRADE.acquiredSupreme, merit: true, functions: ['Hộ thân', 'Vạn pháp bất xâm', 'Trấn áp khí vận'] },
+  { id: 'pangu-banner', name: 'Bàn Cổ Phiên', owner: 'Nguyên Thủy Thiên Tôn', role: 'Giáo chủ Xiển Giáo', school: 'chan', grade: TREASURE_GRADE.innateSupreme, functions: ['Phá phòng ngự', 'Khai phá hỗn độn', 'Trấn áp khí vận'] },
+  { id: 'zhuxian', name: 'Tru Tiên Tứ Kiếm và Trận Đồ', owner: 'Thông Thiên Giáo Chủ', role: 'Giáo chủ Tiệt Giáo', school: 'jie', grade: TREASURE_GRADE.innateSupreme, functions: ['Kiếm khí sát phạt', 'Bày Tru Tiên Trận', 'Phong tỏa trận vực'] },
+  { id: 'jindou', name: 'Hỗn Nguyên Kim Đấu', owner: 'Vân Tiêu', role: 'Chủ trì Cửu Khúc Hoàng Hà Trận', school: 'jie', grade: TREASURE_GRADE.innateSpirit, functions: ['Thu nhiếp', 'Gọt tam hoa', 'Bế ngũ khí'] },
+  { id: 'fantian', name: 'Phiên Thiên Ấn', owner: 'Quảng Thành Tử', role: 'Thủ đồ Xiển Giáo', school: 'chan', grade: TREASURE_GRADE.acquiredSupreme, functions: ['Trấn áp', 'Phá pháp thân'] },
+  { id: 'seven-tree', name: 'Thất Bảo Diệu Thụ', owner: 'Chuẩn Đề', role: 'Nhị giáo chủ Tây Phương', school: 'buddhist', grade: TREASURE_GRADE.innateSpirit, functions: ['Quét pháp bảo', 'Hàng phục', 'Hộ đạo'] },
+  { id: 'lotus', name: 'Thập Nhị Phẩm Công Đức Kim Liên', owner: 'Tiếp Dẫn', role: 'Đại giáo chủ Tây Phương', school: 'buddhist', grade: TREASURE_GRADE.innateSpirit, merit: true, functions: ['Hộ thân', 'Tịnh hóa', 'Trấn áp khí vận'] },
+];
+
+export function treasureManifest(t: LegendaryTreasure, w: number) {
+  const replica = w < 4;
+  return {
+    name: t.name + (replica ? ' (mô phỏng)' : ''),
+    grade: replica ? Math.min(4, worldTreasureCap(w), t.grade - 1) : t.grade,
+    replica,
+    functions: replica ? t.functions.slice(0, 1) : [...t.functions],
+    powerScale: replica ? 0.05 * (w + 1) : 1,
+  };
+}

@@ -1,3 +1,5 @@
+import { worldDefinitions } from '../data/local-items';
+import { localItemId, localRecipeId } from '../data/local-items';
 import { RMAX } from '../data/core';
 import { PHAPQUYET } from '../data/spirit';
 // Cửa tiệm, bán đồ, nhà đấu giá, học nghề.
@@ -38,20 +40,24 @@ export function stock(): Ware[] {
   const hi = l.reg === 'tienchau' ? 6 : l.island ? 4 : l.type === 'market' ? 3 : 2;
   const lo = Math.max(1, Math.min(hi, effRi()) - 1);
   const tierOk = (t: number) => t >= lo - 1 && t <= Math.min(hi, effRi() + 1);
-  const add = (w: Omit<Ware, 'key'>) => out.push({ ...w, key: `${w.id}#${w.g ?? ''}#${out.length}` });
+  const add = (w: Omit<Ware, 'key'>) => {
+    if (w.id.startsWith('recipe:')) { const id = localRecipeId(w.id.slice(7)); w.id = 'recipe:' + id; w.n = (PILLS[id] ? 'Đan phương: ' + PILLS[id].n : 'Phù phương: ' + TALIS[id].n); }
+    else { const id = localItemId(w.id); if (id !== w.id) { w.id = id; w.n = itemName(id, w.g); w.price = Math.round(itemPrice(id, w.g) * mul * 1.4); } }
+    out.push({ ...w, key: `${w.id}#${w.g ?? ''}#${out.length}` });
+  };
   const mul = buyMult();
 
   // đan đột phá ở thành trì: thành lớn (Thành/Kinh/Đô) bày đủ mọi cấp, kể cả cấp cao; thành nhỏ (Trấn) bày đủ cấp thấp và cấp trung
   const town = l.type === 'town';
   if (town) {
     const maxT = isBigTown(l.n) ? BREAK_TIER.hi[1] : BREAK_TIER.mid[1];
-    for (const p of Object.values(PILLS).filter((x) => x.k === 'break' && x.tier <= maxT).sort((a, b) => a.tier - b.tier)) {
+    for (const p of worldDefinitions('p').filter((x) => x.k === 'break' && x.tier <= maxT).sort((a, b) => a.tier - b.tier)) {
       const id = 'p:' + p.id;
       add({ id, n: itemName(id), price: Math.round(itemPrice(id) * mul * 1.4), qty: 1 + (rnd() < 0.4 ? 1 : 0), g: 1 });
     }
   }
   // đan dược
-  const pills = Object.values(PILLS).filter((p) => tierOk(p.tier) && (l.type === 'market' || p.tier <= 2) && p.k !== 'root' && !(town && p.k === 'break'));
+  const pills = worldDefinitions('p').filter((p) => tierOk(p.tier) && (l.type === 'market' || p.tier <= 2) && p.k !== 'root' && !(town && p.k === 'break'));
   for (let i = 0; i < (l.type === 'market' ? 8 : 5) && pills.length; i++) {
     const p = pickR(pills);
     const id = 'p:' + p.id;
@@ -72,7 +78,7 @@ export function stock(): Ware[] {
     add({ id: 'm:' + m.id, n: m.n, price: Math.round(itemPrice('m:' + m.id) * mul * 1.3), qty: 3 + Math.floor(rnd() * 6) });
   }
   // phù lục
-  const tl = Object.values(TALIS).filter((t) => !t.co && tierOk(t.tier) && t.tier <= 3);
+  const tl = worldDefinitions('t').filter((t) => !t.co && tierOk(t.tier) && t.tier <= 3);
   for (let i = 0; i < 6 && tl.length; i++) {
     const t = pickR(tl);
     if (out.some((o) => o.id === 't:' + t.id)) continue;
@@ -80,22 +86,22 @@ export function stock(): Ware[] {
   }
   // sách: chỉ phường thị
   if (l.type === 'market') {
-    const sks = Object.values(SKILLS).filter((k) => !k.peak && k.tier <= Math.min(hi - 1, Math.ceil((effRi() + 1) / 2)) && !skillOwners(k.id).length);
+    const sks = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.min(hi - 1, Math.ceil((effRi() + 1) / 2)) && !skillOwners(k.id).length);
     for (let i = 0; i < 2 && sks.length; i++) {
       const k = pickR(sks);
       if (out.some((o) => o.id === 'sk:' + k.id)) continue;
       add({ id: 'sk:' + k.id, n: itemName('sk:' + k.id), price: Math.round(itemPrice('sk:' + k.id) * mul * 1.5), qty: 1 });
     }
-    const tcs = Object.values(TECHS).filter((t) => !t.blood && t.tier <= Math.min(2 + (hi >= 4 ? 1 : 0), Math.ceil((effRi() + 1) / 2)) && !t.evil && !isExclusiveTech(t.id));
+    const tcs = worldDefinitions('cp').filter((t) => !t.blood && t.tier <= Math.min(2 + (hi >= 4 ? 1 : 0), Math.ceil((effRi() + 1) / 2)) && !t.evil && !isExclusiveTech(t.id));
     if (tcs.length && rnd() < 0.7) {
       const t = pickR(tcs);
       add({ id: 'cp:' + t.id, n: itemName('cp:' + t.id), price: Math.round(itemPrice('cp:' + t.id) * mul * 1.6), qty: 1 });
     }
-    const pqs = Object.values(PHAPQUYET).filter((x) => x.tier <= Math.min(2, Math.ceil((effRi() + 1) / 2)));
+    const pqs = worldDefinitions('fq').filter((x) => x.tier <= Math.min(2, Math.ceil((effRi() + 1) / 2)));
     if (pqs.length && rnd() < 0.5) { const x = pickR(pqs); add({ id: 'fq:' + x.id, n: itemName('fq:' + x.id), price: Math.round(itemPrice('fq:' + x.id) * mul * 1.5), qty: 1 }); }
     // đan phương / phù phương
-    const rec = [...Object.values(PILLS).filter((p) => p.tier <= Math.max(1, s.craft.alch + 1) && !s.recipes.includes(p.id)).map((p) => ({ id: p.id, n: `Đan phương: ${p.n}`, tier: p.tier })),
-      ...Object.values(TALIS).filter((t) => !t.co && t.tier <= Math.max(1, s.craft.talis + 1) && !s.recipes.includes(t.id)).map((t) => ({ id: t.id, n: `Phù phương: ${t.n}`, tier: t.tier }))];
+    const rec = [...worldDefinitions('p').filter((p) => p.tier <= Math.max(1, s.craft.alch + 1) && !s.recipes.includes(p.id)).map((p) => ({ id: p.id, n: `Đan phương: ${p.n}`, tier: p.tier })),
+      ...worldDefinitions('t').filter((t) => !t.co && t.tier <= Math.max(1, s.craft.talis + 1) && !s.recipes.includes(t.id)).map((t) => ({ id: t.id, n: `Phù phương: ${t.n}`, tier: t.tier }))];
     for (let i = 0; i < 3 && rec.length; i++) {
       const r = pickR(rec);
       if (out.some((o) => o.id === 'recipe:' + r.id)) continue;
@@ -199,14 +205,16 @@ export function lots(): Lot[] {
   const tier = clamp(effRi() + 1, 1, 8);
   const sold = (s.flags.aucSold ||= {}) as Record<string, boolean>;
   const pushLot = (id: string, n: string, base: number, g?: number, gear?: Gear) => {
+    const local = localItemId(id);
+    if (local !== id) { id = local; n = itemName(id, g); base = itemPrice(id, g); }
     const k = `${key}#${out.length}`;
     out.push({ key: k, id, n, g, gear, start: Math.round(base * 1.2), rivalMax: Math.round(base * (1.3 + rnd() * 1.6)), rival: pickR(RIVALS), sold: !!sold[k] });
   };
-  const brk = Object.values(PILLS).filter((p) => p.k === 'break' && Math.abs(p.tier - tier) <= 1);
+  const brk = worldDefinitions('p').filter((p) => p.k === 'break' && Math.abs(p.tier - tier) <= 1);
   if (brk.length) { const p = pickR(brk); pushLot('p:' + p.id, p.n, itemPrice('p:' + p.id, 2), 2); }
-  const life = Object.values(PILLS).filter((p) => (p.k === 'life' || p.k === 'root' || p.k === 'stat') && p.tier <= tier + 1);
+  const life = worldDefinitions('p').filter((p) => (p.k === 'life' || p.k === 'root' || p.k === 'stat') && p.tier <= tier + 1);
   if (life.length) { const p = pickR(life); pushLot('p:' + p.id, p.n, itemPrice('p:' + p.id, 1), 1); }
-  const tcs = Object.values(TECHS).filter((t) => !t.blood && t.tier >= 2 && t.tier <= Math.min(4, Math.ceil(tier / 2) + 1));
+  const tcs = worldDefinitions('cp').filter((t) => !t.blood && t.tier >= 2 && t.tier <= Math.min(4, Math.ceil(tier / 2) + 1));
   if (tcs.length) { const t = pickR(tcs); pushLot('cp:' + t.id, itemName('cp:' + t.id), itemPrice('cp:' + t.id)); }
   for (let i = 0; i < 2; i++) {
     const saved = Math.random;

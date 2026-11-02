@@ -8,7 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "check": "tsc --noEmit",
     "art": "python tools/art_server.py",
-    "sim": "node --experimental-strip-types tools/sim.ts"
+    "sim": "node --experimental-strip-types tools/sim.ts",
+    "songtu": "node tools/songtu_server.mjs"
   },
   "devDependencies": {
     "tsx": "^4.23.15",

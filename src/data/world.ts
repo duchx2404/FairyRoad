@@ -1107,6 +1107,17 @@ const BEAST_LINEAGE: BeastLineageNode[] = [
   { n: 'Ung Hòa', parent: 'Chu Yếm', el: 'am', order: 1 },
 ];
 /** Gắn các nhánh phả hệ đã định danh và họ nền dùng cho dị thú bản địa. */
+/** Concrete descendant species, keeping ancestor names separate from the animal's own species. */
+export function beastDescendants(ancestor: string): { n: string; el: El }[] {
+  const descendants = new Set<string>([ancestor]);
+  for (let changed = true; changed;) {
+    changed = false;
+    for (const node of BEAST_LINEAGE) if (node.parent && descendants.has(node.parent) && !descendants.has(node.n)) {
+      descendants.add(node.n); changed = true;
+    }
+  }
+  return BEAST_LINEAGE.filter(node => node.n !== ancestor && descendants.has(node.n) && !BEAST_LINEAGE.some(child => child.parent === node.n));
+}
 export function linkBeastFamilies(beasts: Beast[]) {
   for (const node of BEAST_LINEAGE) {
     let beast = beasts.find((b) => b.n === node.n);

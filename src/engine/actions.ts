@@ -1,12 +1,14 @@
+import { canSongTu, songTuOutcome } from './songtu';
+import { baseItemKey } from '../data/local-items';
 // Hành động của người chơi. Mỗi hành động trả về một Scene để UI hiển thị.
-import { childScene, tenScene, needTenScene } from '../events/diephd';
+import { childScene, engageScene, needEngageScene } from '../events/diephd';
 import { LAST_WORLD, RMAX, worldName, REALMS, STAGES, BREAK_PILL, ROOTS, DAI_DAO, DAO_HOLDER, EL } from '../data/core';
 import { DIA_THE, LOCS, LOC_TYPE, SECTS, type Loc } from '../data/world';
 import { HERBS, PILLS, PILL_GRADE } from '../data/items';
 import { s, type Pin } from './state';
 import { wedDaolu } from './relationships';
-import { moneyScale, effRi, pqSum, cultRate, atBottleneck, addItem, has, stat, root, M, itemName, maxHp, itemPrice, removeItem, stageName, perfectBody } from './char';
-import { trucCoKind, cultivateTurn, passTime, btChance, failBonus, breakthrough, pillBonusOf, addLog, mark, setLoc, travelYears, travelBlock, needsShip, shipFare, dist, travelSpeed, spawnPin, nearestLoc, mkNpc, addNpc, relChange, findNpc, npcRealm, daolu } from './core';
+import { moneyScale, effRi, pqSum, cultRate, atBottleneck, addItem, has, stat, root, M, itemName, maxHp, itemPrice, removeItem, stageName, perfectBody, myLinh } from './char';
+import { missionProg, trucCoKind, cultivateTurn, passTime, btChance, failBonus, breakthrough, pillBonusOf, addLog, mark, setLoc, travelYears, travelBlock, needsShip, shipFare, dist, travelSpeed, spawnPin, nearestLoc, mkNpc, addNpc, relChange, findNpc, npcRealm, daolu } from './core';
 import { EVENTS, pickEvent, markSeen, evTitle, type Choice, type GameEvent, type Where } from './events';
 import { fight, fightSummary, beastFoe, dangerLabel, fightLogs, type FightResult, type FoeSpec } from './combat';
 import { canJoin, joinSect, missionPool, sect, promote, promoInfo } from './sect';
@@ -47,7 +49,7 @@ export const drainFights = () => fightLogs.splice(0, fightLogs.length);
 // ---------- Bế quan ----------
 export function cultivate(n: number): Scene {
   if (s.flags.childhood) return childScene();
-  if (needTenScene()) return tenScene();
+  if (needEngageScene()) return engageScene();
   if (root().m === 0) return { title: 'Ngồi thiền', text: 'Ngươi ngồi cả ngày cố cảm nhận linh khí. Chỉ thấy tê chân. Phế linh căn không thể tu luyện — trừ phi tìm được kỳ ngộ hoặc Tẩy Tủy Đan.' + (passTime(0.25), '') };
   if (atBottleneck()) return { title: 'Bình cảnh', text: 'Tu vi đã chạm bình cảnh, bế quan thêm cũng vô ích. Hãy đột phá.' };
   const startR = `${s.r}.${s.st}.${s.flags.tang ?? 1}`;
@@ -66,7 +68,7 @@ export function cultivate(n: number): Scene {
       ev.text = `(Bế quan ${yearsTxt(s.year - y0)}, tu vi +${Math.round(total)}%.)\n\n` + ev.text;
       return ev;
     }
-    if (pendingDeathSoon() || needTenScene()) break; // tới mười tuổi: dừng để hiện ước định hôn ước
+    if (pendingDeathSoon() || needEngageScene()) break; // tới mười sáu tuổi: dừng để hiện định đoạt hôn ước
   }
   let text = `Bế quan ${yearsTxt(s.year - y0)}. Tu vi tăng ${Math.round(total)}% (${Math.round(cultRate())}%/lượt).`;
   if (`${s.r}.${s.st}.${s.flags.tang ?? 1}` !== startR) text += ` Tinh tiến tới ${stageName()}.`;
@@ -91,7 +93,7 @@ export function breakthroughScene(): Scene {
   for (const b of pills) {
     const id = b.id.slice(2);
     const bonus = pillBonusOf(id, b.g) * (PILLS[id].tier < nr ? 0.35 : 1);
-    choices.push({ t: `Dùng ${itemName(b.id, b.g)}`, hint: `Tỉ lệ ${Math.round(btChance(bonus) * 100)}%${id === want ? ' (đúng loại)' : ''}`, cls: id === want ? 'prime' : undefined, fn: () => breakthrough({ id, g: b.g ?? 1 }).text });
+    choices.push({ t: `Dùng ${itemName(b.id, b.g)}`, hint: `Tỉ lệ ${Math.round(btChance(bonus) * 100)}%${baseItemKey(id) === want ? ' (đúng loại)' : ''}`, cls: baseItemKey(id) === want ? 'prime' : undefined, fn: () => breakthrough({ id, g: b.g ?? 1 }).text });
   }
   choices.push({ t: 'Đột phá tay không', hint: `Tỉ lệ ${Math.round(base * 100)}%`, cls: pills.length ? undefined : 'prime', fn: () => breakthrough().text });
   choices.push({ t: 'Chưa vội', fn: () => 'Ngươi quyết định chuẩn bị thêm.' });
@@ -348,15 +350,15 @@ export function formationInfo(l: Loc) {
     : s.money < fare
     ? `Cần ${fare} linh thạch làm trận phí.`
     : null;
-  return { available: !reason, reason, fare, y: 1 / 12, destination };
+  return { available: !reason, reason, fare, destination };
 }
+/** Truyền tống trận: tới nơi ngay lập tức, không mất thời gian (chỉ tốn trận phí). */
 export function travelFormation(id: string): Scene {
   const l = LOCS[id];
   const ti = formationInfo(l);
   if (!ti.available) return { title: 'Không thể truyền tống', text: ti.reason || 'Truyền tống trận không khả dụng.' };
   const from = l.n;
   s.money -= ti.fare;
-  passTime(ti.y);
   setLoc(ti.destination!.id);
   const text = `Từ ${from}, ngươi kích hoạt cổ trận. Không gian xoắn lại, chớp mắt đã tới ${ti.destination!.n}; tiêu hao ${ti.fare} linh thạch.`;
   addLog(text);
@@ -373,12 +375,14 @@ export function travelTo(id: string): Scene {
     s.money -= ti.fare;
   }
   const from = LOCS[s.loc].n;
-  passTime(ti.y);
-  // sự kiện dọc đường
+  if (ti.y > 0) passTime(ti.y);
+  // sự kiện dọc đường (tọa kỵ tới ngay lập tức thì không có dọc đường)
   const roadP = clamp(ti.d / 900, 0.15, 0.6);
-  const ev = tryEvent('road', roadP);
+  const ev = ti.y > 0 ? tryEvent('road', roadP) : null;
   setLoc(id);
-  const arrive = `Rời ${from}, ${ti.ship ? 'vượt biển' : effRi() >= 2 ? 'ngự kiếm' : 'đi bộ'} ${yearsTxt(ti.y)}, tới ${l.n}.`;
+  const mount = myLinh();
+  const how = ti.ship ? 'vượt biển' : mount ? `cưỡi ${mount.name}` : effRi() >= 2 ? 'ngự kiếm' : 'đi bộ';
+  const arrive = ti.y > 0 ? `Rời ${from}, ${how} ${yearsTxt(ti.y)}, tới ${l.n}.` : `Rời ${from}, ${how} — chớp mắt đã tới ${l.n}.`;
   addLog(arrive);
   if (ev) {
     ev.text = arrive + ' Dọc đường...\n\n' + ev.text;
@@ -409,7 +413,8 @@ export function visitPin(p: Pin): Scene {
 export function doMission(i: number): Scene {
   const m = missionPool()[i];
   if (!m || !s.sect) return { title: '', text: '' };
-  passTime(m.y * Math.max(0.5, REALMS[s.r].turn));
+  const yrs = m.y * Math.max(0.5, REALMS[s.r].turn);
+  passTime(yrs);
   let text = `Nhận nhiệm vụ: ${m.n}. `;
   if (ch(m.danger)) {
     const r = fight(m.danger >= 1 ? { name: pick(['Ma tu áo đen', 'Phản đồ', 'Kẻ trộm bí kíp']), r: effRi(), kind: 'cultivator', mult: 1.05 } : beastFoe(Math.max(0, effRi() - (m.danger < 0.6 ? 1 : 0))).spec, { lethal: m.danger >= 1 });
@@ -417,17 +422,30 @@ export function doMission(i: number): Scene {
     if (!r.win) {
       const half = Math.round(m.reward / 3);
       s.sect.contrib += half;
-      return { title: m.n, text: text + `Nhiệm vụ thất bại, chỉ được ${half} cống hiến an ủi.` };
+      return { title: m.n, text: text + `Nhiệm vụ thất bại, chỉ được ${half} cống hiến an ủi.` + missionProg(yrs, 0.15) };
     }
   }
   s.sect.contrib += m.reward;
   const pay = M(rf(1, 3));
   s.money += pay;
-  return { title: m.n, text: text + `Hoàn thành. Cống hiến +${m.reward}, thưởng ${fmt(pay)} linh thạch.` };
+  return { title: m.n, text: text + `Hoàn thành. Cống hiến +${m.reward}, thưởng ${fmt(pay)} linh thạch.` + missionProg(yrs) };
 }
 export { promote, promoInfo, sect };
 
 // ---------- Nhân mạch ----------
+export function songTuWith(ids: string[]) {
+  const people = [...new Set(ids)].map(id => findNpc(id));
+  const year = Math.floor(s.year);
+  if (!people.length || people.some(n => !n || !canSongTu(n) || (s.flags['npc_dual' + n.id] ?? -99) >= year)) return 'Người đã chọn chưa đủ điều kiện song tu hoặc cần chờ sang năm.';
+  const partners = people.filter((n): n is NonNullable<typeof n> => !!n);
+  const outcome = songTuOutcome(partners, 'Ngươi cùng ' + partners.map(n => n.name).join(', ') + ' nhập định, điều hòa linh khí. Tu vi tăng mạnh.');
+  const bonus = partners.some(n => n.r >= effRi()) ? 35 : 20;
+  for (const n of partners) s.flags['npc_dual' + n.id] = year;
+  passTime(REALMS[s.r].turn);
+  s.prog = Math.min(100, s.prog + bonus);
+  for (const n of partners) relChange(n, 3);
+  return outcome;
+}
 export function npcActions(id: string): Choice[] {
   const n = findNpc(id);
   if (!n || !n.alive) return [];
@@ -485,14 +503,9 @@ export function npcActions(id: string): Choice[] {
     },
   });
   if (n.tag === 'daolu') out.push({
-    t: 'Song tu', dis: done('dual'),
+    t: 'Song tu', dis: done('dual') || !canSongTu(n),
     fn: () => {
-      markDone('dual');
-      passTime(REALMS[s.r].turn);
-      const b = n.r >= effRi() ? 35 : 20;
-      s.prog = Math.min(100, s.prog + b);
-      relChange(n, 3);
-      return `Âm dương giao hòa, chân nguyên luân chuyển giữa hai người. Tu vi tăng mạnh.`;
+      return songTuWith([n.id]);
     },
   });
   const canPropose = n.rel >= 80 && n.tag !== 'daolu' && n.tag !== 'kin' && n.tag !== 'master' && n.tag !== 'disciple' && (n.r >= 1 || s.r === 0) && Math.abs(n.r - s.r) <= 2;
@@ -592,7 +605,7 @@ export function doBounty(b: Bounty): Scene {
   if (r.win) {
     s.money += b.reward;
     s.fame += 2 + b.lv;
-    return { title: b.n, text: `${fightSummary(r)} Nhiệm vụ hoàn thành, nhận ${fmt(b.reward)} linh thạch.` };
+    return { title: b.n, text: `${fightSummary(r)} Nhiệm vụ hoàn thành, nhận ${fmt(b.reward)} linh thạch.` + missionProg(b.y) };
   }
-  return { title: b.n, text: `${fightSummary(r)} Nhiệm vụ thất bại.` };
+  return { title: b.n, text: `${fightSummary(r)} Nhiệm vụ thất bại.` + missionProg(b.y, 0.15) };
 }

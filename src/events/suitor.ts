@@ -1,5 +1,5 @@
 // Tình địch: kẻ thầm yêu Thánh nữ còn giữ hôn ước với người chơi — Thánh tử cùng tông, hoặc cháu / chắt của một nhân vật lớn trong tông.
-// Sinh ngay khi hôn ước được chốt ở mốc mười tuổi (mỗi nàng một kẻ, ghi flags.suitors {brideId: suitorId}); gặp thì gây hấn, thách đấu, ám hại.
+// Sinh ngay khi hôn ước được chốt ở mốc mười sáu tuổi (mỗi nàng một kẻ, ghi flags.suitors {brideId: suitorId}); gặp thì gây hấn, thách đấu, ám hại.
 import { s, register, ch, pick, ri, mark, fame, hurt, relChange, findNpc, battle, effRi, SECTS, REALMS, type NPC, type Choice } from '../engine/api';
 import { CLANS } from '../data/core';
 import { mkNpc, addNpc, holyNpcName } from '../engine/core';

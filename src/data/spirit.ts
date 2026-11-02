@@ -52,19 +52,28 @@ export interface ChanLinh {
   cult?: number;
   luck?: number;
   flee?: number;
+  /** Phẩm tọa kỵ 1..5 (Hoàng → Tiên giai): càng cao đi đường càng nhanh. */
+  mount: number;
 }
 export const CHANLINH: Record<string, ChanLinh> = {
-  hoaly: { id: 'hoaly', n: 'Hỏa Ly', el: 'hoa', ic: 'cat', minR: 1, d: 'Mèo rừng lông đỏ, đuôi cháy như ngọn đuốc. Tham ăn, nhưng trung thành.', atk: 8, luck: 1 },
-  thanhxa: { id: 'thanhxa', n: 'Thanh Linh Xà', el: 'moc', ic: 'snake', minR: 1, reg: ['namman', 'vanmong', 'vanyeu'], d: 'Rắn xanh biết đánh hơi linh thảo.', hp: 10, cult: 3 },
-  ngantho: { id: 'ngantho', n: 'Ngân Nguyệt Thố', el: 'quang', ic: 'rabbit', minR: 1, d: 'Thỏ trắng dưới trăng, gặp nguy chạy nhanh hơn chủ.', flee: 0.15, luck: 2 },
-  tuyetlang: { id: 'tuyetlang', n: 'Tuyết Lang', el: 'bang', ic: 'wolf', minR: 2, reg: ['bacminh', 'cucbac', 'bachai'], d: 'Sói tuyết lạnh lùng, cắn một miếng đông cứng xương.', atk: 12, def: 5 },
-  kimdieu: { id: 'kimdieu', n: 'Kim Sí Điêu', el: 'kim', ic: 'eagle', minR: 2, d: 'Đại bàng cánh vàng, có thể chở chủ bay qua núi.', atk: 10, flee: 0.1 },
-  huyenquy: { id: 'huyenquy', n: 'Huyền Quy', el: 'thuy', ic: 'turtle', minR: 3, reg: ['donghai', 'namhai', 'vanmong', 'tayhai'], d: 'Rùa đen sống ngàn năm, mai cứng hơn pháp bảo.', def: 20, hp: 15 },
-  loiung: { id: 'loiung', n: 'Lôi Ưng', el: 'loi', ic: 'hawk', minR: 3, d: 'Chim ưng mang sét, lao xuống như một tia chớp.', atk: 18 },
-  phonglinhhoa: { id: 'phonglinhhoa', n: 'Phong Linh Hồ', el: 'phong', ic: 'fox', minR: 3, d: 'Hồ ly ba đuôi tinh ranh, giỏi mê hoặc kẻ địch.', atk: 8, flee: 0.15, luck: 2 },
-  hacky: { id: 'hacky', n: 'Hắc Kỳ Lân', el: 'am', ic: 'qilin', minR: 5, d: 'Kỳ lân đen của bóng tối, uy áp làm yêu thú quỳ rạp.', atk: 22, def: 12, hp: 15 },
-  chuoc: { id: 'chuoc', n: 'Chu Tước Ấu Điểu', el: 'hoa', ic: 'phoenix', minR: 6, d: 'Chim lửa con mang huyết mạch thần thú. Lửa của nó không bao giờ tắt.', atk: 30, cult: 6, luck: 3 },
+  hoaly: { id: 'hoaly', n: 'Hỏa Ly', el: 'hoa', ic: 'cat', minR: 1, d: 'Mèo rừng lông đỏ, đuôi cháy như ngọn đuốc. Tham ăn, nhưng trung thành.', atk: 8, luck: 1, mount: 1 },
+  thanhxa: { id: 'thanhxa', n: 'Thanh Linh Xà', el: 'moc', ic: 'snake', minR: 1, reg: ['namman', 'vanmong', 'vanyeu'], d: 'Rắn xanh biết đánh hơi linh thảo.', hp: 10, cult: 3, mount: 1 },
+  ngantho: { id: 'ngantho', n: 'Ngân Nguyệt Thố', el: 'quang', ic: 'rabbit', minR: 1, d: 'Thỏ trắng dưới trăng, gặp nguy chạy nhanh hơn chủ.', flee: 0.15, luck: 2, mount: 2 },
+  tuyetlang: { id: 'tuyetlang', n: 'Tuyết Lang', el: 'bang', ic: 'wolf', minR: 2, reg: ['bacminh', 'cucbac', 'bachai'], d: 'Sói tuyết lạnh lùng, cắn một miếng đông cứng xương.', atk: 12, def: 5, mount: 2 },
+  kimdieu: { id: 'kimdieu', n: 'Kim Sí Điêu', el: 'kim', ic: 'eagle', minR: 2, d: 'Đại bàng cánh vàng, có thể chở chủ bay qua núi.', atk: 10, flee: 0.1, mount: 3 },
+  huyenquy: { id: 'huyenquy', n: 'Huyền Quy', el: 'thuy', ic: 'turtle', minR: 3, reg: ['donghai', 'namhai', 'vanmong', 'tayhai'], d: 'Rùa đen sống ngàn năm, mai cứng hơn pháp bảo.', def: 20, hp: 15, mount: 1 },
+  loiung: { id: 'loiung', n: 'Lôi Ưng', el: 'loi', ic: 'hawk', minR: 3, d: 'Chim ưng mang sét, lao xuống như một tia chớp.', atk: 18, mount: 3 },
+  phonglinhhoa: { id: 'phonglinhhoa', n: 'Phong Linh Hồ', el: 'phong', ic: 'fox', minR: 3, d: 'Hồ ly ba đuôi tinh ranh, giỏi mê hoặc kẻ địch.', atk: 8, flee: 0.15, luck: 2, mount: 2 },
+  hacky: { id: 'hacky', n: 'Hắc Kỳ Lân', el: 'am', ic: 'qilin', minR: 5, d: 'Kỳ lân đen của bóng tối, uy áp làm yêu thú quỳ rạp.', atk: 22, def: 12, hp: 15, mount: 4 },
+  chuoc: { id: 'chuoc', n: 'Chu Tước Ấu Điểu', el: 'hoa', ic: 'phoenix', minR: 6, d: 'Chim lửa con mang huyết mạch thần thú. Lửa của nó không bao giờ tắt.', atk: 30, cult: 6, luck: 3, mount: 5 },
 };
+// ---------- Tọa kỵ: chân linh chở chủ đi đường ----------
+export const MOUNT_GRADE = ['', 'Hoàng giai', 'Huyền giai', 'Địa giai', 'Thiên giai', 'Tiên giai'];
+/** Hệ số nhanh hơn đi thường theo phẩm. Tiên giai: cự ly ngắn tới ngay, cự ly dài chỉ 1–3 tháng. */
+export const MOUNT_SPEED = [1, 1.5, 2, 3, 5, Infinity];
+/** Đi thường từ chừng này trở xuống (năm) thì tọa kỵ Tiên giai tới ngay lập tức. */
+export const MOUNT_BLINK = 0.5;
+export const mountEffect = (c: ChanLinh) => (c.mount >= 5 ? 'cự ly ngắn tới ngay lập tức, cự ly dài chỉ 1–3 tháng' : `đi đường nhanh gấp ${MOUNT_SPEED[c.mount]} lần`);
 export const clEffect = (c: ChanLinh) => {
   const p: string[] = [];
   if (c.atk) p.push(`công +${c.atk}%`);

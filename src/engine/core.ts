@@ -1,6 +1,8 @@
 import { phams, phamSum, perfectBody } from './char';
 import { BREAK_PILL, PHAM_N, PHAM_T, holySur, GIVEN_F, GIVEN_M } from '../data/core';
 import { slots } from './slots';
+import { ensureWorldNames } from './names';
+import { doctrineAccepts } from './sect-doctrine';
 // Lõi vận hành: nhật ký, thời gian, tu luyện, đột phá, đi lại, NPC, dấu trên bản đồ.
 import { worldSize, RMAX, npcCap, DAO_CO, REALMS, BREAK_BASE, EL, ALL_EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, STAGES, type El } from '../data/core';
 import { isLaoTo, daoTitle, DIA_THE, LOCS, LOC_LIST, SECTS, REGIONS, MAP_W, MAP_H, RANK_PAY, type Loc } from '../data/world';
@@ -10,6 +12,7 @@ import { primaryDaolu } from './relationships';
 import { moneyScale, effRi, tamSum, pqSum, myLinh, cultRate, atBottleneck, stat, age, maxLife, placeQi, has, pillMult, removeItem, count, body, thienMenh, daoCoInfo, thienDo, tang, turnLen, realmAt, effR, stageName } from './char';
 import { hooks } from './bus';
 import { ch, clamp, pick, ri, rf, uid, yearsTxt } from '../core/util';
+import { CHANLINH, MOUNT_SPEED, MOUNT_BLINK } from '../data/spirit';
 
 // ---------- Nhật ký ----------
 export function addLog(t: string, k?: 'mark' | 'bad' | 'good' | 'ai') {
@@ -76,6 +79,7 @@ export function mkNpc(o: NpcOpts = {}): NPC {
     talent: o.talent ?? (r === 0 ? 0 : rf(0.5, 1.4)),
     met: s.year,
   };
+  if (!o.name && n.sect && !doctrineAccepts({ ...n, sect: SECTS[n.sect]?.n ?? n.sect })) n.sect = null;
   return n;
 }
 /** Thêm NPC vào nhân mạch (tối đa 40, bỏ người quen sơ đã mất). */
@@ -91,6 +95,7 @@ export function addNpc(n: NPC): NPC {
     }
   }
   s.npcs.push(n);
+  ensureWorldNames();
   if (s.npcs.length > 40) {
     const idx = s.npcs.findIndex((x) => !x.alive || (x.tag === 'acq' && Math.abs(x.rel) < 30));
     if (idx >= 0) s.npcs.splice(idx, 1);
@@ -276,6 +281,17 @@ export function addProg(p: number): string {
     }
   }
   return ups ? `Tu vi tăng vọt, lên ${REALMS[s.r].n} ${STAGES[s.st]}!` : 'Tu vi tăng lên.';
+}
+
+/** Tu vi từ làm nhiệm vụ (đánh nhau, luyện chế, tuần tra…): bằng một phần tu vi bế quan trong cùng khoảng thời gian.
+ *  frac mặc định 30%; việc làm dần trong lúc vẫn tu luyện thì nên để thấp hơn. Nhiệm vụ giao nộp vật phẩm KHÔNG gọi hàm này.
+ *  Trả về câu nối vào kết quả (rỗng nếu không tăng được, vd. đang ở bình cảnh). */
+export function missionProg(years: number, frac = 0.3): string {
+  if (years <= 0 || atBottleneck() || (s.root.k === 0 && s.r === 0)) return '';
+  const p = Math.round(cultRate() * (years / Math.max(1 / 12, turnLen())) * frac);
+  if (p <= 0) return '';
+  const t = addProg(p);
+  return ` Tu vi +${p}%${t.startsWith('Tu vi tăng vọt') ? ` — ${t.replace(/!$/, '')}` : ''}.`;
 }
 
 /** Kinh nghiệm thất bại: mỗi lần đột phá hỏng cùng một cảnh giới, lần sau dễ hơn (tối đa 5 lần cộng dồn). */
@@ -464,7 +480,17 @@ export function travelSpeed() {
   return sp;
 }
 export function travelYears(to: { x: number; y: number }) {
-  return Math.max(1 / 12, (dist(s, to) * worldSize()) / travelSpeed());
+  return mountYears(Math.max(1 / 12, (dist(s, to) * worldSize()) / travelSpeed()));
+}
+/** Cưỡi tọa kỵ (chân linh, kể cả khi chỉ để cưỡi): đi đường nhanh theo phẩm. Tiên giai: cự ly ngắn tới ngay (0), cự ly dài 1–3 tháng.
+ *  base = thời gian đi thường (năm). */
+export function mountYears(base: number): number {
+  const c = myLinh();
+  const d = c ? CHANLINH[c.id] : null;
+  if (!d?.mount) return base;
+  const sp = MOUNT_SPEED[d.mount];
+  if (!isFinite(sp)) return base <= MOUNT_BLINK ? 0 : clamp(base * 0.08, 1 / 12, 0.25);
+  return Math.max(1 / 12, base / sp);
 }
 export function needsShip(l: Loc) {
   const here = LOCS[s.loc];

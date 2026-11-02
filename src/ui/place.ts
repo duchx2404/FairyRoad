@@ -19,13 +19,14 @@ import { EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, courtReq, empireAt } f
 import { myCourt, audience, canTakePost, takePost, resignPost, courtTask } from '../engine/court';
 import { missionPool, promoInfo, canJoin, joinSect, sectWares, isExclusiveTech, markVaultSold } from '../engine/sect';
 import { HERBS, MATS, TALIS } from '../data/items';
-import { moneyScale, effRi, addGear } from '../engine/char';
+import { moneyScale, effRi, addGear, myLinh } from '../engine/char';
 import { TAMPHAP, tamGrade, tamEffect, learnReq, realmForGiai, TIER_N, TECHS, SKILLS, PILLS, TIER_C, techSpeed, techGrade, skillGrade, pillGrade, skHue, SK_KIND, skillEffect, type Skill, type Tech } from '../data/items';
 import { techAff, count, addItem, itemName, tamList, pqList } from '../engine/char';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
 import { itemArtSvg, gearArtSvg } from './art';
 import { skillIconSvg, techIconSvg, pillIconSvg, tamIconSvg, pqIconSvg, scrollIconSvg, gearIconSvg, matIconSvg } from './icons';
-import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate } from '../engine/sectx';
+import { CRAFT_N } from '../engine/craft';
+import { myJobs, MAX_JOBS, jobBoard, takeJob, deliverJobs, jobDone, craftJobScene, type SectJob, baiSu, elderRoster, baiChance, baiBlock, isMyMaster, masterCatchUp, backer, assignedMaster, releaseAssigned, ROLE_GIFT, type Elder, tiThi, daiBi, sparDone, daiBiOpen, daiBiDone, daiBiNext, veinCost, veinCultivate } from '../engine/sectx';
 import { master } from '../engine/core';
 import { rankLabel } from '../data/world';
 import { auctionHeld, nextAuction, stock, buy, wareCat, SHOP_CATS } from '../engine/trade';
@@ -174,7 +175,7 @@ export function openPlace(id = s.loc) {
     const fi = formationInfo(l);
     cards.push({
       t: fi.destination ? `Truyền tống tới ${fi.destination.n}` : 'Trận không thể vận hành',
-      sub: fi.available ? `${yearsTxt(fi.y)} · trận phí ${fmt(fi.fare)} linh thạch` : undefined,
+      sub: fi.available ? `Tới ngay lập tức · trận phí ${fmt(fi.fare)} linh thạch` : undefined,
       dis: !fi.available, why: fi.reason || undefined, hl: fi.available,
       fn: after(() => run(() => travelFormation(l.id))),
     });
@@ -214,11 +215,11 @@ export function openPlace(id = s.loc) {
       const ms = missionPool();
       const pi = promoInfo();
       const jobs = myJobs();
-      const ready = jobs.filter((j) => s.year >= (j.end || 0)).length;
+      const ready = jobs.filter(jobDone).length;
       const m = master();
       if (s.flags.holyScion === sc.id) cards.push({ t: 'Về phủ', sub: 'Thỉnh an, bổng lộc gia tộc, xin trắc linh', fn: after(() => scionHome(sc.id)) });
       cards.push({ t: 'Nhận nhiệm vụ tông môn', sub: `${ms.length} việc · kiếm cống hiến (${s.sect!.contrib})`, hl: true, fn: after(() => openSectHall(0)) });
-      cards.push({ t: 'Nhiệm Vụ Đường', sub: `Đang nhận ${jobs.length}/${MAX_JOBS} việc${ready ? ` · ${ready} việc tới hạn, giao nộp!` : ' · làm dần, giao nộp lấy cống hiến'}`, hl: ready > 0, fn: () => jobHall() });
+      cards.push({ t: 'Nhiệm Vụ Đường', sub: `Đang nhận ${jobs.length}/${MAX_JOBS} việc${ready ? ` · ${ready} việc đã xong, giao nộp!` : ' · luyện đan, khí, phù và việc khác · giao nộp lấy cống hiến'}`, hl: ready > 0, fn: () => jobHall() });
       cards.push({ t: 'Tàng Kinh Các', sub: 'Công pháp, võ công, kinh thư', fn: () => openLibrary('book') });
       cards.push({ t: 'Bảo khố tông môn', sub: 'Đổi cống hiến lấy đan dược', fn: () => openLibrary('vault') });
       cards.push({ t: 'Bái sư', sub: m ? `Sư phụ: ${m.name} · xem các trưởng lão` : 'Chọn một vị trưởng lão để cầu bái', fn: () => masterHall() });
@@ -282,7 +283,7 @@ export function openRemote(id: string) {
   const cards: Card[] = [];
   if (ti.block) cards.push({ t: 'Không thể tới', dis: true, why: ti.block, fn: () => {} });
   else cards.push({
-    t: 'Lên đường', hl: true, sub: `Mất khoảng ${yearsTxt(ti.y)}${ti.ship ? ` · thuyền ${ti.fare} linh thạch` : ''} · ${fmt(ti.d)} dặm`,
+    t: 'Lên đường', hl: true, sub: `${ti.y > 0 ? `Mất khoảng ${yearsTxt(ti.y)}` : 'Tới ngay lập tức'}${myLinh() && !ti.ship ? ` · cưỡi ${myLinh()!.name}` : ''}${ti.ship ? ` · thuyền ${ti.fare} linh thạch` : ''} · ${fmt(ti.d)} dặm`,
     fn: () => {
       closeModal();
       centerOn(l.x, l.y);
@@ -383,13 +384,15 @@ function masterHall() {
 
 function jobHall() {
   const jobs = myJobs();
-  const ready = jobs.filter((j) => s.year >= (j.end || 0));
+  const ready = jobs.filter(jobDone);
   const cards: Card[] = [];
-  if (ready.length) cards.push({ t: `Giao nộp ${ready.length} việc tới hạn`, sub: `+${ready.reduce((a, j) => a + j.reward, 0)} cống hiến`, hl: true, fn: () => { toastMsg(deliverJobs()); jobHall(); } });
-  for (const j of jobs) if (s.year < (j.end || 0)) cards.push({ t: `Đang làm: ${j.n}`, sub: `Còn ${yearsTxt((j.end || 0) - s.year)} · +${j.reward} cống hiến`, dis: true, fn: () => {} });
-  for (const j of jobBoard()) cards.push({ t: j.n, sub: `${j.dur} năm · +${j.reward} cống hiến`, dis: jobs.length >= MAX_JOBS, why: jobs.length >= MAX_JOBS ? `Đã nhận đủ ${MAX_JOBS} việc` : undefined, fn: () => { toastMsg(takeJob(j)); jobHall(); } });
+  const gain = (j: SectJob) => `+${j.reward} cống hiến${j.craft && j.xp ? ` · +${j.xp} thuần thục ${CRAFT_N[j.craft].toLowerCase()}` : ''}`;
+  if (ready.length) cards.push({ t: `Giao nộp ${ready.length} việc đã xong`, sub: ready.map(gain).join(' · '), hl: true, fn: () => { toastMsg(deliverJobs()); jobHall(); } });
+  for (const j of jobs) if (!jobDone(j)) cards.push({ t: `Đang làm: ${j.n}`, sub: `Còn ${yearsTxt((j.end || 0) - s.year)} · ${gain(j)}`, dis: true, fn: () => {} });
+  // việc tay nghề: mở cảnh phong chủ giao việc, làm ngay 3 tháng; việc khác: nhận rồi làm dần
+  for (const j of jobBoard()) cards.push({ t: j.n, sub: `${yearsTxt(j.dur)} · ${gain(j)}`, dis: jobs.length >= MAX_JOBS, why: jobs.length >= MAX_JOBS ? `Đã nhận đủ ${MAX_JOBS} việc` : undefined, fn: j.craft ? after(() => run(() => craftJobScene(j))) : () => { toastMsg(takeJob(j)); jobHall(); } });
   cards.push({ t: 'Trở lại', fn: () => openPlace() });
-  openModal('Nhiệm Vụ Đường', [h('p', { class: 'pl-desc' }, 'Việc dài hạn của tông môn: nhận việc rồi cứ tu luyện, đi lại bình thường — tới hạn thì quay về đây giao nộp lấy cống hiến. Tối đa ba việc cùng lúc.'), grid(cards)], { wide: true, noClose: true, xBtn: true, sub: SECTS[s.sect!.id].n });
+  openModal('Nhiệm Vụ Đường', [h('p', { class: 'pl-desc' }, 'Việc của tông môn: nhận việc rồi cứ tu luyện, đi lại bình thường — việc xong lúc nào thì quay về đây giao nộp lúc ấy, việc đã nhận không mất. Ba việc luyện đan, luyện khí, chế phù luôn có: phong chủ giao việc, làm ngay trong 3 tháng rồi giao nộp; ngoài cống hiến còn tăng thuần thục tay nghề. Tối đa ba việc cùng lúc.'), grid(cards)], { wide: true, noClose: true, xBtn: true, sub: SECTS[s.sect!.id].n });
   refresh();
 }
 
