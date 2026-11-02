@@ -784,26 +784,51 @@ let moved = 0;
 let last = { x: 0, y: 0 };
 const pointers = new Map<number, { x: number; y: number }>();
 let pinchD = 0;
+let pinchCenter = { x: 0, y: 0 };
+function clearPointer(id: number) {
+  pointers.delete(id);
+  if (pointers.size < 2) pinchD = 0;
+  if (pointers.size === 1) {
+    const only = pointers.values().next().value;
+    if (only) last = { x: only.x, y: only.y };
+  }
+  dragging = pointers.size > 0;
+  if (!dragging) cv.classList.remove('drag');
+}
 cv.addEventListener('pointerdown', (e) => {
-  cv.setPointerCapture(e.pointerId);
+  try { cv.setPointerCapture(e.pointerId); } catch {}
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   dragging = true;
-  moved = 0;
-  last = { x: e.clientX, y: e.clientY };
-  if (pointers.size === 2) {
+  if (pointers.size === 1) {
+    moved = 0;
+    last = { x: e.clientX, y: e.clientY };
+  } else if (pointers.size >= 2) {
     const [a, b] = [...pointers.values()];
     pinchD = Math.hypot(a.x - b.x, a.y - b.y);
+    pinchCenter = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
   }
 });
 cv.addEventListener('pointermove', (e) => {
-  if (!dragging) return;
+  if (!dragging || !pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  if (pointers.size === 2) {
+  if (pointers.size >= 2) {
     const [a, b] = [...pointers.values()];
     const d = Math.hypot(a.x - b.x, a.y - b.y);
-    if (pinchD && Math.abs(d - pinchD) > 20) {
-      zoom(d > pinchD ? 1 : -1, (a.x + b.x) / 2, (a.y + b.y) / 2);
+    const midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
+    if (pinchD > 0 && Math.abs(d - pinchD) > 2) {
+      const factor = d / pinchD;
+      const wx = view.x + midX / view.z, wy = view.y + midY / view.z;
+      view.z = view.z * factor;
+      clampView();
+      view.x = wx - midX / view.z;
+      view.y = wy - midY / view.z;
+      clampView();
+      draw();
       pinchD = d;
+      pinchCenter = { x: midX, y: midY };
+    } else if (!pinchD) {
+      pinchD = d;
+      pinchCenter = { x: midX, y: midY };
     }
     moved += 10;
     return;
@@ -818,10 +843,14 @@ cv.addEventListener('pointermove', (e) => {
   draw();
 });
 cv.addEventListener('pointerup', (e) => {
-  pointers.delete(e.pointerId);
-  dragging = pointers.size > 0;
-  cv.classList.remove('drag');
-  if (moved < 6 && s) click(e.clientX, e.clientY);
+  const wasPinching = pointers.size >= 2;
+  clearPointer(e.pointerId);
+  try { cv.releasePointerCapture(e.pointerId); } catch {}
+  if (!wasPinching && moved < 6 && s) click(e.clientX, e.clientY);
+});
+cv.addEventListener('pointercancel', (e) => {
+  clearPointer(e.pointerId);
+  try { cv.releasePointerCapture(e.pointerId); } catch {}
 });
 cv.addEventListener('wheel', (e) => {
   e.preventDefault();
