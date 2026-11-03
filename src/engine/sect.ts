@@ -7,11 +7,11 @@ import { kmSyncSkills } from './kinhmach';
 import { PHAPQUYET, CHANLINH } from '../data/spirit';
 // Tông môn: khảo hạch, gia nhập, thăng cấp, rời tông, nhiệm vụ, đổi cống hiến.
 import { RMAX, REALMS, EL } from '../data/core';
-import { SECTS, SECT_RANKS, SECT_TIER, SECT_TIER_INFO, RK, rankLabel, promoReq, headTitle } from '../data/world';
+import { SECTS, SECT_RANKS, SECT_TIER, SECT_TIER_INFO, RK, rankLabel, promoReq, headTitle, type Sect } from '../data/world';
 import { MAX_SKILLS, TECHS, SKILLS, PILLS, TAMPHAP, TALIS, HERBS, MATS, mkGear, gearPrice, type Gear } from '../data/items';
 import { seeded, hashStr, clamp, ch, pick } from '../core/util';
 import { s, codexAdd } from './state';
-import { effRi, seenRoot as root, root as trueRoot, thapHidden } from './char';
+import { effRi, seenRoot as root, root as trueRoot, thapHidden, isYao, YAO_LIFE_MULT, getArtRace, checkArtRacePermission } from './char';
 import { mark, addLog, setLoc, mkNpc, addNpc } from './core';
 import { queueJoinCongrats } from './bride';
 import { allyFollow } from './ally';
@@ -34,23 +34,103 @@ export const sectCanTeachSkill = (skId: string, sectId: string) => { const o = s
 export const sect = () => (s.sect ? SECTS[s.sect.id] : null);
 export const rankName = () => (s.sect ? rankLabel(s.sect.rank, SECTS[s.sect.id], s.g) : '');
 
+export function sectRace(sc: Sect): 'human' | 'yao' | 'all' {
+  if (sc.race) return sc.race;
+  // Tiệt Giáo: nhận tất cả mọi người không phân biệt chủng loài (Hữu giáo vô loại)
+  if (
+    sc.id.includes('jie') ||
+    sc.id.includes('tietgiao') ||
+    sc.n.includes('Tiệt Giáo') ||
+    sc.n.includes('Bích Du Cung') ||
+    sc.motto?.includes('Hữu giáo vô loài') ||
+    sc.d?.includes('hữu giáo vô loại') ||
+    sc.d?.includes('không phân biệt xuất thân hay chủng loài')
+  ) {
+    return 'all';
+  }
+  // Các thế lực Yêu tộc:
+  if (
+    sc.tribe ||
+    sc.id === 'vanyeudinh' ||
+    sc.id === 'lucnha' ||
+    sc.leader === 'Yêu Hoàng' ||
+    sc.leader === 'Hải Long Vương' ||
+    sc.dragon ||
+    sc.n.includes('Yêu Trại') ||
+    sc.n.includes('Yêu Đình') ||
+    sc.n.includes('Long Cung') ||
+    sc.n.includes('Yêu Sơn') ||
+    sc.n.includes('Vạn Yêu')
+  ) {
+    return 'yao';
+  }
+  return 'human';
+}
+
+function sectAllowsArt(sRace: 'human' | 'yao' | 'all', artId: string): boolean {
+  if (sRace === 'all') return true; // Tiệt Giáo có cả nhân tộc và yêu tộc
+  const aRace = getArtRace(artId);
+  if (aRace === 'all') return true; // Bộ cấp cao dùng chung có ở mọi nơi
+  return aRace === sRace; // Thế lực nào chỉ có sách của tộc đó
+}
+
+
 export function canJoin(id: string, token = false): { ok: boolean; why: string } {
   const sc = SECTS[id];
+  if (!sc) return { ok: false, why: 'Thế lực không tồn tại.' };
   if (s.sect) return { ok: false, why: 'Ngươi đã là người của tông môn khác.' };
   const h = s.sectHist[id];
   if (h === 'betrayed' || h === 'expelled') return { ok: false, why: `${sc.n} đã liệt ngươi vào danh sách phản đồ.` };
-  const admissionRoot = thapHidden() && effRi() >= 2 ? trueRoot() : root();
-  if (admissionRoot.m === 0) return { ok: false, why: 'Không có linh căn, tông môn nào nhận?' };
-  if (sc.tribe) return { ok: false, why: sc.tribe === 'hai' ? `${sc.n} chỉ thu nhận hải tộc yêu thú hóa hình, không nhận nhân tộc.` : `${sc.n} chỉ thu nhận thủy tộc yêu thú hóa hình, không nhận nhân tộc.` };
-  const age = s.year - s.born;
-  const maxAge = SECT_TIER_INFO[sc.tier].maxAge;
-  const veteran = effRi() >= sc.tier + 1; // tu sĩ đủ mạnh được mời làm khách khanh, bỏ qua giới hạn tuổi
-  if (age > maxAge && !veteran) return { ok: false, why: `${SECT_TIER[sc.tier]} chỉ nhận người dưới ${maxAge} tuổi, trừ tu sĩ từ ${REALMS[sc.tier + 1].n} trở lên.` };
-  if (!token || sc.tier === 4) {
-    if (admissionRoot.q < sc.minQ) return { ok: false, why: `Tư chất ${admissionRoot.n} chưa đạt yêu cầu của ${sc.n}.` };
-    if (!s.root.els.some((e) => sc.el.includes(e)) && !(s.root.els.length >= 5 && sc.el.length >= 5)) return { ok: false, why: `${sc.n} chỉ nhận linh căn ${sc.el.map((e) => EL[e].n).join(', ')}.` };
-    if (sc.fem && s.g === 'm' && admissionRoot.q < 5) return { ok: false, why: `${sc.n} hiếm khi nhận nam đệ tử, trừ phi tư chất xuất chúng.` };
+
+  const sRace = sectRace(sc);
+  const playerIsYao = isYao();
+
+  // Kiểm tra chủng tộc bái nhập:
+  if (sRace === 'yao' && !playerIsYao) {
+    return {
+      ok: false,
+      why: `${sc.n} là thế lực của Yêu tộc, chỉ thu nhận đệ tử mang huyết mạch và yêu khí Yêu tộc; nhân tộc không có cửa bái nhập.`
+    };
   }
+  if (sRace === 'human' && playerIsYao) {
+    return {
+      ok: false,
+      why: `${sc.n} là tiên môn của Nhân tộc, sợ nhiễm yêu khí nên không thu nhận dị loại yêu thú. Muốn bái nhập tiên môn hãy tới Tiệt Giáo hữu giáo vô loại.`
+    };
+  }
+  // Tiệt Giáo (sRace === 'all'): Hữu giáo vô loại, nhân tộc và yêu tộc đều bái nhập được!
+
+  const a = s.year - s.born;
+  const maxAge = playerIsYao ? SECT_TIER_INFO[sc.tier].maxAge * YAO_LIFE_MULT : SECT_TIER_INFO[sc.tier].maxAge;
+  const veteran = effRi() >= sc.tier + 1;
+  if (a > maxAge && !veteran) {
+    return { ok: false, why: `${SECT_TIER[sc.tier]} chỉ nhận người dưới ${maxAge} tuổi, trừ tu sĩ từ ${REALMS[sc.tier + 1].n} trở lên.` };
+  }
+
+  if (!playerIsYao) {
+    const admissionRoot = thapHidden() && effRi() >= 2 ? trueRoot() : root();
+    if (admissionRoot.m === 0) return { ok: false, why: 'Không có linh căn, tông môn nào nhận?' };
+    if (!token || sc.tier === 4) {
+      if (admissionRoot.q < sc.minQ) return { ok: false, why: `Tư chất ${admissionRoot.n} chưa đạt yêu cầu của ${sc.n}.` };
+      if (sRace !== 'all' && !s.root.els.some((e) => sc.el.includes(e)) && !(s.root.els.length >= 5 && sc.el.length >= 5)) {
+        return { ok: false, why: `${sc.n} chỉ nhận linh căn ${sc.el.map((e) => EL[e].n).join(', ')}.` };
+      }
+    }
+  } else {
+    // Yêu tộc: kiểm tra thuộc tính Yêu Đan phù hợp (nếu không phải Tiệt Giáo)
+    if (sRace !== 'all' && sc.el && sc.el.length > 0) {
+      const matchEl = s.root.els.some((e) => sc.el.includes(e)) || sc.el.length >= 5;
+      if (!matchEl) {
+        return { ok: false, why: `${sc.n} chỉ thu nhận Yêu thú thuộc tính ${sc.el.map((e) => EL[e].n).join(', ')}.` };
+      }
+    }
+  }
+
+  if (sc.fem && s.g === 'm') {
+    const admissionRoot = thapHidden() && effRi() >= 2 ? trueRoot() : root();
+    if (admissionRoot.q < 5) return { ok: false, why: `${sc.n} hiếm khi nhận nam đệ tử, trừ phi tư chất xuất chúng.` };
+  }
+
   return { ok: true, why: '' };
 }
 
@@ -151,12 +231,45 @@ export function sectWares(): SectWare[] {
   const sc = sect();
   if (!sc) return [];
   const out: SectWare[] = [];
-  const techs = worldDefinitions('cp').filter((t) => !t.blood && (t.id === sc.tech || (t.tier <= Math.min(6, sc.tier + 1) && !t.evil === !sc.evil && (t.el.length === 0 || t.el.some((e) => sc.el.includes(e)) || sc.el.length === 0))) && sectCanTeachTech(t.id, sc.id));
+  const sRace = sectRace(sc);
+  // Công pháp: Lọc theo chủng tộc (Yêu tộc: chỉ bí kíp yêu; Nhân tộc: chỉ bí kíp nhân; Tiệt Giáo: có cả 2)
+  const techs = worldDefinitions('cp').filter((t) =>
+    !t.blood &&
+    sectAllowsArt(sRace, 'cp:' + t.id) &&
+    (t.id === sc.tech || (
+      t.tier <= Math.min(6, sc.tier + 1) &&
+      !t.evil === !sc.evil &&
+      (sRace === 'all' || t.el.length === 0 || t.el.some((e) => sc.el.includes(e)) || sc.el.length === 0)
+    )) &&
+    sectCanTeachTech(t.id, sc.id)
+  );
   for (const t of techs) out.push({ id: 'cp:' + t.id, n: t.n, cost: 40 * Math.pow(4, t.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU, RK.CHU][t.tier] });
-  const sks = worldDefinitions('sk').filter((k) => !k.peak && ((k.tier <= sc.tier + 1 && (!k.el || sc.el.includes(k.el) || sc.el.length === 0)) || skillOwners(k.id).includes(sc.id)) && sectCanTeachSkill(k.id, sc.id));
+
+  // Võ kỹ / Thần thông: Lọc theo chủng tộc
+  const sks = worldDefinitions('sk').filter((k) =>
+    !k.peak &&
+    sectAllowsArt(sRace, 'sk:' + k.id) &&
+    (
+      (k.tier <= sc.tier + 1 && (sRace === 'all' || !k.el || sc.el.includes(k.el) || sc.el.length === 0)) ||
+      skillOwners(k.id).includes(sc.id)
+    ) &&
+    sectCanTeachSkill(k.id, sc.id)
+  );
   for (const k of sks) out.push({ id: 'sk:' + k.id, n: k.n, cost: 25 * Math.pow(3.5, k.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][Math.min(6, k.tier)] });
-  for (const x of worldDefinitions('tp')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
-  for (const x of worldDefinitions('fq')) if (!x.exclusive && x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+
+  // Tâm pháp: Lọc theo chủng tộc
+  for (const x of worldDefinitions('tp')) {
+    if (x.tier <= Math.min(6, sc.tier + 2) && sectAllowsArt(sRace, 'tp:' + x.id)) {
+      out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+    }
+  }
+
+  // Pháp quyết: Lọc theo chủng tộc
+  for (const x of worldDefinitions('fq')) {
+    if (!x.exclusive && x.tier <= Math.min(6, sc.tier + 2) && sectAllowsArt(sRace, 'fq:' + x.id)) {
+      out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+    }
+  }
   
   // Đan dược: Bảo khố bày đủ các cấp đan dược (đột phá, hỗ trợ, tu luyện, thọ nguyên...)
   const artCap = Math.min(6, worldArtCap());

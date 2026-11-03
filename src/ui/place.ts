@@ -17,9 +17,9 @@ import { wander, work, explore, gatherScene, travelInfo, travelTo, formationInfo
 import { whereOf, ownerTxt } from '../data/world';
 import { EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, courtReq, empireAt } from '../data/world';
 import { myCourt, audience, canTakePost, takePost, resignPost, courtTask } from '../engine/court';
-import { missionPool, promoInfo, canJoin, joinSect, sectWares, isExclusiveTech, markVaultSold, donateItemToVault, donateGearToVault } from '../engine/sect';
+import { missionPool, promoInfo, canJoin, joinSect, sectRace, sectWares, isExclusiveTech, markVaultSold, donateItemToVault, donateGearToVault } from '../engine/sect';
 import { HERBS, MATS, TALIS } from '../data/items';
-import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows, itemPrice, stageName, age } from '../engine/char';
+import { moneyScale, effRi, addGear, myLinh, hiddenRootName, hiddenFlows, itemPrice, stageName, age, isYao } from '../engine/char';
 import { TAMPHAP, tamGrade, tamEffect, learnReq, realmForGiai, TIER_N, TECHS, SKILLS, PILLS, TIER_C, techSpeed, techGrade, skillGrade, pillGrade, skHue, SK_KIND, skillEffect, type Skill, type Tech } from '../data/items';
 import { techAff, count, addItem, itemName, tamList, pqList } from '../engine/char';
 import { PHAPQUYET, pqGrade } from '../data/spirit';
@@ -1016,11 +1016,15 @@ export function applySect(id: string) {
   const sc = SECTS[id];
   const c = canJoin(id);
   const token = s.bag.some((b) => b.id === 'x:kiemlenh');
+  const sRace = sectRace(sc);
+  const raceLabel = sRace === 'yao' ? 'Thế lực Yêu tộc (chỉ thu nhận Yêu tộc)' : sRace === 'all' ? 'Tiệt Giáo hữu giáo vô loại (nhận cả Nhân tộc & Yêu tộc)' : 'Tiên môn Nhân tộc';
+  const welcomeText = c.ok ? (isYao() ? 'Thủ lĩnh/trưởng lão mở sơn môn, đón tiếp yêu tu bái nhập.' : 'Đệ tử gác cổng dẫn ngươi tới trước đá trắc linh.') : c.why;
+  const actBtnText = isYao() ? 'Vận khí bái sơn nhập môn' : 'Đặt tay lên đá trắc linh';
   showScene({
     title: `Bái sơn ${sc.n}`,
-    text: `${sc.d}\n\n${SECT_TIER[sc.tier]} · ${sc.el.length ? 'Nhận linh căn: ' + sc.el.map((e) => EL[e].n).join(', ') : 'Không kén linh căn'}${sc.evil ? ' · Ma đạo' : ''}\n\n${c.ok ? 'Đệ tử gác cổng dẫn ngươi tới đá trắc linh.' : c.why}`,
+    text: `${sc.d}\n\n${SECT_TIER[sc.tier]} · ${raceLabel} · ${sc.el.length ? 'Hệ: ' + sc.el.map((e) => EL[e].n).join(', ') : 'Không kén hệ'}${sc.evil ? ' · Ma đạo' : ''}\n\n${welcomeText}`,
     choices: [
-      ...(c.ok ? [{ t: 'Đặt tay lên đá trắc linh', cls: 'prime' as const, fn: () => joinSect(id) }] : []),
+      ...(c.ok ? [{ t: actBtnText, cls: 'prime' as const, fn: () => joinSect(id) }] : []),
       ...(!c.ok && token && canJoin(id, true).ok ? [{ t: 'Trình lệnh bài tiến cử', cls: 'prime' as const, fn: () => { s.bag = s.bag.filter((b) => b.id !== 'x:kiemlenh'); return 'Trưởng lão xem lệnh bài, gật đầu. ' + joinSect(id); } }] : []),
       { t: 'Cáo từ', fn: () => 'Ngươi chắp tay cáo từ.' },
     ],

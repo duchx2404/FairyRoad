@@ -264,6 +264,7 @@ export interface Sect {
   dragon?: { king: string; title: string; rank: string };
   /** Long cung chỉ thu nhận yêu thú hóa hình: 'thuy' thủy tộc (sông), 'hai' hải tộc (biển). */
   tribe?: 'thuy' | 'hai';
+  race?: 'human' | 'yao' | 'all'; // chủng tộc thu nhận (human: chỉ nhân tộc, yao: chỉ yêu tộc, all: hữu giáo vô loại)
 }
 export const SECT_TIER = ['', 'Hạ tông', 'Trung tông', 'Thượng tông', 'Thánh địa'];
 /** Cảnh giới tông chủ và tuổi tối đa nhận đệ tử mới theo bậc. */
@@ -316,7 +317,7 @@ export const SECTS: Record<string, Sect> = {
   haiyen: { id: 'haiyen', n: 'Hải Yến Môn', loc: 'haiyen', tier: 1, el: ['thuy', 'phong'], minQ: 1, tech: 'nhuocthuyquyet', craft: 'talis', d: 'Môn phái đảo nhỏ, giỏi thân pháp trên sóng.', motto: 'Yến bay không sợ bão.' },
   cucquang: { id: 'cucquang', n: 'Cực Quang Tông', loc: 'cucquang', tier: 2, el: ['quang', 'bang'], minQ: 2, tech: 'luuquangquyet', craft: 'talis', d: 'Tông môn quang tu dưới cực quang phương bắc.', motto: 'Đêm càng dài, ánh sáng càng quý.' },
   sanho: { id: 'sanho', n: 'San Hô Các', loc: 'sanho', tier: 2, el: ['thuy', 'moc'], minQ: 2, tech: 'xuansinhcong', craft: 'alch', fem: true, d: 'Các phái nữ tu Nam Hải, dưỡng linh thảo dưới biển.', motto: 'Biển sâu cũng có hoa.' },
-  lucnha: { id: 'lucnha', n: 'Lục Nha Yêu Trại', loc: 'lucnha', tier: 2, el: ['moc', 'phong'], minQ: 1, tech: 'ngulinhquyet', craft: 'alch', d: 'Trại yêu tu lang tộc, nhận cả nhân tộc qua huyết khế.', motto: 'Bầy sống, sói đơn chết.' },
+  lucnha: { id: 'lucnha', n: 'Lục Nha Yêu Trại', loc: 'lucnha', tier: 2, el: ['moc', 'phong'], minQ: 1, race: 'yao', tech: 'tatphongliepbao', craft: 'alch', d: 'Trại yêu tu lang tộc, nhận cả nhân tộc qua huyết khế.', motto: 'Bầy sống, sói đơn chết.' },
   hoangthu: { id: 'hoangthu', n: 'Hoang Thú Điện', loc: 'hoangthu', tier: 3, el: ['tho', 'am'], minQ: 3, tech: 'baisonkinh', craft: 'alch', evil: true, d: 'Điện thờ thú thần hồng hoang, tu sĩ luyện thân thành nửa thú. Chính đạo coi là tà môn.', motto: 'Người là thú biết nói dối.' },
   // ---- Bổ sung: bốn vực ----
   thuongthuy: { id: 'thuongthuy', n: 'Thương Lan Thủy Phủ', loc: 'thuongthuy', tier: 3, el: ['thuy', 'loi'], minQ: 4, tech: 'tinhhaiquyet', craft: 'alch', d: 'Thủy phủ cổ xưa nhất Đông Vực, cửa phủ chìm dưới nước.', motto: 'Nước chảy đá mòn.' },
@@ -339,7 +340,7 @@ export const SECTS: Record<string, Sect> = {
   batchu: { id: 'batchu', n: 'Bất Chu Thánh Sơn', loc: 'batchu', tier: 4, el: ['tho', 'moc', 'hoa', 'bang'], minQ: 5, tech: 'batchu', craft: 'alch', d: 'Thánh sơn trên núi gãy đỉnh. Đệ tử tu nhục thân tới mức đao kiếm khó vào.', motto: 'Trời sập thì ta chống.' },
   cucbang: { id: 'cucbang', n: 'Cực Băng Thần Điện', loc: 'cucbang', tier: 4, el: ['bang', 'thuy', 'quang'], minQ: 5, tech: 'huyenbang', craft: 'talis', d: 'Thánh địa duy nhất của Cực Bắc, thần điện băng đứng trên đỉnh thế giới.', motto: 'Băng không tan, đạo không đổi.' },
   longdinh: { id: 'longdinh', n: 'Thương Hải Long Đình', loc: 'longdinh', tier: 4, el: ['thuy', 'loi', 'kim'], minQ: 5, tech: 'bichhaitrieu', craft: 'alch', d: 'Thánh địa dưới đáy Nam Hải, đệ tử cưỡi giao long ra vào.', motto: 'Biển lớn dung trăm sông.' },
-  vanyeudinh: { id: 'vanyeudinh', n: 'Vạn Yêu Thánh Đình', loc: 'vanyeudinh', tier: 4, el: ['moc', 'tho', 'am', 'phong'], minQ: 5, tech: 'vanyeuhoahinh', craft: 'alch', d: 'Triều đình yêu tộc. Nhân tộc được nhận làm khách khanh, hiếm khi làm đệ tử.', motto: 'Vạn yêu quy nhất.' },
+  vanyeudinh: { id: 'vanyeudinh', n: 'Vạn Yêu Thánh Đình', loc: 'vanyeudinh', tier: 4, el: ['moc', 'tho', 'am', 'phong'], minQ: 5, race: 'yao', tech: 'vanyeuhoahinh', craft: 'alch', d: 'Triều đình yêu tộc. Nhân tộc được nhận làm khách khanh, hiếm khi làm đệ tử.', motto: 'Vạn yêu quy nhất.' },
 };
 /** Mười một bậc thân phận trong tông môn (thứ tự thăng tiến). */
 export const SECT_RANKS = [
@@ -1085,7 +1086,7 @@ export function mkDragons(o: { prefix: string; seas: [string, string, string, st
     const id = `${o.prefix}lc_${v}`;
     const king = SEA_KINGS[seaIdx[v]], rank = SEA_RANKS[seaIdx[v]];
     locs.push({ id, n: `${seaN} Long Cung`, type: 'sect', reg: o.seaReg[v], x: 0, y: 0, qi: 1.9, sect: id, island: true, sea: true, xy: seaXY[v], d: `Long cung dưới đáy ${seaN}, cột san hô, mái dạ minh châu. Hải Long Vương ${king} cai quản toàn bộ ${seaN}: thủy tộc, mưa gió, tàu thuyền qua lại đều phải nộp lễ.` });
-    sects[id] = { id, n: `${seaN} Long Cung`, loc: id, tier: 3, el: ['thuy', 'loi'], minQ: 3, tech: o.seaTech, craft: 'alch', leader: 'Hải Long Vương', tribe: 'hai', dragon: { king, title: 'Hải Long Vương', rank }, d: `Thế lực của Hải Long Vương ${king}, cai quản ${seaN}. Tiên chức Thiên Đình: ${rank}. Chỉ thu nhận hải tộc yêu thú hóa hình; nhân tộc không có cửa.`, motto: 'Bốn biển một nhà, trăm sông về biển.' };
+    sects[id] = { id, n: `${seaN} Long Cung`, loc: id, tier: 3, el: ['thuy', 'loi'], minQ: 3, tech: o.seaTech, craft: 'alch', leader: 'Hải Long Vương', tribe: 'hai', race: 'yao', dragon: { king, title: 'Hải Long Vương', rank }, d: `Thế lực của Hải Long Vương ${king}, cai quản ${seaN}. Tiên chức Thiên Đình: ${rank}. Chỉ thu nhận hải tộc yêu thú hóa hình; nhân tộc không có cửa.`, motto: 'Bốn biển một nhà, trăm sông về biển.' };
   }
   const order: Vuc[] = VUC_ORDER.flatMap((v) => Array.from({ length: majorN[v] }, () => v)); // mỗi sông lớn một long cung
   o.rivers.forEach((river, i) => {
@@ -1094,7 +1095,7 @@ export function mkDragons(o: { prefix: string; seas: [string, string, string, st
     const king = riverKings[i % riverKings.length], rank = RIVER_RANKS[i % RIVER_RANKS.length];
     const title = riverKingTitle(river);
     locs.push({ id, n: `${river} Long Cung`, type: 'sect', reg: o.landReg[v], x: 0, y: 0, qi: 1.5, sect: id, river, d: `Long cung dưới đáy ${river}. ${title} ${king} cai quản dòng sông và các sông nhỏ đổ vào: nước lớn nước ròng, cá tôm, thuyền bè đều theo lệnh.` });
-    sects[id] = { id, n: `${river} Long Cung`, loc: id, tier: 2, el: ['thuy'], minQ: 2, tech: o.riverTech, craft: 'talis', leader: title, tribe: 'thuy', dragon: { king, title, rank }, d: `Thế lực của ${title} ${king}, cai quản ${river} cùng các nhánh sông nhỏ đổ vào (nhánh nhỏ không có Long Vương riêng). Tiên chức Thiên Đình: ${rank}, dưới quyền Hải Long Vương nơi sông đổ ra. Chỉ thu nhận thủy tộc yêu thú hóa hình.`, motto: 'Nước chảy về đâu, lệnh ta tới đó.' };
+    sects[id] = { id, n: `${river} Long Cung`, loc: id, tier: 2, el: ['thuy'], minQ: 2, tech: o.riverTech, craft: 'talis', leader: title, tribe: 'thuy', race: 'yao', dragon: { king, title, rank }, d: `Thế lực của ${title} ${king}, cai quản ${river} cùng các nhánh sông nhỏ đổ vào (nhánh nhỏ không có Long Vương riêng). Tiên chức Thiên Đình: ${rank}, dưới quyền Hải Long Vương nơi sông đổ ra. Chỉ thu nhận thủy tộc yêu thú hóa hình.`, motto: 'Nước chảy về đâu, lệnh ta tới đó.' };
   });
   return { locs, sects };
 }
@@ -1204,7 +1205,7 @@ function placeSpecial() {
   SECTS.daigiac = { id: 'daigiac', n: 'Đại Giác Tự', loc: 'daigiac', tier: 2, el: ['quang', 'tho'], minQ: 2, tech: 'thanquangquyet', craft: 'talis', d: 'Hạ viện của Linh Sơn Tự trong ốc đảo Tây Vực, chuyên giảng kinh và chế phù trấn tà.', motto: 'Phóng hạ đồ đao.' };
   SECTS.tutieu.leader = 'Vân Tiêu Tiên Tử';
   SECTS.vanyeudinh.leader = 'Yêu Hoàng';
-  const dr = mkDragons({ prefix: '', seas: ['Đông Hải', 'Nam Hải', 'Tây Hải', 'Bắc Hải'], rivers: majorRivers(RIVERS0), seaReg: { dong: 'donghai', nam: 'namhai', tay: 'tayhai', bac: 'bachai' }, landReg: { trung: 'trungtho', dong: 'vanmong', tay: 'tayluong', nam: 'namman', bac: 'bacminh' }, seaTech: 'bichhaitrieu', riverTech: 'tinhhaiquyet', landmass: LANDMASS });
+  const dr = mkDragons({ prefix: '', seas: ['Đông Hải', 'Nam Hải', 'Tây Hải', 'Bắc Hải'], rivers: majorRivers(RIVERS0), seaReg: { dong: 'donghai', nam: 'namhai', tay: 'tayhai', bac: 'bachai' }, landReg: { trung: 'trungtho', dong: 'vanmong', tay: 'tayluong', nam: 'namman', bac: 'bacminh' }, seaTech: 'bacminhkinhba', riverTech: 'giaolongphucthuy', landmass: LANDMASS });
   L.push(...dr.locs);
   Object.assign(SECTS, dr.sects);
   const byId = (id: string) => L.find((l) => l.id === id)!;
