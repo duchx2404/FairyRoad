@@ -7,7 +7,8 @@ import { s, type NPC } from './state';
 import { linhFights, removeItem, count, itemName, pillMult } from './char';
 import { relChange, findNpc, addLog } from './core';
 import { ch, ri, pick } from '../core/util';
-import { SKILLS, TECHS, PILLS, SLOTS, mkGear, learnReq, gearLabel, type Gear } from '../data/items';
+import { SKILLS, TECHS, PILLS, SLOTS, mkGear, mkNgocBoiDoi, learnReq, gearLabel, type Gear } from '../data/items';
+import { HEROINE } from '../data/heroine';
 import { REALMS } from '../data/core';
 import { SECTS } from '../data/world';
 import { sectCanTeachSkill, isExclusiveTech, skillOwners } from './sect';
@@ -118,6 +119,13 @@ export function outfit(n: NPC, why = 'gia nhập') {
   const lv = Math.max(1, Math.min(n.r, REALMS.length - 2));
   let got = 0;
   for (let slot = 0; slot < 5; slot++) {
+    if (slot === 3 && (n.heroine || n.name === HEROINE.name || n.id === s.flags.heroineId)) {
+      if (!K.gear[3] || !/ngọc bội/i.test(K.gear[3].n)) {
+        K.gear[3] = mkNgocBoiDoi();
+        got++;
+      }
+      continue;
+    }
     const gear = mkGear(lv, g, slot, n.el, g >= 3 ? ri(1, 3) : ri(0, 2));
     const old = K.gear[slot];
     if (!old || gearScore(old) < gearScore(gear)) { K.gear[slot] = gear; got++; }

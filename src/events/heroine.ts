@@ -23,16 +23,16 @@ register([
     text: () => `${HEROINE.name} đặt nửa ngọc bội đã ghép lên bàn. Nàng nhìn ngươi, không nhắc tới hôn ước hay lời hứa nào: "Con đường phía trước còn dài. Nếu ngươi muốn, chúng ta có thể cùng đi."`,
     ch: () => [
       {
-        t: 'Cùng nàng kết làm đạo lữ',
+        t: 'Cùng nàng kết làm đạo lữ (Chính thất)',
         cls: 'prime',
         fn: () => {
           const n = heroine();
           if (!n) return 'Nàng đã rời đi.';
           wedDaolu(n);
           n.rel = 100;
-          mark(`Kết đạo lữ với ${HEROINE.name}`);
+          mark(`Kết đạo lữ với ${HEROINE.name} (Chính thất)`);
           fame(300);
-          return `${n.name} nhận lại nửa ngọc bội, khẽ mỉm cười. Từ nay hai người cùng bước tiếp trên tiên lộ.`;
+          return `${n.name} nhận lại nửa ngọc bội, khẽ mỉm cười. Hai nửa ngọc bội đôi trong tay hai người tương thông cộng hưởng. Từ nay hai người cùng bước tiếp trên tiên lộ.`;
         },
       },
       {

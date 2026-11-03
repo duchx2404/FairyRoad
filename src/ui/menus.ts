@@ -101,7 +101,7 @@ export function openCraft(tab = -1) {
       }
     } else if (k === 'talis') {
       const known = s.recipes.map(id => TALIS[id]).filter(x => x && !x.co).sort((a, b) => a.p - b.p);
-      const co = !!s.flags.coPhu;
+      const co = !!s.flags.coPhu || (s.flags.phapquyet && s.flags.phapquyet.includes('cophu'));
       if (co) {
         body.append(h('div', { class: 'small muted', style: { marginBottom: '6px' } }, 'Bí tịch chế phù thượng cổ: cổ phù mạnh gấp mười, nhưng phải vẽ trên giấy da yêu thú (tới Tứ phẩm) hoặc giấy linh mộc (mọi phẩm).'));
         PAPER_REC.forEach(([src, out, n], i) => list.append(h('div', { class: 'item' }, icon('m:' + out), h('div', { class: 'nm' }, `Chế ${itemName('m:' + out)}`,

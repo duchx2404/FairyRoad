@@ -1,9 +1,11 @@
 import { worldDefinitions } from '../data/local-items';
 // Đầu thai, cái chết, điểm số, luân hồi và thành tựu.
 import { kmSyncSkills, kmFillNew, kmAutoAll } from './kinhmach';
-import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, ORIGINS, PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, HON_DON_ROOT, hiddenRootKind, REALMS, STAGES, type El, type StatKey } from '../data/core';
-import { BEASTS, LOCS, LOC_LIST, SECTS, RK, REGIONS, applyWorld, beastRoot } from '../data/world';
-import { mkGear } from '../data/items';
+import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, BEAST_BODIES, ORIGINS, PERKS, BEAST_PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, HON_DON_ROOT, hiddenRootKind, REALMS, STAGES, type El, type StatKey } from '../data/core';
+import { BEASTS, LOCS, LOC_LIST, SECTS, RK, REGIONS, applyWorld, beastRoot, worldPack, beastLeafNodes } from '../data/world';
+import { tryEvolvePlayerBeast } from './beast-evolution';
+import { mkGear, BEAST_INNATE_SKILLS } from '../data/items';
+import { mkNgocBoiDoi } from './items';
 import { lineTop } from './combat';
 import { joinSect } from './sect';
 import { TECHS, MAX_SKILLS } from '../data/items';
@@ -75,10 +77,16 @@ export function rollRoot(boost = false): { k: number; els: El[] } {
   return { k, els };
 }
 
-export function rollFate(boostRoot = false, g: 'm' | 'f' = 'm'): Fate {
+export function rollFate(boostRoot = false, g: 'm' | 'f' = 'm', isBeastRace = false): Fate {
   const stats = { can: 0, ngo: 0, van: 0, mi: 0, tam: 0 } as Record<StatKey, number>;
   for (const k of STAT_KEYS) stats[k] = ri(2, 7);
   for (let i = 0; i < upLv('stats'); i++) stats[pick(STAT_KEYS)]++;
+  if (isBeastRace) {
+    const bodies = BEAST_BODIES;
+    const body = pick(bodies).id;
+    const perkOffer = shuffle(BEAST_PERKS.map((p) => p.id)).slice(0, 5);
+    return { stats, root: { k: 0, els: [] }, body, perkOffer };
+  }
   const bodies = BODIES.filter((b) => !b.g || b.g === g);
   const body = wpick(bodies, (b) => b.w).id;
   const perkOffer = shuffle(PERKS.map((p) => p.id)).slice(0, 5);
@@ -113,6 +121,7 @@ export interface NewLifeOpts {
   origin: string;
   fate: Fate;
   perks: string[];
+  beast?: string;
 }
 
 /** Thiên phú có hợp với xuất thân không: Diệp gia Hỗn Độn còn nguyên gia tộc nên không thể mang "huyết hải thâm thù" (kẻ thù diệt môn) — chỉ chọn một trong hai. */
@@ -208,15 +217,21 @@ export function newLife(o: NewLifeOpts) {
   applyWorld(0);
   const org = ORIGINS.find((x) => x.id === o.origin)!;
   o.perks = [...new Set([...o.perks, ...(org.forcePerks ?? [])])].filter((p) => perkAllowed(o.origin, p));
-  const beastCandidates = org.beastOrigin ? BEASTS.filter((b) => !b.codexOnly && !b.codexHidden && (!!b.home || !!b.reg?.length) && (lineTop(b.n) || lineTop(beastRoot(b)))) : [];
-  if (org.beastOrigin && !beastCandidates.length) throw new Error('No eligible Thương Lan beast species are available for this origin');
-  const beastSpecies = org.beastOrigin ? pick(beastCandidates) : undefined;
+  const leafNodes = beastLeafNodes();
+  let beastSpecies: { n: string; el: El; reg?: string[]; home?: string } | undefined;
+  if (org.beastOrigin) {
+    if (o.beast) {
+      beastSpecies = leafNodes.find((b) => b.n === o.beast) || BEASTS.find((b) => b.n === o.beast) || { n: o.beast, el: 'hoa' };
+    } else {
+      beastSpecies = pick(leafNodes);
+    }
+  }
   const beast = beastSpecies?.n;
   const beastRegion = beastSpecies?.reg?.length ? pick(beastSpecies.reg) : beastSpecies?.home ? LOCS[beastSpecies.home]?.reg : undefined;
   const settlements = beastRegion ? LOC_LIST.filter((l) => l.reg === beastRegion && (l.type === 'town' || l.type === 'village')) : [];
-  const startLoc = org.beastOrigin && settlements.length ? pick(settlements) : LOCS[org.loc];
+  const startLoc = org.beastOrigin && settlements.length ? pick(settlements) : LOCS[org.loc] || LOC_LIST[0];
   if (!startLoc) throw new Error(`Unknown starting location "${org.loc}" for origin "${org.id}"`);
-  const startAge = o.origin === 'diep_hondon' ? 1 : 10;
+  const startAge = 1; // Tất cả xuất thân đều bắt đầu từ 1 tuổi
   const year = meta.worldYear + ri(1, 30);
   const stats = { ...o.fate.stats };
   for (const [k, v] of Object.entries(org.stat || {})) stats[k as StatKey] += v as number;
@@ -237,7 +252,7 @@ export function newLife(o: NewLifeOpts) {
     year,
     born: year - startAge,
     stats,
-    root: o.fate.root,
+    root: (org.race === 'Yêu tộc' || org.beastOrigin) ? { k: 0, els: beastSpecies ? [beastSpecies.el] : ['hoa'] } : o.fate.root,
     body: o.fate.body,
     perks: o.perks,
     r: 0,
@@ -253,10 +268,10 @@ export function newLife(o: NewLifeOpts) {
     techM: 0,
     known: [],
     skills: [],
-    gear: [null, null, null, null, null],
+    gear: [null, null, null, mkNgocBoiDoi(), null],
     gearBag: [],
     refining: null,
-    bag: [{ id: 'x:ngocboidoi', n: 1 }],
+    bag: [],
     meridians: 0,
     merProg: 0,
     sect: null,
@@ -271,7 +286,7 @@ export function newLife(o: NewLifeOpts) {
     good: 0,
     kills: 0,
     wins: 0,
-    flags: { yearStart: year, fleeAt: 0.3, mapV2: true, rankV2: true, mapV3: true, mapV4: true, mapV5: true, mapV6: true, mapV7: true, mapV8: true, mapV9: true, mapV10: true, mapV11: true, mapV12: true, mapV13: true, mapV14: true },
+    flags: { yearStart: year, fleeAt: 0.3, initialBeast: beast, beastBlood: beast ? `${beast} · huyết mạch sơ khai` : undefined, mapV2: true, rankV2: true, mapV3: true, mapV4: true, mapV5: true, mapV6: true, mapV7: true, mapV8: true, mapV9: true, mapV10: true, mapV11: true, mapV12: true, mapV13: true, mapV14: true },
     evSeen: {},
     log: [],
     marks: [],
@@ -293,14 +308,25 @@ export function newLife(o: NewLifeOpts) {
   if (org.gearG !== undefined) { const gr = mkGear(Math.max(1, org.startR || 0), org.gearG, 0); gr.refined = true; s.gear[0] = gr; }
   const lb = upLv('life');
   if (lb) s.lifeBonus = Math.round(REALMS[0].life * 0.05 * lb);
-  if (org.tech || upLv('memory')) {
-    const t = org.tech || 'thanhtam';
+  const isYaoOrg = org.race === 'Yêu tộc' || org.beastOrigin;
+  if (org.tech || upLv('memory') || isYaoOrg) {
+    const defaultTech = isYaoOrg ? 'thonnguyetquyet' : 'thanhtam';
+    const t = isYaoOrg ? (org.tech || 'thonnguyetquyet') : (org.tech || 'thanhtam');
     s.tech = t;
-    for (const k of TECHS[t].skills) {
-      s.known.push(k);
-      s.skills.push(k);
+    for (const k of TECHS[t]?.skills || []) {
+      if (!s.known.includes(k)) s.known.push(k);
+      if (!s.skills.includes(k)) s.skills.push(k);
     }
     codexAdd('tech', t);
+  }
+  if (org.race === 'Yêu tộc' || org.beastOrigin) {
+    if (!s.perks.includes('yeudan')) s.perks.push('yeudan');
+    const beastEl = beastSpecies?.el || 'hoa';
+    const innate = BEAST_INNATE_SKILLS[beastEl] || 'yeu_hoangao';
+    for (const sk of ['yeu_hoangao', innate]) {
+      if (!s.known.includes(sk)) s.known.push(sk);
+      if (!s.skills.includes(sk)) s.skills.push(sk);
+    }
   }
   if (org.herb) s.bag.push({ id: 'h:ngungkhithao', n: org.herb });
   if (org.craft === 'talis') s.bag.push({ id: 'm:phuchi', n: 6 }, { id: 'm:chusa', n: 4 });
@@ -372,7 +398,7 @@ export function newLife(o: NewLifeOpts) {
     for (const aid of org.id === 'diep_hondon' ? [] : clan.allies.slice(0, 1)) {
       const a = CLANS[aid];
       const g2 = s.g === 'm' ? 'f' : 'm';
-      addNpc(mkNpc({ r: 1, st: 0, tag: 'friend', rel: 45, g: g2, el: a.el[0], how: `Con cháu ${a.n}, thế gia đồng minh. Hai nhà từng nhắc chuyện hôn ước`, sect: a.patron, age: ri(9, 12), talent: 1, name: withSur(a.sur, mkName(g2)) }));
+      addNpc(mkNpc({ r: 1, st: 0, tag: 'friend', rel: 45, g: g2, el: a.el[0], how: `Con cháu ${a.n}, thế gia đồng minh. Hai nhà từng nhắc chuyện hôn ước`, sect: a.patron, age: ri(1, 2), talent: 1, name: withSur(a.sur, mkName(g2)) }));
     }
     if (clan.patron) s.bag.push({ id: 'x:kiemlenh', n: 1 });
     // công pháp gia truyền: phẩm Hoàng/Huyền hợp linh căn, ưu tiên hệ của tộc
@@ -388,10 +414,10 @@ export function newLife(o: NewLifeOpts) {
   addNpc(fam);
   if (clan) clanHouse(clan, fam, org.id === 'diep_hondon', !!org.rival);
   if (!o.perks.includes('cotrung')) {
-    addNpc(mkNpc({ r: 0, tag: 'friend', rel: 45, how: 'Bạn chơi từ thuở nhỏ', age: ri(9, 12), sect: null, talent: ch(0.4) ? 0.8 : 0 }));
+    addNpc(mkNpc({ r: 0, tag: 'friend', rel: 45, how: 'Bạn chơi từ thuở nhỏ', age: ri(1, 2), sect: null, talent: ch(0.4) ? 0.8 : 0 }));
   }
   if (org.rival) {
-    const rv = addNpc(mkNpc({ r: 1, st: 1, tag: 'rival', rel: -40, how: org.sect ? `Ứng viên thánh truyền thua ngươi, vẫn chưa phục` : org.clan ? 'Anh em họ trong tộc, tranh suất gia chủ với ngươi' : org.id === 'thaitu' ? 'Hoàng tôn cùng dòng, coi ngươi là cái gai' : 'Đích tử trong tộc, luôn chèn ép ngươi', age: ri(12, 15), talent: 1.2 }));
+    const rv = addNpc(mkNpc({ r: 1, st: 1, tag: 'rival', rel: -40, how: org.sect ? `Ứng viên thánh truyền thua ngươi, vẫn chưa phục` : org.clan ? 'Anh em họ trong tộc, tranh suất gia chủ với ngươi' : org.id === 'thaitu' ? 'Hoàng tôn cùng dòng, coi ngươi là cái gai' : 'Đích tử trong tộc, luôn chèn ép ngươi', age: ri(2, 4), talent: 1.2 }));
     if (org.clan) rv.name = org.clan + ' ' + rv.name.split(' ').slice(-1)[0];
   }
   // tên trong nhân mạch không trùng nhau: đổi tên người đến sau; riêng cha/mẹ giữ tên (đã ghi trong mô tả người khác)
@@ -433,7 +459,7 @@ export function newLife(o: NewLifeOpts) {
     mark('Sáu tuổi trắc linh: đá không sáng. Bị phán phế linh căn, phế bỏ danh vị');
     // hôn ước từ bé trong cùng thánh địa
     const g2: 'm' | 'f' = s.g === 'm' ? 'f' : 'm';
-    const fz = addNpc(mkNpc({ r: 1, st: 2, g: g2, sect: org.sect, tag: 'friend', rel: 55, age: ri(10, 11), talent: 1.3, how: '' }));
+    const fz = addNpc(mkNpc({ r: 1, st: 2, g: g2, sect: org.sect, tag: 'friend', rel: 55, age: ri(1, 2), talent: 1.3, how: '' }));
     const elder = mkName(ri(0, 1) ? 'm' : 'f');
     fz.name = elder.split(' ').slice(0, -1).join(' ') + ' ' + mkName(g2).split(' ').slice(-1)[0];
     fz.how = `${g2 === 'f' ? 'Hôn thê' : 'Hôn phu'} từ bé — ${g2 === 'f' ? 'con gái' : 'con trai'} Trưởng lão nội môn ${elder} của ${sc.n}. Hai nhà định thân ngay ngày ngươi ra đời giữa dị tượng`;
@@ -457,20 +483,22 @@ export function newLife(o: NewLifeOpts) {
       s.skills = [...TECHS.honnguyenkinh.skills];
     }
     s.flags.coPhu = true;
-    s.bag.push({ id: 'x:cophu', n: 1 }, { id: 'm:phuchi', n: 6 }, { id: 'm:chusa', n: 6 }, { id: 'm:yeubiphuchi', n: 4 });
+    s.bag.push({ id: 'fq:cophu', n: 1 }, { id: 'm:phuchi', n: 6 }, { id: 'm:chusa', n: 6 }, { id: 'm:yeubiphuchi', n: 4 });
     if (s.craft.talis < 1) s.craft.talis = 1;
     for (const r of ['trantaphu', 'thanhanhphu', 'hoaphu', 'kimcangphu', 'hoixuanphu']) if (!s.recipes.includes(r)) s.recipes.push(r);
     addLog(org.id === 'diep_hondon'
       ? 'Ngày ngươi tròn một tuổi, lão tổ đặt tay lên trán ngươi rồi rụt lại như chạm phải lửa. "Huyết mạch này… không phải của Thương Lan." Trong người ngươi, một bộ công pháp chí cao tự vận chuyển — Hỗn Nguyên Kinh, công pháp trấn tộc của Diệp gia Hỗn Độn. Lão trao cho ngươi bí tịch chế phù thượng cổ — cùng thanh Hỗn Độn Kiếm (Tàn khuyết) và tấm ngọc bội Hỗn Độn đã nằm trong nôi của ngươi.'
       : org.clanId === 'diep'
-      ? 'Mười tuổi. Lão tổ gọi ngươi vào từ đường, đặt tay lên trán ngươi. Một luồng nhiệt chạy qua bảy mươi hai huyệt khiếu — Bát Cửu Huyền Công, chỉ máu họ Diệp mới mở được. Rồi lão đưa ngươi cuốn da thú cũ: "Bí tịch chế phù thượng cổ. Nhà ta mất hết, chỉ còn giữ được hai thứ này."'
-      : 'Mười tuổi. Trong tay nải cha mẹ để lại có một cuốn da thú cũ khắc chữ "Diệp" và một tấm ngọc giản. Ngươi vừa chạm vào, một luồng nhiệt chạy qua bảy mươi hai huyệt khiếu — như có thứ gì trong máu vừa thức dậy.', 'good');
+      ? 'Một tuổi. Lão tổ gọi ngươi vào từ đường, đặt tay lên trán ngươi. Một luồng nhiệt chạy qua bảy mươi hai huyệt khiếu — Bát Cửu Huyền Công, chỉ máu họ Diệp mới mở được. Rồi lão đưa ngươi cuốn da thú cũ: "Bí tịch chế phù thượng cổ. Nhà ta mất hết, chỉ còn giữ được hai thứ này."'
+      : 'Một tuổi. Trong tay nải cha mẹ để lại có một cuốn da thú cũ khắc chữ "Diệp" và một tấm ngọc giản. Ngươi vừa chạm vào, một luồng nhiệt chạy qua bảy mươi hai huyệt khiếu — như có thứ gì trong máu vừa thức dậy.', 'good');
   }
   s.flags.soulBorn = s.born; // tuổi linh hồn tính từ lần sinh đầu tiên
   mark(`Sinh ra tại ${startLoc.n}, ${((x) => x[0].toLowerCase() + x.slice(1))(originName(org, s.g))}${beast ? `, yêu thú loài ${beast}` : ''}`);
-  if (org.id === 'diep_hondon') addLog('Một tuổi. Ngươi lớn lên ở Diệp gia Tổ Địa, là con nuôi của gia chủ và người kế thừa đã được chỉ định. Các vị thánh nữ có hôn ước với ngươi đều sinh cùng năm.');
-  else if (hiddenRootKind(o.fate.root.k)) addLog('Mười tuổi. Thầy bói đặt tay ngươi lên đá trắc linh: không một tia sáng. "Phế linh căn." Cả làng thở dài. Chỉ mình ngươi cảm thấy, trong người có những dòng chảy nhỏ đang lặng lẽ xoay vòng.');
-  else addLog(`Mười tuổi. ${root().n}. ${o.fate.root.k === 0 ? 'Thầy bói trong làng lắc đầu: "Đứa nhỏ này không có tiên duyên."' : 'Người trong làng nói ngươi có tướng lạ.'}`);
+  if (org.race === 'Yêu tộc' || org.beastOrigin) {
+    addLog(`Một tuổi. Ngươi là yêu thú loài ${beast}, sinh ra không có linh căn người phàm. Trong đan điền, một viên ${beastSpecies?.el ? EL[beastSpecies.el].n : 'Hỏa'} hệ Yêu Đan đang chậm rãi xoay chuyển, vận hành Thôn Nguyệt Thổ Nạp Quyết hấp thu nhật nguyệt tinh hoa rèn đúc nhục thân.`);
+  } else if (org.id === 'diep_hondon') addLog('Một tuổi. Ngươi lớn lên ở Diệp gia Tổ Địa, là con nuôi của gia chủ và người kế thừa đã được chỉ định. Các vị thánh nữ có hôn ước với ngươi đều sinh cùng năm.');
+  else if (hiddenRootKind(o.fate.root.k)) addLog('Một tuổi. Thầy bói đặt tay ngươi lên đá trắc linh: không một tia sáng. "Phế linh căn." Cả làng thở dài. Chỉ mình ngươi cảm thấy, trong người có những dòng chảy nhỏ đang lặng lẽ xoay vòng.');
+  else addLog(`Một tuổi. ${root().n}. ${o.fate.root.k === 0 ? 'Thầy bói trong làng lắc đầu: "Đứa nhỏ này không có tiên duyên."' : 'Người trong làng nói ngươi có tướng lạ.'}`);
   regrowGear();
   kmFillNew();
   save();
@@ -562,6 +590,16 @@ export function ascend(): string {
     s.stats.ngo += 2; s.stats.can += 2;
     addLog('Vừa đặt chân xuống Hỗn Độn, huyết mạch trong người ngươi sôi lên, phong ấn vỡ tan. Đây là cố hương. Ở đâu đó giữa hỗn độn, Diệp gia đang chờ ngươi trở về.', 'good');
     mark('Huyết mạch Diệp gia Hỗn Độn thức tỉnh');
+  }
+  if (s.race === 'Yêu tộc' || s.beast || s.perks.includes('yeudan')) {
+    const evo = tryEvolvePlayerBeast(s, worldPack(w).beasts);
+    if (evo?.ok) {
+      addLog(evo.text, 'good');
+      mark(`Phi thăng huyết mạch thoát biến: ${evo.from} ➔ ${evo.to}`);
+    } else if (evo?.requiresChoice && evo.branches) {
+      s.flags.pendingBeastBranches = evo.branches;
+      addLog(`Phi thăng mở ra nhiều con đường tiến hóa mới cho huyết mạch ${s.beast}. Hãy chọn con đường đạo lộ của ngươi!`, 'mark');
+    }
   }
   return to;
 }

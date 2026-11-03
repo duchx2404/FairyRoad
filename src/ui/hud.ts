@@ -14,7 +14,7 @@ import { LAST_WORLD, RMAX, worldName, REALMS, STAGES, splitName, GIVEN_F, GIVEN_
 import { LOCS, LOC_TYPE, REGIONS, SECTS, VUC, rankLabel, whereOf, ownerTxt, type Loc } from '../data/world';
 import { TECHS } from '../data/items';
 import { soulAge } from '../engine/char';
-import { turnLen, age, maxLife, rootLabel, cultRate, atBottleneck, powerScore, stageName, body, techAff } from '../engine/char';
+import { turnLen, age, maxLife, rootLabel, cultRate, atBottleneck, powerScore, stageName, body, techAff, isYao, yeuDanName } from '../engine/char';
 import { dateStr, realmOpen, nextOpen, passTime, renameNpc } from '../engine/core';
 import { daoScene, cultivate, breakthroughScene, wander, explore, gatherScene, work, rest, travelTo, travelInfo, visitPin, eventScene } from '../engine/actions';
 import { auctionHeld } from '../engine/trade';
@@ -40,6 +40,7 @@ setPrelude(() => {
 import { setTravelLine, centerOn } from './map';
 import { openShop, openCraft, openSectHall, openAuction } from './menus';
 import { openPlace, openRemote } from './place';
+import { showBeastBranchModal } from './panels';
 import { fmt, yearsTxt, esc } from '../core/util';
 
 import { playerPortrait, npcPortrait, npcPic, foePortrait, avatarSvg } from './portrait';
@@ -129,7 +130,12 @@ export function renderHud() {
       h('div', {},
         h('div', { class: 'hud-name' }, s.name),
         h('div', { class: 'hud-realm' }, stageName() + (s.world ? ` · ${worldName(s.world)}` : '')),
-        h('div', { class: 'hud-sub', title: formatStonesDetail(s.money) }, `${fmt(a)} / ${fmt(life)} tuổi${s.world ? ` (hồn ${fmt(soulAge())})` : ''} · ${formatStonesShort(s.money)}`),
+        h('div', {
+          class: 'hud-sub',
+          title: isYao()
+            ? `Yêu tộc thọ nguyên gấp 4 lần nhân tộc: ${fmt(a)} tuổi Yêu tộc ≈ ${fmt(+(a / 4).toFixed(1))} tuổi Nhân tộc | ${formatStonesDetail(s.money)}`
+            : formatStonesDetail(s.money)
+        }, `${fmt(a)} / ${fmt(life)} tuổi${isYao() ? ` (≈ ${fmt(+(a / 4).toFixed(1))}t Nhân)` : ''}${s.world ? ` (hồn ${fmt(soulAge())})` : ''} · ${formatStonesShort(s.money)}`),
       ),
     ),
     h('div', { class: 'hud-detail' },
@@ -137,11 +143,16 @@ export function renderHud() {
       bar(s.prog),
       h('div', { class: 'hud-row' }, h('span', {}, 'Khí huyết'), h('span', {}, s.hurt > 0 ? `Thương ${Math.round(s.hurt)}%` : 'Khỏe mạnh')),
       bar(100 - s.hurt, 'hp'),
-      h('div', { class: 'hud-row' }, h('span', {}, 'Thọ nguyên'), h('span', {}, `còn ${fmt(Math.max(0, life - a))} năm`)),
+      h('div', {
+        class: 'hud-row',
+        title: isYao()
+          ? `Còn ${fmt(Math.max(0, life - a))} năm Yêu tộc (tương đương ${fmt(+((life - a) / 4).toFixed(1))} năm Nhân tộc)`
+          : undefined
+      }, h('span', {}, 'Thọ nguyên'), h('span', {}, `còn ${fmt(Math.max(0, life - a))} năm`)),
       bar(((life - a) / life) * 100, 'life'),
       s.tamma > 5 ? [h('div', { class: 'hud-row' }, h('span', {}, 'Tâm ma'), h('span', {}, `${Math.round(s.tamma)}`)), bar(s.tamma, 'tm')] : null,
       h('div', { class: 'kv' },
-        h('span', {}, 'Linh căn'), h('span', {}, rootLabel()),
+        ...(isYao() ? [h('span', {}, 'Yêu Đan'), h('span', {}, `${yeuDanName()} · ${s.beast || 'Yêu thú'}`)] : [h('span', {}, 'Linh căn'), h('span', {}, rootLabel())]),
         h('span', {}, 'Công pháp'), h('span', {}, t ? `${t.n} (hợp ${Math.round(techAff() * 100)}%)` : 'Chưa có'),
         h('span', {}, 'Tốc độ tu'), h('span', {}, `${cultRate().toFixed(1)}%/lượt (${yearsTxt(turnLen())})`),
         h('span', {}, 'Chiến lực'), h('span', {}, fmt(powerScore())),
@@ -173,6 +184,9 @@ export function renderActions() {
     return;
   }
   if (needEngageScene()) add(btn('Hôn ước năm mười sáu tuổi', () => run(engageScene), 'prime'));
+  if (s.flags.pendingBeastBranches && s.flags.pendingBeastBranches.length > 0) {
+    add(btn('⚡ Chọn Đạo Lộ Tiến Hóa', () => showBeastBranchModal(), 'prime', { title: 'Lựa chọn nhánh thoát biến huyết mạch cho yêu thú' }));
+  }
   // tu luyện
   if (atBottleneck()) {
     add(btn(s.r === 0 ? 'Đả thông kinh mạch' : s.r === RMAX() || (s.body === 'thiendo' && s.r === 1) ? ((s.world ?? 0) >= LAST_WORLD ? 'Hợp nhất Đại Đạo' : 'Độ kiếp phi thăng') : 'Đột phá', () => run(breakthroughScene), 'prime'));

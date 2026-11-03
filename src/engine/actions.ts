@@ -51,7 +51,7 @@ export const drainFights = () => fightLogs.splice(0, fightLogs.length);
 export function cultivate(n: number, stoneCount = 0): Scene {
   if (s.flags.childhood) return childScene();
   if (needEngageScene()) return engageScene();
-  if (root().m === 0) return { title: 'Ngồi thiền', text: 'Ngươi ngồi cả ngày cố cảm nhận linh khí. Chỉ thấy tê chân. Phế linh căn không thể tu luyện — trừ phi tìm được kỳ ngộ hoặc Tẩy Tủy Đan.' + (passTime(0.25), '') };
+  if (root().m === 0 && !has('yeudan') && s.race !== 'Yêu tộc' && !s.beast) return { title: 'Ngồi thiền', text: 'Ngươi ngồi cả ngày cố cảm nhận linh khí. Chỉ thấy tê chân. Phế linh căn không thể tu luyện — trừ phi tìm được kỳ ngộ hoặc Tẩy Tủy Đan.' + (passTime(0.25), '') };
   if (atBottleneck()) return { title: 'Bình cảnh', text: 'Tu vi đã chạm bình cảnh, bế quan thêm cũng vô ích. Hãy đột phá.' };
 
   const startR = `${s.r}.${s.st}.${s.flags.tang ?? 1}`;
@@ -102,8 +102,9 @@ export function cultivate(n: number, stoneCount = 0): Scene {
 
   if (`${s.r}.${s.st}.${s.flags.tang ?? 1}` !== startR) text += ` Tinh tiến tới ${stageName()}.`;
   if (atBottleneck()) text += s.r === 0 ? ' Linh khí trong người đã đầy, có thể thử đả thông kinh mạch bước vào Luyện Khí.' : ' Đã chạm bình cảnh, có thể thử đột phá.';
-  if (!s.tech && s.r === 0) text += ' (Không có công pháp, tu luyện như mò kim đáy biển. Hãy tìm một bộ công pháp.)';
-  return { title: 'Bế quan', text, kind: 'info' };
+  if (!s.tech && s.r === 0 && !has('yeudan') && s.race !== 'Yêu tộc') text += ' (Không có công pháp, tu luyện như mò kim đáy biển. Hãy tìm một bộ công pháp.)';
+  const isYaoChar = s.race === 'Yêu tộc' || !!s.beast || has('yeudan');
+  return { title: isYaoChar ? 'Ngưng đan luyện thể' : 'Bế quan', text, kind: 'info' };
 }
 const pendingDeathSoon = () => false;
 

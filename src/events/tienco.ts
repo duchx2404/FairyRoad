@@ -77,7 +77,7 @@ Ngươi không ở trong số đó. Ngươi sinh ra ở Thương Lan, chỉ là 
     title: () => selected().heroine ? 'Nửa ngọc bội giữa dòng người' : 'Duyên gặp gỡ',
     text: () => {
       const p = selected();
-      if (p.heroine) return `Giữa dòng người qua lại, một thiếu nữ tên ${p.name} khẽ khựng bước. Nửa ngọc bội trong tay áo ngươi chợt ấm lên; nơi cổ nàng cũng đeo một mảnh ngọc có đường vân khớp đến lạ.`;
+      if (p.heroine) return `Giữa dòng người qua lại, một thiếu nữ tên ${p.name} khẽ khựng bước. Nửa ngọc bội trong tay áo ngươi chợt ấm lên; nơi cổ nàng cũng đeo nửa ngọc bội đôi còn lại có đường vân khớp đến lạ.`;
       return `Một ${p.g === 'm' ? 'thiếu niên' : 'thiếu nữ'} ${same(p) ? 'trạc tuổi ngươi' : 'còn rất trẻ'} đi ngang. Tu vi ${realmTxt(p.r, p.st)}, thần sắc bình thản giữa dòng người.`;
     },
     ch: () => {
@@ -91,8 +91,8 @@ Ngươi không ở trong số đó. Ngươi sinh ra ở Thương Lan, chỉ là 
             const n = spawn(p, 'peer', 35, `Gặp gỡ tại ${WORLDS[p.world]}`);
             n.rel = 70;
             s.flags.heroineMet = true;
-            mark(`Gặp ${n.name} giữa dòng người`);
-            return `Hai mảnh ngọc bội vừa chạm nhau đã khớp thành một, ánh ngọc dịu nhẹ lan qua kẽ tay. ${n.name} mỉm cười, rồi cùng ngươi trò chuyện về con đường tu hành. Từ đây, nàng đã ở trong Nhân mạch của ngươi.`;
+            mark(`Gặp ${n.name} (giữ nửa ngọc bội đôi còn lại) giữa dòng người`);
+            return `Hai mảnh ngọc bội vừa chạm nhau đã khớp thành một, ánh ngọc Hỗn Độn dịu nhẹ lan qua kẽ tay. ${n.name} mỉm cười, rồi cùng ngươi trò chuyện về con đường tu hành. Nửa ngọc bội đôi của hai người đã tìm thấy nhau. Từ đây, nàng đã ở trong Nhân mạch của ngươi.`;
           },
         },
         { t: 'Cất ngọc bội, lướt qua', fn: () => 'Ngươi không gọi nàng lại. Dòng người nhanh chóng che khuất bóng áo; mảnh ngọc trong tay áo dần nguội đi.' },

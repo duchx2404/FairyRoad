@@ -1,4 +1,5 @@
 import { s, type NPC } from './state';
+import { mkNgocBoiDoi } from '../data/items';
 
 function leadId(): string | undefined {
   return s.g === 'm' ? s.flags.heroineId : s.flags.mainLeadId;
@@ -19,6 +20,9 @@ export function wedDaolu(n: NPC): NPC {
   if (n.id === leadId() && (!primary || primary.id === n.id)) {
     n.spouseRole = 'primary';
     s.flags.primaryDaolu = n.id;
+    if (n.kit && (!n.kit.gear[3] || !/ngọc bội/i.test(n.kit.gear[3].n))) {
+      n.kit.gear[3] = mkNgocBoiDoi();
+    }
   } else {
     n.spouseRole = 'concubine';
   }

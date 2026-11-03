@@ -6,9 +6,10 @@ import { PHAPQUYET, CHANLINH, pqGrade } from '../data/spirit';
 import { TAMPHAP, tamGrade, tamEffect, learnReq, skillGrade, PILLS, TECHS, SKILLS, SPECIALS, MATS, REFINE_Y, MAX_SKILLS, SLOTS, gearLabel, type Gear } from '../data/items';
 import { REALMS, ROOTS, BASIC_EL, STATS, hiddenRootKind, rootKindOf, type StatKey } from '../data/core';
 import { s, codexAdd } from './state';
-import { effRi, tamList, tamActive, tamSlots, pqList, myLinh, removeItem, pillMult, techAff, bagFree, itemName, count, addItem, skEff, regrowGear } from './char';
+import { effRi, checkArtRacePermission, tamList, tamActive, tamSlots, pqList, myLinh, removeItem, pillMult, techAff, bagFree, itemName, count, addItem, skEff, regrowGear } from './char';
 import { addProg, addLog, mark } from './core';
 import { mkChanLinh } from './beast-companion';
+import { mutateBeastLineageBranch } from './beast-evolution';
 import { clamp, pick, ch, fmt } from '../core/util';
 
 export function usePill(id: string, g = 1): string {
@@ -63,6 +64,14 @@ export function usePill(id: string, g = 1): string {
       }
       return 'Dược lực tẩy sạch tạp chất trong xương, nhưng linh căn không đổi.';
     }
+    case 'mutate': {
+      if (s.race !== 'Yêu tộc' && !s.beast && !s.perks.includes('yeudan')) {
+        return 'Ngươi không có yêu thú huyết mạch, dùng đan này chỉ cảm thấy khí huyết cuồn cuộn một hồi rồi tan biến.';
+      }
+      const msg = mutateBeastLineageBranch(s);
+      mark('Dùng Dị Hóa Niết Bàn Đan trùng tố huyết mạch');
+      return msg;
+    }
     case 'break':
       return 'Đan phá cảnh nên để dành lúc đột phá (chọn khi bấm Đột phá).';
   }
@@ -89,6 +98,7 @@ export function useSpecial(key: string): string {
     case 'linhtuyen': return 'Linh tuyền mát lạnh chảy xuống đan điền. ' + addProg(50);
     case 'thanhoa': s.flags.flame = true; mark('Luyện hóa linh hỏa'); return 'Đốm lửa chui vào lòng bàn tay, từ nay luyện đan luyện khí đều có linh hỏa trợ lực.';
     case 'phatnganh': s.flags.bodhi = true; s.tamma = 0; s.stats.tam += 1; return 'Vị đắng chát lan khắp miệng rồi hóa ngọt. Tâm tĩnh như nước, đạo tâm +1. Lần đột phá tới sẽ dễ hơn.';
+    case 'cophu': return readScroll('fq:cophu', true);
     default: {
       if (key.startsWith('trung_')) {
         const beastId = key.slice(6);
@@ -115,6 +125,8 @@ function learn(k: string) {
 
 /** Đọc bí kíp: trả về mô tả; nếu switch=true thì đổi công pháp chính. */
 export function readScroll(id: string, sw: boolean): string {
+  const perm = checkArtRacePermission(id);
+  if (!perm.ok) return perm.reason || 'Chủng tộc không phù hợp.';
   if (id.startsWith('tp:')) {
     const k = id.slice(3);
     const tp = TAMPHAP[k];
@@ -134,6 +146,7 @@ export function readScroll(id: string, sw: boolean): string {
     if (effRi() < learnReq(x.tier)) return `Cảnh giới chưa đủ: ${pqGrade(x)} cần ${REALMS[learnReq(x.tier)].n}.`;
     removeItem(id, 1);
     pqList().push(k);
+    if (k === 'cophu') s.flags.coPhu = true;
     addLog(`Học được pháp quyết ${x.n}.`, 'good');
     return `Ngươi luyện ${x.n} tới thuần thục. ${x.d}`;
   }
@@ -225,28 +238,33 @@ export const isChaosBroken = (g: Gear | null | undefined) => !!g?.grow && /\(tà
 export const CHAOS_FORGE_MATS = ['hondonkim', 'hondonngoc', 'hondonhoa'] as const;
 /** Kiểm tra Hỗn Độn Kiếm còn có thể sửa (bằng Hỗn Độn Thạch) hoặc rèn tăng phẩm (bằng nguyên liệu Hỗn Độn) hay không. */
 export const canUpgradeChaosSword = (g: Gear | null | undefined) => !!g?.grow && (isChaosBroken(g) || (g.g === 12 && (g.q ?? 0) < 3));
+export { mkNgocBoiDoi } from '../data/items';
+
 export function repairChaosSword(uid: string): string {
   const g = [...s.gear, ...s.gearBag].find((x) => x?.uid === uid);
   if (!g || !g.grow) return '';
+  const isSword = g.n.includes('Kiếm');
+  const kind = isSword ? 'thân kiếm' : 'thân ngọc bội';
+  const nameBase = isSword ? 'Hỗn Độn Kiếm' : 'Ngọc bội đôi';
   regrowGear();
   if (isChaosBroken(g)) {
-    if (g.g < 11 || (g.q ?? 0) < 3) return 'Hỗn Độn Kiếm (Tàn khuyết) cần trưởng thành tới Hỗn Độn Linh Bảo cực phẩm mới có thể dung hợp Hỗn Độn Thạch.';
+    if (g.g < 11 || (g.q ?? 0) < 3) return `${g.n} cần trưởng thành tới Hỗn Độn Linh Bảo cực phẩm mới có thể dung hợp Hỗn Độn Thạch.`;
     if (!count('m:hondonthach')) return 'Cần một khối Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới.';
     removeItem('m:hondonthach', 1);
     const old = g.growMul ?? 1;
-    g.n = 'Hỗn Độn Kiếm'; g.g = 12; g.q = 0;
+    g.n = nameBase; g.g = 12; g.q = 0;
     g.growMul = 1.5;
     g.luck = Math.max(g.luck, 3);
     g.cult = Math.max(g.cult, 6);
     regrowGear();
-    addLog('Hỗn Độn Thạch dung vào thân kiếm: Hỗn Độn Kiếm trở thành Hỗn Độn Chí Bảo hạ phẩm.', 'good');
-    return `Khối Hỗn Độn Thạch tan vào vết nứt trên thân kiếm. Kiếm rung lên một tiếng dài, những vết khuyết liền lại. Hỗn Độn Kiếm đã khôi phục bản nguyên, trở thành Hỗn Độn Chí Bảo hạ phẩm: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×1.5, có thêm thủ, khí vận +3, tu luyện +6%. Cần tìm thêm nguyên liệu luyện khí cấp bậc Hỗn Độn để rèn lên cực phẩm.`;
+    addLog(`Hỗn Độn Thạch dung vào ${kind}: ${g.n} trở thành Hỗn Độn Chí Bảo hạ phẩm.`, 'good');
+    return `Khối Hỗn Độn Thạch tan vào vết nứt trên ${kind}. Khí tức Hỗn Độn cuộn trào, những vết khuyết liền lại. ${g.n} đã khôi phục bản nguyên, trở thành Hỗn Độn Chí Bảo hạ phẩm: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×1.5, có thêm thủ, khí vận +${g.luck}, tu luyện +${g.cult}%. Cần tìm thêm nguyên liệu luyện khí cấp bậc Hỗn Độn để rèn lên cực phẩm.`;
   }
   if (g.g === 12 && (g.q ?? 0) < 3) {
     const q = g.q ?? 0;
     const matKey = CHAOS_FORGE_MATS[q];
     const matName = MATS[matKey]?.n || matKey;
-    if (!count('m:' + matKey)) return `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn) để rèn Hỗn Độn Kiếm lên bậc kế tiếp.`;
+    if (!count('m:' + matKey)) return `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn) để rèn ${g.n} lên bậc kế tiếp.`;
     removeItem('m:' + matKey, 1);
     const old = g.growMul ?? 1.5;
     g.q = q + 1;
@@ -255,8 +273,8 @@ export function repairChaosSword(uid: string): string {
     g.cult = Math.max(g.cult, 6 + g.q * 2);
     regrowGear();
     const label = gearLabel(g);
-    addLog(`Rèn Hỗn Độn Kiếm bằng ${matName}: thăng lên ${label}.`, 'good');
-    return `${matName} tan chảy trong kiếm ý Hỗn Độn, dung nhập vào thân kiếm. Hỗn Độn Kiếm thăng lên ${label}: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×${g.growMul.toFixed(1)}, khí vận +${g.luck}, tu luyện +${g.cult}%.`;
+    addLog(`Rèn ${g.n} bằng ${matName}: thăng lên ${label}.`, 'good');
+    return `${matName} tan chảy trong đạo vận Hỗn Độn, dung nhập vào ${kind}. ${g.n} thăng lên ${label}: tỷ lệ trưởng thành ×${old.toFixed(1)} → ×${g.growMul.toFixed(1)}, khí vận +${g.luck}, tu luyện +${g.cult}%.`;
   }
   return '';
 }
@@ -295,6 +313,8 @@ export function discard(id: string, g?: number) {
 export function discardGear(uid: string) {
   const i = s.gearBag.findIndex((x) => x.uid === uid);
   if (i >= 0) {
+    const g = s.gearBag[i];
+    if (g.grow || /ngọc bội/i.test(g.n)) return 'Bảo vật gắn liền với bản mệnh, không thể vứt bỏ.';
     if (s.refining?.uid === uid) s.refining = null;
     return `Vứt bỏ ${s.gearBag.splice(i, 1)[0].n}.`;
   }

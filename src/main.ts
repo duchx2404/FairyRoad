@@ -71,6 +71,13 @@ setOnStart(() => {
     }
     s.flags.laoToV1 = true;
   }
+  if ((s.race === 'Yêu tộc' || s.beast || s.perks.includes('yeudan')) && s.tech === 'thanhtam') {
+    s.tech = 'thonnguyetquyet';
+    if (!s.known.includes('yeu_hoangao')) s.known.push('yeu_hoangao');
+    if (!s.skills.includes('yeu_hoangao')) s.skills.push('yeu_hoangao');
+    s.known = s.known.filter((x) => x !== 'chuongphong');
+    s.skills = s.skills.filter((x) => x !== 'chuongphong');
+  }
   if (s.tech === 'batcuc') { // đổi Bát Cực → Bát Cửu Huyền Công
     s.tech = 'batcuu';
     const ren: Record<string, string> = { batcucbang: 'phapthientuongdia', batcuchothe: 'thatthapnhibien' };

@@ -5,7 +5,8 @@ import { ensureWorldNames } from './names';
 import { doctrineAccepts } from './sect-doctrine';
 // Lõi vận hành: nhật ký, thời gian, tu luyện, đột phá, đi lại, NPC, dấu trên bản đồ.
 import { worldSize, RMAX, npcCap, DAO_CO, REALMS, BREAK_BASE, EL, ALL_EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, STAGES, type El } from '../data/core';
-import { isLaoTo, daoTitle, DIA_THE, LOCS, LOC_LIST, SECTS, REGIONS, MAP_W, MAP_H, RANK_PAY, type Loc } from '../data/world';
+import { isLaoTo, daoTitle, DIA_THE, LOCS, LOC_LIST, SECTS, REGIONS, MAP_W, MAP_H, RANK_PAY, type Loc, worldPack } from '../data/world';
+import { tryEvolvePlayerBeast } from './beast-evolution';
 import { PILLS } from '../data/items';
 import { s, meta, codexAdd, type NPC, type NpcTag, type Pin } from './state';
 import { primaryDaolu } from './relationships';
@@ -261,7 +262,7 @@ export function cultivateTurn(): { gain: number; stageUp: boolean } {
 
 /** Thêm tu vi (đơn vị % một tiểu cảnh giới). Dùng cho đan dược, kỳ ngộ. */
 export function addProg(p: number): string {
-  if (s.root.k === 0 && s.r === 0) return 'Thân phàm không giữ được linh khí, tất cả tan đi.';
+  if (s.root.k === 0 && s.r === 0 && !has('yeudan') && s.race !== 'Yêu tộc' && !s.beast) return 'Thân phàm không giữ được linh khí, tất cả tan đi.';
   let left = p;
   let ups = 0;
   if (thienDo()) {
@@ -428,6 +429,24 @@ export function breakthrough(pill?: { id: string; g: number }): { ok: boolean; t
         ? `\n\nĐịa thế trúc cơ. Ngươi mượn ${DIA_THE[s.loc]} ép vào đạo cơ, đúc ra ${g}!`
         : `\n\nTrúc cơ thường, thành ${g}.${grade < 2 ? ' Tâm cảnh, độ thuần thục công pháp và Trúc Cơ Đan tốt sẽ giúp đạo cơ vững hơn.' : ''}`;
       addLog(`Đạo cơ: ${g}.`, 'good');
+    }
+    if (s.race === 'Yêu tộc' || s.beast || has('yeudan')) {
+      const evo = tryEvolvePlayerBeast(s, worldPack(s.world ?? 0).beasts);
+      if (evo) {
+        if (evo.ok) {
+          addLog(evo.text, 'good');
+          mark(`Huyết mạch thoát biến: ${evo.from} ➔ ${evo.to}`);
+          dc += `\n\n${evo.text}`;
+        } else if (evo.requiresChoice && evo.branches) {
+          s.flags.pendingBeastBranches = evo.branches;
+          const choicePrompt = `Huyết mạch ${s.beast} trong người ngươi cuộn trào trước nhiều ngã rẽ tiến hóa. Hãy chọn con đường đạo lộ huyết mạch của ngươi!`;
+          addLog(choicePrompt, 'mark');
+          dc += `\n\n【Chọn Con Đường Tiến Hóa】${choicePrompt}`;
+        } else if (evo.blocked) {
+          addLog(evo.blocked, 'bad');
+          dc += `\n\n${evo.blocked}`;
+        }
+      }
     }
     return { ok: true, text: `Đột phá thành công! ${txt}${dc}` };
   }

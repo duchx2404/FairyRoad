@@ -96,6 +96,7 @@ export function paperFor(id: string, co: boolean): string | null {
   if (!co) return 'phuchi';
   return coPaper(TALIS[id].p).find((k) => count('m:' + k) > 0) || null;
 }
+export const hasCoPhu = () => !!s.flags.coPhu || (s.flags.phapquyet && s.flags.phapquyet.includes('cophu'));
 export function canDraw(id: string, co = false): string | null {
   const t = TALIS[id];
   if (t.tier > worldArtCap()) return 'Phù lục vượt trần phẩm chất của giới hiện tại.';
@@ -103,7 +104,7 @@ export function canDraw(id: string, co = false): string | null {
   if (!s.recipes.includes(id)) return 'Chưa có phù phương.';
   if (effRi() < t.p - 1) return `${PHU_PHAM[t.p]} phẩm phù cần cảnh giới ${REALMS[t.p - 1].n} mới vẽ nổi.`;
   if (t.tier > s.craft.talis + 1) return `Cần tay nghề ${craftTitle(t.tier - 1, 'talis')}.`;
-  if (co && !s.flags.coPhu) return 'Chưa có bí tịch chế phù thượng cổ.';
+  if (co && !hasCoPhu()) return 'Chưa có bí tịch chế phù thượng cổ.';
   if (co && !paperFor(id, true)) return t.p <= 4 ? 'Cổ phù phải vẽ trên Yêu bì phù chỉ hoặc Linh mộc phù chỉ.' : 'Cổ phù từ Ngũ phẩm trở lên chỉ Linh mộc phù chỉ mới chứa nổi.';
   for (const [m, n] of talisRec(id)) if (m !== 'phuchi' && count(itemIdOf(m)) < n) return `Thiếu ${itemName(itemIdOf(m))} (${count(itemIdOf(m))}/${n}).`;
   if (!co && count('m:phuchi') < 1) return 'Thiếu Phù chỉ.';
@@ -129,7 +130,7 @@ export function draw(id: string, co = false): string {
 export const PAPER_REC: [string, string, number][] = [['dayeu', 'yeubiphuchi', 2], ['linhmoc', 'linhmocphuchi', 3]];
 export function makePaper(i: number): string {
   const [src, out, n] = PAPER_REC[i];
-  if (!s.flags.coPhu) return 'Chưa có bí tịch chế phù thượng cổ.';
+  if (!hasCoPhu()) return 'Chưa có bí tịch chế phù thượng cổ.';
   if (count('m:' + src) < 1) return `Thiếu ${itemName('m:' + src)}.`;
   removeItem('m:' + src, 1);
   passTime(0.1);

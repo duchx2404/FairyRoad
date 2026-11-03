@@ -19,20 +19,30 @@ export interface PhapQuyet {
   def?: number; // % thủ
   heal?: number; // % hồi phục thương thế
   luck?: number; // khí vận
+  race?: 'human' | 'yao' | 'all'; // chủng tộc có thể học
+  exclusive?: boolean; // bí tịch gia tộc / truyền thừa độc quyền
 }
 export const PHAPQUYET: Record<string, PhapQuyet> = {
+  // ===== Pháp Quyết Yêu Tộc =====
+  yeu_thithuyet: { id: 'yeu_thithuyet', n: 'Thệ Huyết Thối Thể Quyết', tier: 1, pq: 1, icon: 'shield', race: 'yao', def: 12, d: 'Bí quyết rèn luyện yêu cốt bằng cách vận chuyển huyết khí toàn thân, phòng thủ +12%.' },
+  yeu_khunghoang: { id: 'yeu_khunghoang', n: 'Man Hoang Thú Uy Quyết', tier: 1, pq: 2, icon: 'scroll', race: 'yao', atk: 12, d: 'Tỏa ra uy áp của yêu thú man hoang thượng cổ, công phạt +12%.' },
+  yeu_thonkhi: { id: 'yeu_thonkhi', n: 'Thôn Thệ Yêu Khí Thuật', tier: 1, pq: 1, icon: 'scroll', race: 'yao', cult: 8, d: 'Nuốt chửng thiên địa yêu khí vào đan điền bồi dưỡng yêu đan, tốc độ tu +8%.' },
+  yeu_khuudoc: { id: 'yeu_khuudoc', n: 'Ngự Độc Hóa Thương Thuật', tier: 1, pq: 0, icon: 'scroll', race: 'yao', heal: 40, d: 'Bản năng dã thú tự liếm láp miệng vết thương, chữa lành thương thế nhanh hơn 40%.' },
+  yeu_hacphong: { id: 'yeu_hacphong', n: 'Hắc Phong Độn Quyết', tier: 2, pq: 1, icon: 'boots', race: 'yao', speed: 35, d: 'Hóa thành làn cuồng phong đen kịt cuộn trào phi hành, tốc độ đi đường +35%.' },
+  yeu_khuuthu: { id: 'yeu_khuuthu', n: 'Thiên Yêu Thú Tê Quyết', tier: 3, pq: 1, icon: 'shield', race: 'yao', def: 15, atk: 5, d: 'Lớp sừng vảy yêu thú dày cộm đao kiếm bất nhập, thủ +15%, công +5%.' },
+  cophu: { id: 'cophu', n: 'Bí tịch chế phù thượng cổ', tier: 1, pq: 3, icon: 'scroll', exclusive: true, d: 'Cuốn da thú cũ của Diệp thị Hoang Cổ, chép cách vẽ phù từ thời chưa có tông môn. Phù vẽ theo bí tịch này mạnh gấp mười phù thường (kèm bí pháp chế Yêu bì phù chỉ, Linh mộc phù chỉ).' },
   tulinhquyet: { id: 'tulinhquyet', n: 'Tụ Linh Quyết', tier: 1, pq: 1, icon: 'scroll', cult: 8, d: 'Tu luyện +8%.' },
   thiennhan: { id: 'thiennhan', n: 'Thiên Nhãn Thuật', tier: 1, pq: 2, icon: 'eye', herb: 1, d: 'Nhìn thấu linh khí cỏ cây, hái dược được thêm một cây.' },
-  liemtuc: { id: 'liemtuc', n: 'Liễm Tức Quyết', tier: 1, pq: 1, icon: 'scroll', hide: 0.3, flee: 0.1, d: 'Thu liễm khí tức: yêu thú khó phát hiện, thoát thân dễ hơn 10%.' },
+  liemtuc: { id: 'liemtuc', race: 'all', n: 'Liễm Tức Quyết', tier: 1, pq: 1, icon: 'scroll', hide: 0.3, flee: 0.1, d: 'Thu liễm khí tức: yêu thú khó phát hiện, thoát thân dễ hơn 10%.' },
   hoinguyenquyet: { id: 'hoinguyenquyet', n: 'Hồi Nguyên Quyết', tier: 1, pq: 0, icon: 'scroll', heal: 40, d: 'Vết thương mau lành hơn 40%.' },
   ngukiemquyet: { id: 'ngukiemquyet', n: 'Ngự Kiếm Quyết', tier: 2, pq: 1, icon: 'scroll', speed: 35, d: 'Ngự kiếm phi hành, đi đường nhanh hơn 35%.' },
-  thodon: { id: 'thodon', n: 'Thổ Độn Thuật', tier: 2, pq: 2, icon: 'mountain', flee: 0.25, d: 'Độn thổ thoát khỏi trận đấu: thoát thân +25%.' },
-  tambao: { id: 'tambao', n: 'Tầm Bảo Thuật', tier: 2, pq: 1, icon: 'eye', luck: 2, d: 'Cảm ứng bảo khí, khí vận +2.' },
+  thodon: { id: 'thodon', race: 'all', n: 'Thổ Độn Thuật', tier: 2, pq: 2, icon: 'mountain', flee: 0.25, d: 'Độn thổ thoát khỏi trận đấu: thoát thân +25%.' },
+  tambao: { id: 'tambao', race: 'all', n: 'Tầm Bảo Thuật', tier: 2, pq: 1, icon: 'eye', luck: 2, d: 'Cảm ứng bảo khí, khí vận +2.' },
   kimcang: { id: 'kimcang', n: 'Kim Cang Bất Hoại Thân', tier: 3, pq: 1, icon: 'shield', def: 15, d: 'Luyện thân như kim cang, thủ +15%.' },
-  tuphongbo: { id: 'tuphongbo', n: 'Truy Phong Bộ', tier: 3, pq: 2, icon: 'boots', speed: 25, flee: 0.1, d: 'Thân pháp như gió: đi đường +25%, thoát thân +10%.' },
-  phapthien: { id: 'phapthien', n: 'Pháp Thiên Tượng Địa', tier: 4, pq: 2, icon: 'person', atk: 20, d: 'Hóa thân cự nhân, công +20%.' },
-  thienlythuc: { id: 'thienlythuc', n: 'Súc Địa Thành Thốn', tier: 5, pq: 2, icon: 'boots', speed: 80, d: 'Thu ngàn dặm vào một bước: đi đường +80%.' },
-  vanphaptu: { id: 'vanphaptu', n: 'Vạn Pháp Quy Tông Quyết', tier: 6, pq: 3, icon: 'scroll', cult: 15, atk: 10, def: 10, d: 'Tu luyện +15%, công và thủ +10%.' },
+  tuphongbo: { id: 'tuphongbo', race: 'all', n: 'Truy Phong Bộ', tier: 3, pq: 2, icon: 'boots', speed: 25, flee: 0.1, d: 'Thân pháp như gió: đi đường +25%, thoát thân +10%.' },
+  phapthien: { id: 'phapthien', race: 'all', n: 'Pháp Thiên Tượng Địa', tier: 4, pq: 2, icon: 'person', atk: 20, d: 'Hóa thân cự nhân, công +20%.' },
+  thienlythuc: { id: 'thienlythuc', race: 'all', n: 'Súc Địa Thành Thốn', tier: 5, pq: 2, icon: 'boots', speed: 80, d: 'Thu ngàn dặm vào một bước: đi đường +80%.' },
+  vanphaptu: { id: 'vanphaptu', race: 'all', n: 'Vạn Pháp Quy Tông Quyết', tier: 6, pq: 3, icon: 'scroll', cult: 15, atk: 10, def: 10, d: 'Tu luyện +15%, công và thủ +10%.' },
 };
 export const pqGrade = (x: PhapQuyet) => gradeLabel(x.tier, x.pq);
 export const pqPrice = (x: PhapQuyet) => Math.round(55 * Math.pow(4.2, x.tier - 1) * (1 + x.pq * 0.3));

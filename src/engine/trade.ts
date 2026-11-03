@@ -118,7 +118,7 @@ export function stock(): Ware[] {
       const t = pickR(tcs);
       add({ id: 'cp:' + t.id, n: itemName('cp:' + t.id), price: Math.round(itemPrice('cp:' + t.id) * mul * 1.6), qty: 1 });
     }
-    const pqs = worldDefinitions('fq').filter((x) => x.tier <= Math.min(2, Math.ceil((effRi() + 1) / 2)));
+    const pqs = worldDefinitions('fq').filter((x) => !x.exclusive && x.tier <= Math.min(2, Math.ceil((effRi() + 1) / 2)));
     if (pqs.length && rnd() < 0.5) { const x = pickR(pqs); add({ id: 'fq:' + x.id, n: itemName('fq:' + x.id), price: Math.round(itemPrice('fq:' + x.id) * mul * 1.5), qty: 1 }); }
     // đan phương / phù phương
     const rec = [...worldDefinitions('p').filter((p) => p.tier <= Math.max(1, s.craft.alch + 1) && !s.recipes.includes(p.id)).map((p) => ({ id: p.id, n: `Đan phương: ${p.n}`, tier: p.tier })),

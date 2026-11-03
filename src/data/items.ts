@@ -30,12 +30,60 @@ export interface Tech {
   def?: number;
   hp?: number;
   blood?: string; // công pháp huyết mạch: chỉ người mang huyết mạch này tu được, không rơi, không bán
+  race?: 'human' | 'yao' | 'all'; // chủng tộc có thể tu luyện
   grow?: boolean; // phẩm trưởng thành theo người dùng: luôn bằng trần phẩm của giới đang ở (Hỗn Nguyên Kinh)
 }
 export const TECHS: Record<string, Tech> = {
-  honnguyenkinh: { id: 'honnguyenkinh', n: 'Hỗn Nguyên Kinh', el: ['hondon'], get tier() { return growArtGrade().tier; }, get pq() { return growArtGrade().pq; }, blood: 'diep_hondon', grow: true, skills: ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong'], pw: 1.35, hp: 1.45, def: 1.3, d: 'Công pháp trấn tộc chí cao của Diệp gia Hỗn Độn, vạn đạo quy nguyên. Bắt đầu từ phẩm thấp nhất rồi trưởng thành theo người dùng, bị giới hạn phẩm theo trần của giới đang ở; khi về tới Hỗn Độn giới sẽ không còn giới hạn trần.' },
+  // ===== Công pháp Yêu Tộc =====
+  bachthutoithe: { id: 'bachthutoithe', n: 'Bách Thú Tôi Thể Quyết', el: [], tier: 1, race: 'yao', skills: ['yeu_cuongthu', 'yeu_thuphach'], hp: 1.15, def: 1.12, d: 'Lấy huyết khí của trăm loài yêu thú tôi rèn thể phách, da dày thịt béo.' },
+  manhoangluyencot: { id: 'manhoangluyencot', n: 'Man Hoang Luyện Cốt Kinh', el: [], tier: 2, race: 'yao', skills: ['yeu_cuongthu', 'yeu_diaham'], hp: 1.2, def: 1.18, pw: 1.08, d: 'Hấp thụ khí man hoang viễn cổ, rèn xương cứng như huyền thiết.' },
+  thietgiapyeubao: { id: 'thietgiapyeubao', n: 'Thiết Giáp Yêu Quyết', el: ['kim'], tier: 1, race: 'yao', skills: ['yeu_lietthach'], def: 1.15, d: 'Luyện yêu khí thành lớp giáp sắt bao bọc nhục thân, móng vuốt sắc bén.' },
+  kimgiacyeukinh: { id: 'kimgiacyeukinh', n: 'Kim Giác Cự Thú Kinh', el: ['kim'], tier: 2, race: 'yao', skills: ['yeu_bachkimtrao'], def: 1.15, pw: 1.12, d: 'Công pháp của loài Kim Giác thú, ngưng tụ kim sát vào sừng nhọn và móng vuốt.' },
+  bachhothankim: { id: 'bachhothankim', n: 'Bạch Hổ Canh Kim Điển', el: ['kim'], tier: 3, race: 'yao', skills: ['yeu_bachhocanhkim'], pw: 1.22, d: 'Thượng cổ Bạch Hổ truyền thừa bí điển, sát khí Canh Kim xé rách vạn vật.' },
+  xichkimthanvien: { id: 'xichkimthanvien', n: 'Xích Kim Thần Viên Kinh', el: ['kim', 'hoa'], tier: 4, race: 'yao', skills: ['yeu_bachhokhong', 'yeu_bachhocanhkim'], hp: 1.2, def: 1.15, pw: 1.25, d: 'Bí điển Thông Thiên Thần Viên, nhục thân kim cương bất hoại, lực bạt sơn hề.' },
+  thanhmanthonmoc: { id: 'thanhmanthonmoc', n: 'Thanh Mãng Thôn Mộc Quyết', el: ['moc'], tier: 1, race: 'yao', skills: ['yeu_manhtoc'], hp: 1.12, d: 'Nuốt sinh cơ mộc linh trong rừng sâu để tôi luyện yêu đan, sinh mệnh dồi dào.' },
+  vanthumocyen: { id: 'vanthumocyen', n: 'Vạn Thụ Mộc Yêu Kinh', el: ['moc'], tier: 2, race: 'yao', skills: ['yeu_vanmoc', 'yeu_chucdoc'], hp: 1.2, def: 1.1, d: 'Hấp thụ linh khí ngàn năm thảo mộc, vết thương tự động khép miệng cực nhanh.' },
+  thienthuhoalinh: { id: 'thienthuhoalinh', n: 'Thiên Thụ Hóa Linh Điển', el: ['moc'], tier: 3, race: 'yao', skills: ['yeu_thanhlinhhoang', 'yeu_vanmoc'], hp: 1.3, d: 'Khai mở linh trí mộc tộc, sinh cơ dồi dào tựa biển sâu, trường thọ bất lão.' },
+  cuudiepyeuthan: { id: 'cuudiepyeuthan', n: 'Cửu Diệp Yêu Thần Kinh', el: ['moc', 'thuy'], tier: 4, race: 'yao', skills: ['yeu_thanhlinhhoang', 'yeu_vanmoc'], hp: 1.35, def: 1.18, d: 'Thượng cổ thần thảo đắc đạo thành yêu, chín lá chém đứt tinh thần, sinh cơ vô tận.' },
+  giaolongphucthuy: { id: 'giaolongphucthuy', n: 'Giao Long Phục Thủy Quyết', el: ['thuy'], tier: 1, race: 'yao', skills: ['yeu_thuylang'], hp: 1.1, d: 'Học theo Giao Long điều khiển dòng nước, yêu lực cuồn cuộn liên miên bất tuyệt.' },
+  uhaixuankinh: { id: 'uhaixuankinh', n: 'U Hải Huyền Xà Kinh', el: ['thuy'], tier: 2, race: 'yao', skills: ['yeu_uhaichao', 'yeu_haithanhoang'], hp: 1.18, def: 1.1, d: 'Ẩn mình đáy biển sâu lạnh giá, yêu lực nhu hòa mà hiểm độc khôn lường.' },
+  bacminhkinhba: { id: 'bacminhkinhba', n: 'Bắc Minh Kình Ba Điển', el: ['thuy'], tier: 3, race: 'yao', skills: ['yeu_giaolongbaivi', 'yeu_uhaichao'], hp: 1.25, pw: 1.15, d: 'Kình ngư Bắc Minh quẫy đuôi dâng ngập trời sóng gió, chân nguyên hùng hậu vô song.' },
+  chanlonghoathan: { id: 'chanlonghoathan', n: 'Chân Long Hóa Thần Kinh', el: ['thuy', 'loi'], tier: 4, race: 'yao', skills: ['yeu_chanlongphan', 'yeu_giaolongbaivi'], hp: 1.3, def: 1.2, pw: 1.25, d: 'Long tộc chí cao công pháp, lột xác thành Chân Long đằng vân giá vũ, thống trị muôn loài.' },
+  xichdiemhoadieu: { id: 'xichdiemhoadieu', n: 'Xích Diễm Hỏa Điểu Quyết', el: ['hoa'], tier: 1, race: 'yao', skills: ['yeu_hoatuc'], pw: 1.08, d: 'Loài chim lửa thổ nạp thái dương hỏa khí, yêu hỏa thiêu đốt đối thủ.' },
+  liethoathanchu: { id: 'liethoathanchu', n: 'Liệt Hỏa Thần Chu Kinh', el: ['hoa'], tier: 2, race: 'yao', skills: ['yeu_lietdiem', 'yeu_mahoa'], pw: 1.16, d: 'Hỏa nhện phun tơ lửa rực cháy, yêu hỏa hung bạo thiêu rụi kinh mạch.' },
+  chutuothanhoa: { id: 'chutuothanhoa', n: 'Chu Tước Thần Hỏa Điển', el: ['hoa'], tier: 3, race: 'yao', skills: ['yeu_chutuocviem', 'yeu_lietdiem'], hp: 1.1, pw: 1.25, d: 'Nam Phương Chu Tước truyền thừa thánh điển, thần hỏa bất diệt đốt cháy càn khôn.' },
+  nietbankimo: { id: 'nietbankimo', n: 'Niết Bàn Kim Ô Kinh', el: ['hoa', 'quang'], tier: 4, race: 'yao', skills: ['yeu_nietbanhoa', 'yeu_chutuocviem'], hp: 1.25, pw: 1.3, d: 'Thái Dương Kim Ô thượng cổ bí pháp, tắm trong lửa thần niết bàn tái sinh.' },
+  hauthuhungvuong: { id: 'hauthuhungvuong', n: 'Hậu Thổ Hùng Vương Quyết', el: ['tho'], tier: 1, race: 'yao', skills: ['yeu_thuphach'], hp: 1.1, def: 1.2, d: 'Thổ hùng vững chãi đứng trên mặt đất, tiếp nhận thổ địa yêu lực phòng thủ vô song.' },
+  trongsoncutuong: { id: 'trongsoncutuong', n: 'Trọng Sơn Cự Tượng Kinh', el: ['tho'], tier: 2, race: 'yao', skills: ['yeu_diaham'], hp: 1.18, def: 1.22, d: 'Cự tượng giẫm nát núi non, khí huyết nồng đậm trầm ổn như núi cao.' },
+  huyenquyhoangtho: { id: 'huyenquyhoangtho', n: 'Huyền Quy Thác Thiên Điển', el: ['tho', 'thuy'], tier: 3, race: 'yao', skills: ['yeu_huyenquygiap'], hp: 1.25, def: 1.35, d: 'Bắc Hải Huyền Quy đỡ trời chống đất, mai rùa bất hoại cản phá vạn kiếp công kích.' },
+  hoanglongkinh: { id: 'hoanglongkinh', n: 'Hoàng Long Hậu Thổ Kinh', el: ['tho'], tier: 4, race: 'yao', skills: ['yeu_hoanglongchan', 'yeu_huyenquygiap'], hp: 1.3, def: 1.3, pw: 1.15, d: 'Hoàng Long trấn giữ trung ương đại địa, long uy bàng bạc dồi dào sinh cơ.' },
+  hanbangbachlang: { id: 'hanbangbachlang', n: 'Hàn Băng Bạch Lang Quyết', el: ['bang'], tier: 1, race: 'yao', skills: ['yeu_bangnha'], def: 1.08, pw: 1.06, d: 'Bạch lang miền tuyết lạnh, hơi thở ngưng sương, nanh vuốt giá buốt.' },
+  bangphachtuyetho: { id: 'bangphachtuyetho', n: 'Băng Phách Tuyết Hồ Kinh', el: ['bang'], tier: 2, race: 'yao', skills: ['yeu_huyenbangphun'], hp: 1.12, pw: 1.12, d: 'Tuyết Hồ cửu vĩ chi thứ, ngưng băng phách vào yêu đan, thân hình uyển chuyển thoắt ẩn thoắt hiện.' },
+  huyenbangthangiao: { id: 'huyenbangthangiao', n: 'Huyền Băng Thần Giao Điển', el: ['bang', 'thuy'], tier: 3, race: 'yao', skills: ['yeu_banglongtuc'], hp: 1.15, def: 1.15, pw: 1.2, d: 'Băng Giao ngàn năm ngưng hàn khí cực độ, đông cứng huyết mạch kẻ thù.' },
+  cuchanbanglong: { id: 'cuchanbanglong', n: 'Cực Hàn Băng Long Kinh', el: ['bang'], tier: 4, race: 'yao', skills: ['yeu_cuchanbangvuc', 'yeu_banglongtuc'], hp: 1.2, def: 1.25, pw: 1.25, d: 'Băng Long viễn cổ phun tuyết lạnh thấu cửu u, đóng băng hư không.' },
+  loibaotrucquyet: { id: 'loibaotrucquyet', n: 'Lôi Báo Trục Điện Quyết', el: ['loi'], tier: 1, race: 'yao', skills: ['yeu_loibao'], pw: 1.1, d: 'Báo sấm săn mồi giữa mưa giông, yêu lực chuyển hóa thành tia chớp chớp nhoáng.' },
+  cuuthienloibang: { id: 'cuuthienloibang', n: 'Cửu Thiên Lôi Bằng Kinh', el: ['loi', 'phong'], tier: 2, race: 'yao', skills: ['yeu_kinhloibao'], pw: 1.18, d: 'Lôi Bằng vỗ cánh cuốn theo sấm chớp cuồng phong, chấn động kinh mạch.' },
+  loigiaokhiulong: { id: 'loigiaokhiulong', n: 'Lôi Giao Khiêu Long Điển', el: ['loi'], tier: 3, race: 'yao', skills: ['yeu_cuuthienloi'], pw: 1.26, d: 'Lôi Giao tắm mình trong thiên kiếp lôi đình, mượn sấm sét rèn luyện lôi đan.' },
+  tuloithanlong: { id: 'tuloithanlong', n: 'Tử Lôi Thần Long Kinh', el: ['loi'], tier: 4, race: 'yao', skills: ['yeu_tuloigiang', 'yeu_cuuthienloi'], def: 1.1, pw: 1.35, d: 'Thượng cổ Tử Lôi Long Kinh, hô phong hoán lôi, hủy diệt vạn vật.' },
+  thanhungnguphong: { id: 'thanhungnguphong', n: 'Thanh Ưng Ngự Phong Quyết', el: ['phong'], tier: 1, race: 'yao', skills: ['yeu_phongvuc'], pw: 1.05, d: 'Chim ưng bay lượn nương theo chiều gió, xé gió phi hành chém địch.' },
+  tatphongliepbao: { id: 'tatphongliepbao', n: 'Tật Phong Liệp Báo Kinh', el: ['phong'], tier: 2, race: 'yao', skills: ['yeu_phongtrao', 'yeu_thanquang'], pw: 1.15, d: 'Báo gió săn mồi với tốc độ kinh người, vuốt phong xé rách phòng hộ.' },
+  kimsidaibang: { id: 'kimsidaibang', n: 'Kim Sí Đại Bằng Điển', el: ['phong', 'kim'], tier: 3, race: 'yao', skills: ['yeu_kimsitram', 'yeu_phongtrao'], pw: 1.25, d: 'Đại Bằng kim sí vỗ cánh chín vạn dặm, cuồng phong trảm kích đoạn sơn ngăn sông.' },
+  cuuthienphongbang: { id: 'cuuthienphongbang', n: 'Cửu Thiên Cuồng Bằng Kinh', el: ['phong'], tier: 4, race: 'yao', skills: ['yeu_conbangphahai', 'yeu_kimsitram'], def: 1.15, pw: 1.3, d: 'Thần điểu rẽ mây đạp gió thượng tầng thiên, thân hóa gió lốc cuồng bạo.' },
+  uamxaanh: { id: 'uamxaanh', n: 'U Minh Xà Ảnh Quyết', el: ['am'], tier: 1, race: 'yao', skills: ['yeu_uamkich'], pw: 1.08, d: 'Loài rắn độc rình rập trong bóng tối, yêu khí âm u lạnh lẽo.' },
+  damaducbuc: { id: 'damaducbuc', n: 'Dạ Ma Dực Bức Kinh', el: ['am'], tier: 2, race: 'yao', skills: ['yeu_hacvu', 'yeu_thientho'], hp: 1.12, pw: 1.14, d: 'Dơi quỷ bay lượn trong đêm hút tinh huyết, hóa thành bóng đêm phục kích.' },
+  cuuumayeu: { id: 'cuuumayeu', n: 'Cửu U Ma Yêu Điển', el: ['am'], tier: 3, race: 'yao', skills: ['yeu_cuuumathu', 'yeu_hacvu'], hp: 1.15, pw: 1.24, d: 'Ma thú chín tầng địa u tụ hội âm sát, gặm nhấm ăn mòn thần hồn đối phương.' },
+  thontienhaclong: { id: 'thontienhaclong', n: 'Thôn Thiên Hắc Long Kinh', el: ['am'], tier: 4, race: 'yao', skills: ['yeu_cuuumathu', 'yeu_thientho'], hp: 1.25, pw: 1.3, d: 'Hắc Long thượng cổ nuốt chửng bóng tối và càn khôn, khí tức âm tà bá đạo.' },
+  kimquangthanloc: { id: 'kimquangthanloc', n: 'Kim Quang Thần Lộc Quyết', el: ['quang'], tier: 1, race: 'yao', skills: ['yeu_quanghoa'], hp: 1.12, d: 'Hươu sao tắm ánh hào quang, thanh lọc yêu khí trở nên thuần khiết tường hòa.' },
+  dieuquangbachho: { id: 'dieuquangbachho', n: 'Diệu Quang Thần Hạc Kinh', el: ['quang'], tier: 2, race: 'yao', skills: ['yeu_quanghoa', 'yeu_sinhco'], hp: 1.18, pw: 1.1, d: 'Hạc tiên nghênh đón bình minh, hào quang chiếu sáng xua tan ma chướng.' },
+  thaiduongthandieu: { id: 'thaiduongthandieu', n: 'Thái Dương Thần Điểu Điển', el: ['quang', 'hoa'], tier: 3, race: 'yao', skills: ['yeu_chutuocviem', 'yeu_quanghoa'], hp: 1.15, pw: 1.25, d: 'Thần điểu mang ánh thái dương rực rỡ, chiếu rọi vạn vật, uy áp rực sáng.' },
+  quangminhlongthan: { id: 'quangminhlongthan', n: 'Quang Minh Long Thần Kinh', el: ['quang'], tier: 4, race: 'yao', skills: ['yeu_chanlongphan', 'yeu_quanghoa'], hp: 1.25, def: 1.15, pw: 1.3, d: 'Quang Minh Cự Long chí thánh, vảy rồng sáng như vầng thái dương, vạn tà quy phục.' },
+  honnguyenkinh: { id: 'honnguyenkinh', race: 'all', n: 'Hỗn Nguyên Kinh', el: ['hondon'], get tier() { return growArtGrade().tier; }, get pq() { return growArtGrade().pq; }, blood: 'diep_hondon', grow: true, skills: ['honnguyenkhaithien', 'honnguyenphaptuong', 'vankiemquytong'], pw: 1.35, hp: 1.45, def: 1.3, d: 'Công pháp trấn tộc chí cao của Diệp gia Hỗn Độn, vạn đạo quy nguyên. Bắt đầu từ phẩm thấp nhất rồi trưởng thành theo người dùng, bị giới hạn phẩm theo trần của giới đang ở; khi về tới Hỗn Độn giới sẽ không còn giới hạn trần.' },
   cuuchuyen: { id: 'cuuchuyen', n: 'Cửu Chuyển Huyền Công', el: [], tier: 6, blood: 'diep_hondon', skills: ['cuuchuyenphathien', 'cuuchuyenkimthan', 'tichhuyettrungsinh', 'phapthientuongdia'], pw: 1.3, hp: 1.4, def: 1.25, d: 'Công pháp trấn tộc của Diệp gia Hỗn Độn. Chín lần chuyển hóa nhục thân: mỗi lần chuyển là thay máu đổi xương, tới chuyển thứ chín thì nhỏ máu tái sinh, vạn kiếp bất diệt. Chỉ dòng chính Diệp gia Hỗn Độn mới khai mở được.' },
   batcuu: { id: 'batcuu', n: 'Bát Cửu Huyền Công', el: [], tier: 5, blood: 'diep', skills: ['phapthientuongdia', 'thatthapnhibien'], pw: 1.15, hp: 1.2, def: 1.1, d: 'Công pháp huyết mạch của Diệp thị Hoang Cổ. Tu tới đại thành có bảy mươi hai phép biến hóa, nhục thân luyện tới bất hoại, pháp thiên tượng địa. Không mang máu họ Diệp thì đọc cũng không hiểu nổi một chữ.' },
+  // --- Công pháp Yêu tộc ---
+  thonnguyetquyet: { id: 'thonnguyetquyet', n: 'Thôn Nguyệt Thổ Nạp Quyết', el: [], tier: 1, skills: ['yeu_hoangao'], hp: 1.15, def: 1.1, d: 'Pháp môn thổ nạp bản năng của Yêu tộc: ngẩng đầu nuốt ánh trăng, hấp thụ tinh hoa nhật nguyệt và thiên địa linh khí để ngưng tụ yêu đan, tôi rèn yêu cốt nhục thân.' },
+  thienyeuluyenthe: { id: 'thienyeuluyenthe', n: 'Thiên Yêu Luyện Thể Điển', el: [], tier: 3, skills: ['yeu_hoangao'], hp: 1.25, def: 1.2, pw: 1.1, d: 'Thượng cổ yêu điển tôi luyện chân thân, lấy yêu khí và lôi đình đoán cốt hoán huyết.' },
+  thontienyeukinh: { id: 'thontienyeukinh', n: 'Thôn Thiên Yêu Kinh', el: [], tier: 4, skills: ['thuvuong', 'yeu_hoangao'], pw: 1.2, hp: 1.3, def: 1.15, d: 'Bí điển trấn tộc thượng cổ của cự yêu, miệng nuốt nhật nguyệt, thân hóa thiên địa.' },
   thanhtam: { id: 'thanhtam', n: 'Thanh Tâm Dẫn Khí Thuật', el: [], tier: 1, skills: ['chuongphong'], d: 'Pháp môn dẫn khí nhập thể phổ biến nhất. Ai cũng tu được, nhưng chẳng ai tu nhanh.' },
   kimcuongquyet: { id: 'kimcuongquyet', n: 'Kim Cương Luyện Khí Quyết', el: ['kim'], tier: 1, skills: ['kimtien'], d: 'Luyện kim khí vào xương, đánh ra sắc bén.' },
   thanhmocquyet: { id: 'thanhmocquyet', n: 'Thanh Mộc Trường Sinh Quyết', el: ['moc'], tier: 1, skills: ['dangleo'], hp: 1.1, d: 'Hấp thụ sinh cơ cỏ cây, sống dai.' },
@@ -59,8 +107,8 @@ export const TECHS: Record<string, Tech> = {
   canhkimkiem: { id: 'canhkimkiem', n: 'Canh Kim Kiếm Điển', el: ['kim'], tier: 3, skills: ['canhkimkiem'], pw: 1.2, d: 'Kiếm điển chí cương, một kiếm phá vạn pháp.' },
   thaiatmoc: { id: 'thaiatmoc', n: 'Thái Ất Thanh Mộc Kinh', el: ['moc', 'hoa'], tier: 3, skills: ['vanmoc', 'hoixuan'], hp: 1.2, d: 'Chân kinh mộc hệ cổ xưa, sinh sinh bất tức.' },
   tutieuthan: { id: 'tutieuthan', n: 'Tử Tiêu Thần Lôi Kinh', el: ['loi', 'phong', 'hoa'], tier: 4, skills: ['tutieuloi', 'loiquang'], pw: 1.15, d: 'Thần kinh của Tử Tiêu Tiên Cung, dẫn tử lôi chín tầng trời.' },
-  hondonkinh: { id: 'hondonkinh', n: 'Hỗn Độn Khai Thiên Kinh', el: [], tier: 4, skills: ['khaithien'], pw: 1.2, d: 'Tương truyền là pháp môn khi trời đất chưa phân. Không kén linh căn.' },
-  thaicuc: { id: 'thaicuc', n: 'Thái Cực Vô Lượng Kinh', el: ['kim', 'moc', 'thuy', 'hoa', 'tho'], tier: 4, skills: ['thaicucan', 'thaihuyenan'], def: 1.2, d: 'Âm dương tương tế, ngũ hành viên dung.' },
+  hondonkinh: { id: 'hondonkinh', race: 'all', n: 'Hỗn Độn Khai Thiên Kinh', el: [], tier: 4, skills: ['khaithien'], pw: 1.2, d: 'Tương truyền là pháp môn khi trời đất chưa phân. Không kén linh căn.' },
+  thaicuc: { id: 'thaicuc', race: 'all', n: 'Thái Cực Vô Lượng Kinh', el: ['kim', 'moc', 'thuy', 'hoa', 'tho'], tier: 4, skills: ['thaicucan', 'thaihuyenan'], def: 1.2, d: 'Âm dương tương tế, ngũ hành viên dung.' },
   huyenbang: { id: 'huyenbang', n: 'Cửu U Huyền Băng Kinh', el: ['bang'], tier: 4, skills: ['cuuuban'], d: 'Băng từ chín tầng địa phủ, đóng băng cả thần hồn.' },
   // --- bổ sung: mỗi hệ đủ bốn phẩm ---
   ngunguyenquyet: { id: 'ngunguyenquyet', n: 'Ngũ Nguyên Quy Tức Pháp', el: ['kim', 'moc', 'thuy', 'hoa', 'tho'], tier: 1, skills: ['chuongphong'], d: 'Nhập môn của Ngũ Nguyên Quán. Năm hành hít thở như một, dành cho kẻ linh căn tạp.' },
@@ -81,9 +129,9 @@ export const TECHS: Record<string, Tech> = {
   baisonkinh: { id: 'baisonkinh', n: 'Bàn Sơn Chân Kinh', el: ['tho'], tier: 3, skills: ['sontrung', 'kimthan'], def: 1.2, hp: 1.15, d: 'Gánh núi mà tu, mỗi tầng công pháp là một ngọn núi đè trên vai.' },
   phonglangquyet: { id: 'phonglangquyet', n: 'Phong Lăng Cửu Thiên Quyết', el: ['phong'], tier: 3, skills: ['phongnhan', 'cuongphong'], d: 'Cưỡi gió chín tầng trời, thân pháp nhanh như ý niệm.' },
   huyennguyen: { id: 'huyennguyen', n: 'Huyền Nguyên Chân Kinh', el: ['kim', 'thuy', 'quang', 'tho'], tier: 4, skills: ['thaihuyenan', 'daiquangminh'], def: 1.1, d: 'Trấn phái của Huyền Nguyên Thánh Địa: bốn hành quy về một điểm sáng.' },
-  batchu: { id: 'batchu', n: 'Bất Chu Thần Kinh', el: ['tho', 'moc', 'hoa', 'bang'], tier: 4, skills: ['sontrung', 'vanmoc'], hp: 1.2, pw: 1.1, d: 'Tương truyền khắc trên cột chống trời đã gãy. Thân thể vững như núi Bất Chu.' },
-  vanmakinh: { id: 'vanmakinh', n: 'Vạn Ma Quy Nguyên Kinh', el: ['am'], tier: 4, skills: ['vanmaphe', 'phehon'], evil: true, pw: 1.2, d: 'Ma kinh tối thượng. Vạn ma quy về một thân, đổi lại là tâm ma không bao giờ ngủ.' },
-  daiquangminhkinh: { id: 'daiquangminhkinh', n: 'Đại Quang Minh Kinh', el: ['quang'], tier: 4, skills: ['daiquangminh', 'thanhquang'], d: 'Ánh sáng không sinh không diệt. Người tu thành thì tà ma tránh xa.' },
+  batchu: { id: 'batchu', race: 'all', n: 'Bất Chu Thần Kinh', el: ['tho', 'moc', 'hoa', 'bang'], tier: 4, skills: ['sontrung', 'vanmoc'], hp: 1.2, pw: 1.1, d: 'Tương truyền khắc trên cột chống trời đã gãy. Thân thể vững như núi Bất Chu.' },
+  vanmakinh: { id: 'vanmakinh', race: 'all', n: 'Vạn Ma Quy Nguyên Kinh', el: ['am'], tier: 4, skills: ['vanmaphe', 'phehon'], evil: true, pw: 1.2, d: 'Ma kinh tối thượng. Vạn ma quy về một thân, đổi lại là tâm ma không bao giờ ngủ.' },
+  daiquangminhkinh: { id: 'daiquangminhkinh', race: 'all', n: 'Đại Quang Minh Kinh', el: ['quang'], tier: 4, skills: ['daiquangminh', 'thanhquang'], d: 'Ánh sáng không sinh không diệt. Người tu thành thì tà ma tránh xa.' },
   thanhvukiem: { id: 'thanhvukiem', n: 'Thanh Vũ Phong Lôi Kiếm', el: ['phong', 'loi'], tier: 4, skills: ['phongloi', 'tutieuloi'], pw: 1.2, d: 'Kiếm thế như mưa xanh, mỗi giọt mang tiếng sấm.' },
   bichhaitrieu: { id: 'bichhaitrieu', n: 'Bích Hải Triều Sinh Kinh', el: ['thuy', 'moc'], tier: 4, skills: ['tinhhailang', 'thuymanthien'], hp: 1.25, d: 'Như thủy triều, rút đi rồi lại về, sinh cơ không cạn.' },
 };
@@ -91,12 +139,54 @@ export const TECH_SPEED = [0, 1, 1.25, 1.55, 2, 2.5, 3.2, 4, 5, 6.2];
 export const TECH_POW = [0, 1, 1.2, 1.45, 1.8, 2.25, 2.9, 3.6, 4.5, 5.6];
 // Công pháp mới cấp Thần/Tiên giai
 Object.assign(TECHS, {
-  vanyeuhoahinh: { id: 'vanyeuhoahinh', n: 'Vạn Yêu Hóa Hình Kinh', el: ['moc', 'tho', 'am', 'phong'], tier: 5, skills: ['thuvuong', 'vanmoc'], pw: 1.15, hp: 1.15, d: 'Trấn đình chi bảo của Vạn Yêu Thánh Đình: dạy yêu hóa người, dạy người hiểu yêu.' },
-  thaiso: { id: 'thaiso', n: 'Thái Sơ Đạo Kinh', el: ['kim', 'moc', 'thuy', 'hoa', 'tho', 'bang', 'loi', 'phong', 'am', 'quang'], tier: 6, skills: ['khaithien', 'thaicucan'], pw: 1.2, def: 1.2, d: 'Đạo kinh từ trước khi có trời đất. Mười hệ đều thông — truyền thuyết nói chỉ người mười linh căn mới tu tới tận cùng.' },
+  vanyeuhoahinh: { id: 'vanyeuhoahinh', race: 'all', n: 'Vạn Yêu Hóa Hình Kinh', el: ['moc', 'tho', 'am', 'phong'], tier: 5, skills: ['thuvuong', 'vanmoc'], pw: 1.15, hp: 1.15, d: 'Trấn đình chi bảo của Vạn Yêu Thánh Đình: dạy yêu hóa người, dạy người hiểu yêu.' },
+  thaiso: { id: 'thaiso', race: 'all', n: 'Thái Sơ Đạo Kinh', el: ['kim', 'moc', 'thuy', 'hoa', 'tho', 'bang', 'loi', 'phong', 'am', 'quang'], tier: 6, skills: ['khaithien', 'thaicucan'], pw: 1.2, def: 1.2, d: 'Đạo kinh từ trước khi có trời đất. Mười hệ đều thông — truyền thuyết nói chỉ người mười linh căn mới tu tới tận cùng.' },
 } as Record<string, Tech>);
 /** Định giai/phẩm cho công pháp: thánh địa → Thần giai, cổ kinh thất truyền → Tiên giai. */
 const TECH_GRADE: Record<string, [number, number]> = {
-  cuuchuyen: [6, 3], batcuu: [5, 2], thanhtam: [1, 0], kimcuongquyet: [1, 1], thanhmocquyet: [1, 1], nhuocthuyquyet: [1, 1], liethoaquyet: [1, 1], hauthoquyet: [1, 2], thanhhakiem: [1, 2], xuansinhcong: [1, 2],
+  bachthutoithe: [1, 1],
+  manhoangluyencot: [2, 1],
+  thietgiapyeubao: [1, 1],
+  kimgiacyeukinh: [2, 1],
+  bachhothankim: [3, 2],
+  xichkimthanvien: [4, 2],
+  thanhmanthonmoc: [1, 1],
+  vanthumocyen: [2, 1],
+  thienthuhoalinh: [3, 2],
+  cuudiepyeuthan: [4, 2],
+  giaolongphucthuy: [1, 1],
+  uhaixuankinh: [2, 1],
+  bacminhkinhba: [3, 2],
+  chanlonghoathan: [4, 2],
+  xichdiemhoadieu: [1, 1],
+  liethoathanchu: [2, 1],
+  chutuothanhoa: [3, 2],
+  nietbankimo: [4, 2],
+  hauthuhungvuong: [1, 1],
+  trongsoncutuong: [2, 1],
+  huyenquyhoangtho: [3, 2],
+  hoanglongkinh: [4, 2],
+  hanbangbachlang: [1, 1],
+  bangphachtuyetho: [2, 1],
+  huyenbangthangiao: [3, 2],
+  cuchanbanglong: [4, 2],
+  loibaotrucquyet: [1, 1],
+  cuuthienloibang: [2, 1],
+  loigiaokhiulong: [3, 2],
+  tuloithanlong: [4, 2],
+  thanhungnguphong: [1, 1],
+  tatphongliepbao: [2, 1],
+  kimsidaibang: [3, 2],
+  cuuthienphongbang: [4, 2],
+  uamxaanh: [1, 1],
+  damaducbuc: [2, 1],
+  cuuumayeu: [3, 2],
+  thontienhaclong: [4, 2],
+  kimquangthanloc: [1, 1],
+  dieuquangbachho: [2, 1],
+  thaiduongthandieu: [3, 2],
+  quangminhlongthan: [4, 2],
+  cuuchuyen: [6, 3], batcuu: [5, 2], thonnguyetquyet: [1, 1], thienyeuluyenthe: [3, 2], thontienyeukinh: [4, 2], thanhtam: [1, 0], kimcuongquyet: [1, 1], thanhmocquyet: [1, 1], nhuocthuyquyet: [1, 1], liethoaquyet: [1, 1], hauthoquyet: [1, 2], thanhhakiem: [1, 2], xuansinhcong: [1, 2],
   ngunguyenquyet: [1, 1], bangphachquyet: [1, 1], loidinhquyet: [1, 2], thanhphongquyet: [1, 1], liemtucthuat: [1, 1], thanquangquyet: [1, 1],
   nguhanhquyet: [2, 1], phuvanbo: [2, 2], lietduongcong: [2, 2], hanbangquyet: [2, 2], vandockinh: [2, 2], huyenthuychanquyet: [2, 3], kinhloiquyet: [2, 1], canhphongquyet: [2, 0],
   trongsonquyet: [2, 1], ngulinhquyet: [2, 2], uamquyet: [2, 1], luuquangquyet: [2, 1],
@@ -124,6 +214,7 @@ export interface Skill {
   cd: number; // hồi chiêu (lượt)
   sword?: boolean;
   w?: Weapon; // loại vũ khí / quyền cước
+  race?: 'human' | 'yao' | 'all'; // chủng tộc có thể thi triển
   peak?: boolean; // chân truyền của phong chủ, không bán, không rơi
   /** Chiêu hồi phục có thêm hồi máu theo lượt: mỗi lượt hồi m × lượng hồi tức thời, trong `turns` lượt. Chỉ hồi máu, không hồi giáp. */
   hot?: { m: number; turns: number };
@@ -134,6 +225,44 @@ export interface Skill {
 export type Weapon = 'kiem' | 'dao' | 'thuong' | 'quyen' | 'chuong' | 'cung' | 'kich';
 export const WEAPON_N: Record<Weapon, string> = { kiem: 'Kiếm', dao: 'Đao', thuong: 'Thương', quyen: 'Quyền', chuong: 'Chưởng', cung: 'Cung', kich: 'Kích' };
 export const SKILLS: Record<string, Skill> = {
+  // ===== Võ Kỹ / Thần Thông Yêu Tộc =====
+  yeu_lietthach: { id: 'yeu_lietthach', n: 'Liệt Thạch Yêu Trảo', el: 'kim', tier: 1, k: 'atk', m: 1.45, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Vuốt sắc chém đá nát vàng.' },
+  yeu_cuongthu: { id: 'yeu_cuongthu', n: 'Cuồng Thú Bôn Tập', el: 'tho', tier: 1, k: 'atk', m: 1.4, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Lao mạnh nghiền nát vật cản bằng nhục thân đồ sộ.' },
+  yeu_manhtoc: { id: 'yeu_manhtoc', n: 'Mãng Độc Triền Nhiễu', el: 'moc', tier: 1, k: 'dot', m: 0.65, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Nọc độc yêu xà ngấm vào kinh mạch rút cạn sinh lực.' },
+  yeu_hoatuc: { id: 'yeu_hoatuc', n: 'Xích Viêm Thổ Tức', el: 'hoa', tier: 1, k: 'atk', m: 1.55, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Phun ra luồng lửa yêu thiêu đốt quân thù.' },
+  yeu_thuylang: { id: 'yeu_thuylang', n: 'Bích Ba Thủy Kích', el: 'thuy', tier: 1, k: 'atk', m: 1.35, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Cuộn sóng yêu thủy đập tan hộ thể đối phương.' },
+  yeu_loibao: { id: 'yeu_loibao', n: 'Lôi Thiểm Bôn Lôi', el: 'loi', tier: 1, k: 'atk', m: 1.5, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Thân hóa lôi đình bạo kích chớp nhoáng.' },
+  yeu_bangnha: { id: 'yeu_bangnha', n: 'Băng Nha Toái Cốt', el: 'bang', tier: 1, k: 'atk', m: 1.4, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Răng nanh sắc nhọn mang theo hàn khí đông cứng thịt xương.' },
+  yeu_phongvuc: { id: 'yeu_phongvuc', n: 'Liệt Phong Cuồng Vực', el: 'phong', tier: 1, k: 'multi', m: 0.6, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Vỗ cánh phóng ra ba lưỡi phong nhận xé rách đối phương.' },
+  yeu_uamkich: { id: 'yeu_uamkich', n: 'U Minh Ảnh Kích', el: 'am', tier: 1, k: 'atk', m: 1.4, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Đột kích hiểm hóc từ bóng tối không một tiếng động.' },
+  yeu_quanghoa: { id: 'yeu_quanghoa', n: 'Quang Dực Trảm', el: 'quang', tier: 1, k: 'atk', m: 1.45, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Đôi cánh tỏa kim quang trảm kích sắc bén.' },
+  yeu_thuphach: { id: 'yeu_thuphach', n: 'Cương Giáp Hộ Thể', el: 'tho', tier: 1, k: 'shield', m: 1.25, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Gồng cứng cơ bắp và lớp da yêu thú hóa giải đòn đánh.' },
+  yeu_sinhco: { id: 'yeu_sinhco', n: 'Yêu Huyết Hồi Sinh', el: 'moc', tier: 1, k: 'heal', m: 0.95, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Vận chuyển yêu huyết chữa lành thương thế cực nhanh.' },
+  yeu_bachkimtrao: { id: 'yeu_bachkimtrao', n: 'Bách Kim Liệt Không Trảo', el: 'kim', tier: 2, k: 'multi', m: 0.75, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Vuốt sắc xé gió để lại nhiều vết thương chí mạng.' },
+  yeu_kinhloibao: { id: 'yeu_kinhloibao', n: 'Kinh Lôi Yêu Hống', el: 'loi', tier: 2, k: 'atk', m: 2.1, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Tiếng gầm sấm sét làm tê liệt thần hồn kẻ địch.' },
+  yeu_huyenbangphun: { id: 'yeu_huyenbangphun', n: 'Huyền Băng Thổ Tức', el: 'bang', tier: 2, k: 'atk', m: 1.8, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Phun ra dòng hàn băng đóng cứng kinh mạch mục tiêu.' },
+  yeu_diaham: { id: 'yeu_diaham', n: 'Đại Địa Ba Chấn', el: 'tho', tier: 2, k: 'shield', m: 1.5, cd: 4, race: 'yao', d: 'Thần thông yêu tộc: Dộng chân xuống đất dựng màn chắn đất đá kiên cố.' },
+  yeu_haithanhoang: { id: 'yeu_haithanhoang', n: 'Thủy Triều Dưỡng Tinh', el: 'thuy', tier: 2, k: 'heal', m: 1.25, cd: 4, race: 'yao', d: 'Thần thông yêu tộc: Thủy khí dạt dào làm dịu và phục hồi vết thương.' },
+  yeu_mahoa: { id: 'yeu_mahoa', n: 'Hắc Viêm Ma Hỏa', el: 'hoa', tier: 2, k: 'atk', m: 2.05, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Ngọn lửa yêu ma u tối bốc cháy dữ dội.' },
+  yeu_chucdoc: { id: 'yeu_chucdoc', n: 'Chúc Cốt Yêu Độc', el: 'moc', tier: 2, k: 'dot', m: 1.05, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Chất độc ngấm tận tủy xương ăn mòn hộ thể.' },
+  yeu_thientho: { id: 'yeu_thientho', n: 'Thôn Hồn Đoạt Phách', el: 'am', tier: 2, k: 'atk', m: 1.95, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Hút một phần hồn phách đối phương làm suy yếu.' },
+  yeu_thanquang: { id: 'yeu_thanquang', n: 'Phong Dực Hóa Ảnh', el: 'phong', tier: 2, k: 'multi', m: 0.7, cd: 2, race: 'yao', d: 'Thần thông yêu tộc: Đôi cánh hóa thành tàn ảnh trảm kích liên hồi.' },
+  yeu_giaolongbaivi: { id: 'yeu_giaolongbaivi', n: 'Giao Long Bãi Vĩ', el: 'thuy', tier: 3, k: 'multi', m: 1.0, cd: 3, race: 'yao', d: 'Thần thông yêu tộc: Đuôi rồng quất mạnh gây sóng gió dập tan quân thù.' },
+  yeu_bachhocanhkim: { id: 'yeu_bachhocanhkim', n: 'Canh Kim Bạch Hổ Sát', el: 'kim', tier: 3, k: 'atk', m: 2.75, cd: 3, race: 'yao', d: 'Thần thông Bạch Hổ: Kim sát sắc bén xuyên thủng hộ thể tuyệt đối.' },
+  yeu_chutuocviem: { id: 'yeu_chutuocviem', n: 'Chu Tước Liệt Thiên Viêm', el: 'hoa', tier: 3, k: 'atk', m: 2.6, cd: 3, race: 'yao', d: 'Thần thông Chu Tước: Biển lửa thiêu đỏ cả một góc trời.' },
+  yeu_huyenquygiap: { id: 'yeu_huyenquygiap', n: 'Huyền Quy Thác Thiên Giáp', el: 'tho', tier: 3, k: 'shield', m: 2.2, cd: 4, race: 'yao', d: 'Thần thông Huyền Quy: Khí thuẫn mai rùa đỡ trời cản phá đòn tấn công.' },
+  yeu_cuuthienloi: { id: 'yeu_cuuthienloi', n: 'Cửu Thiên Cuồng Lôi', el: 'loi', tier: 3, k: 'atk', m: 2.7, cd: 3, race: 'yao', d: 'Thần thông lôi yêu: Dẫn sấm sét cuồng bạo đánh tan nát mục tiêu.' },
+  yeu_banglongtuc: { id: 'yeu_banglongtuc', n: 'Băng Long Thổ Tức', el: 'bang', tier: 3, k: 'atk', m: 2.5, cd: 3, race: 'yao', d: 'Thần thông băng yêu: Luồng hàn phong cực độ đóng băng vạn dặm.' },
+  yeu_kimsitram: { id: 'yeu_kimsitram', n: 'Đại Bằng Liệt Phong Trảm', el: 'phong', tier: 3, k: 'multi', m: 0.95, cd: 3, race: 'yao', d: 'Thần thông Kim Sí Đại Bằng: Đôi cánh chém đứt không gian.' },
+  yeu_cuuumathu: { id: 'yeu_cuuumathu', n: 'Cửu U Ma Yêu Vực', el: 'am', tier: 3, k: 'dot', m: 1.35, cd: 3, race: 'yao', d: 'Thần thông ma yêu: Vực thẳm âm u hút cạn sinh cơ mục tiêu.' },
+  yeu_thanhlinhhoang: { id: 'yeu_thanhlinhhoang', n: 'Thanh Loan Dưỡng Mệnh Quang', el: 'moc', tier: 3, k: 'heal', m: 1.6, cd: 4, race: 'yao', d: 'Thần thông Thanh Loan: Ánh sáng sinh mệnh hồi phục trọng thương trong tích tắc.' },
+  yeu_chanlongphan: { id: 'yeu_chanlongphan', n: 'Chân Long Phá Giới Kích', el: 'thuy', tier: 4, k: 'atk', m: 3.5, cd: 3, race: 'yao', d: 'Chân Long thần thông: Móng vuốt xé toạc không gian bổ đôi tinh cầu.' },
+  yeu_nietbanhoa: { id: 'yeu_nietbanhoa', n: 'Phượng Hoàng Niết Bàn Viêm', el: 'hoa', tier: 4, k: 'heal', m: 2.5, cd: 4, race: 'yao', d: 'Chân Phượng thần thông: Lửa niết bàn hồi sinh từ cõi chết.' },
+  yeu_conbangphahai: { id: 'yeu_conbangphahai', n: 'Côn Bằng Phá Hải Thôn Thiên', el: 'phong', tier: 4, k: 'atk', m: 3.6, cd: 4, race: 'yao', d: 'Côn Bằng thần thông: Nuốt chửng đất trời, sức mạnh nghiền nát càn khôn.' },
+  yeu_bachhokhong: { id: 'yeu_bachhokhong', n: 'Bạch Hổ Đoạt Mệnh Tuyệt Sát', el: 'kim', tier: 4, k: 'atk', m: 3.7, cd: 4, race: 'yao', d: 'Bạch Hổ thần thông: Sát phạt tuyệt đối, một kích lấy mạng kẻ thù.' },
+  yeu_hoanglongchan: { id: 'yeu_hoanglongchan', n: 'Hoàng Long Hậu Thổ Ấn', el: 'tho', tier: 4, k: 'shield', m: 3.2, cd: 4, race: 'yao', d: 'Hoàng Long thần thông: Đại địa ấn phù hộ thể kim thân vạn kiếp bất diệt.' },
+  yeu_tuloigiang: { id: 'yeu_tuloigiang', n: 'Cửu Thiên Tử Tiêu Diệt Lôi', el: 'loi', tier: 4, k: 'atk', m: 3.65, cd: 4, race: 'yao', d: 'Thần lôi diệt thế giáng xuống hóa tro tàn mọi chướng ngại.' },
+  yeu_cuchanbangvuc: { id: 'yeu_cuchanbangvuc', n: 'Cực Hàn Tuyệt Đối Vực', el: 'bang', tier: 4, k: 'dot', m: 1.8, cd: 4, race: 'yao', d: 'Băng vực tuyệt đối ngưng đọng thời gian và đóng băng mọi sinh linh.' },
   chuongphong: { id: 'chuongphong', n: 'Chưởng Phong', el: 'phong', tier: 1, k: 'atk', m: 1.2, cd: 1, d: 'Gom linh khí vào lòng bàn tay mà đánh.' },
   kimtien: { id: 'kimtien', n: 'Kim Tiễn Thuật', el: 'kim', tier: 1, k: 'atk', m: 1.45, cd: 2, d: 'Ngưng kim khí thành mũi tên.' },
   dangleo: { id: 'dangleo', n: 'Đằng La Triền', el: 'moc', tier: 1, k: 'dot', m: 0.6, cd: 3, d: 'Dây leo quấn chặt, rút dần sinh lực địch.' },
@@ -190,6 +319,30 @@ export const SKILLS: Record<string, Skill> = {
   vanmaphe: { id: 'vanmaphe', n: 'Vạn Ma Phệ Thiên', el: 'am', tier: 4, k: 'atk', m: 3.5, cd: 3, d: 'Vạn bóng ma từ dưới đất trồi lên cắn xé.' },
   daiquangminh: { id: 'daiquangminh', n: 'Đại Quang Minh Ấn', el: 'quang', tier: 4, k: 'atk', m: 3.3, cd: 3, d: 'Ấn sáng như mặt trời giữa trưa, tà ma tan biến.' },
   phongloi: { id: 'phongloi', n: 'Phong Lôi Song Kích', el: 'phong', tier: 4, k: 'multi', m: 1.25, cd: 3, d: 'Gió dẫn đường cho sét.' },
+  // Thần thông bản mệnh Yêu thú
+  yeu_hoangao: { id: 'yeu_hoangao', n: 'Yêu Thú Cuồng Hống', el: null, tier: 1, k: 'atk', m: 1.5, cd: 2, d: 'Thần thông bản mệnh: Gầm vang rung chuyển đất trời, bạo phát yêu lực nghiền ép đối thủ.' },
+  yeu_lietdiem: { id: 'yeu_lietdiem', n: 'Liệt Diễm Thôn Thiên', el: 'hoa', tier: 2, k: 'atk', m: 1.8, cd: 2, d: 'Thần thông bản mệnh: Phun ra yêu hỏa ngập trời thiêu rụi mục tiêu.' },
+  yeu_bangphach: { id: 'yeu_bangphach', n: 'Băng Phách Huyền Quang', el: 'bang', tier: 2, k: 'atk', m: 1.8, cd: 2, d: 'Thần thông bản mệnh: Ngưng tụ hàn băng thấu xương đóng băng đối phương.' },
+  yeu_cuongloi: { id: 'yeu_cuongloi', n: 'Cuồng Lôi Oanh Kích', el: 'loi', tier: 2, k: 'atk', m: 1.9, cd: 2, d: 'Thần thông bản mệnh: Dẫn thiên lôi oanh tạc kinh hoàng.' },
+  yeu_phongtrao: { id: 'yeu_phongtrao', n: 'Liệt Phong Yêu Trảo', el: 'phong', tier: 2, k: 'multi', m: 0.8, cd: 2, d: 'Thần thông bản mệnh: Vuốt sắc xé gió trảm kích ba liên hoàn.' },
+  yeu_uhaichao: { id: 'yeu_uhaichao', n: 'U Hải Nộ Triều', el: 'thuy', tier: 2, k: 'atk', m: 1.7, cd: 2, d: 'Thần thông bản mệnh: Thủy triều yêu khí cuồn cuộn dâng trào nuốt chửng quân thù.' },
+  yeu_kimquang: { id: 'yeu_kimquang', n: 'Phá Giáp Kim Quang', el: 'kim', tier: 2, k: 'atk', m: 1.85, cd: 2, d: 'Thần thông bản mệnh: Kim mang sắc bén xuyên thủng hộ thể.' },
+  yeu_trongnham: { id: 'yeu_trongnham', n: 'Trọng Nham Hộ Thể', el: 'tho', tier: 2, k: 'shield', m: 1.8, cd: 3, d: 'Thần thông bản mệnh: Tường đá nham thạch bao bọc nhục thân.' },
+  yeu_hacvu: { id: 'yeu_hacvu', n: 'Thực Hồn Hắc Vụ', el: 'am', tier: 2, k: 'dot', m: 1.0, cd: 3, d: 'Thần thông bản mệnh: Màn sương yêu ám gặm nhấm sinh cơ.' },
+  yeu_tinhhoa: { id: 'yeu_tinhhoa', n: 'Nguyệt Hoa Tịnh Thể', el: 'quang', tier: 2, k: 'heal', m: 1.4, cd: 3, d: 'Thần thông bản mệnh: Hấp thụ nguyệt hoa chữa lành vết thương nhục thân.' },
+  yeu_vanmoc: { id: 'yeu_vanmoc', n: 'Vạn Mộc Tác Hồn', el: 'moc', tier: 2, k: 'dot', m: 0.95, cd: 3, d: 'Thần thông bản mệnh: Dây leo yêu mộc trói buộc và hút cạn sinh cơ.' },
+};
+export const BEAST_INNATE_SKILLS: Record<string, string> = {
+  hoa: 'yeu_lietdiem',
+  bang: 'yeu_bangphach',
+  loi: 'yeu_cuongloi',
+  phong: 'yeu_phongtrao',
+  thuy: 'yeu_uhaichao',
+  kim: 'yeu_kimquang',
+  tho: 'yeu_trongnham',
+  am: 'yeu_hacvu',
+  quang: 'yeu_tinhhoa',
+  moc: 'yeu_vanmoc',
 };
 /** Không giới hạn cố định: chiêu nào xếp được vào kinh mạch thì mang theo được (số lớn chỉ để chặn lỗi). */
 export const MAX_SKILLS = 99;
@@ -293,7 +446,7 @@ export const HERBS: Record<string, Herb> = {
 };
 
 // ---------- Đan dược ----------
-export type PillKind = 'cult' | 'heal' | 'break' | 'life' | 'stat' | 'detox' | 'root';
+export type PillKind = 'cult' | 'heal' | 'break' | 'life' | 'stat' | 'detox' | 'root' | 'mutate';
 export interface Pill {
   giai?: number;
   id: string;
@@ -328,6 +481,7 @@ export const PILLS: Record<string, Pill> = {
   hopnguyen: { id: 'hopnguyen', n: 'Hợp Nguyên Đan', k: 'break', tier: 7, v: 0.15, rec: ['hongmongqua', 'tinhthannhuy', 'bangtamthao'], d: 'Hỗ trợ đột phá Hợp Thể.' },
   daithua: { id: 'daithua', n: 'Đại Thừa Đạo Đan', k: 'break', tier: 8, v: 0.14, rec: ['hongmongqua', 'vannienthanhmoc', 'hoalongqua'], d: 'Hỗ trợ đột phá Đại Thừa.' },
   truongsinh: { id: 'truongsinh', n: 'Trường Sinh Đan', k: 'life', tier: 6, v: 300, rec: ['hongmongqua', 'vannienthanhmoc', 'cuuchuyenhoa'], d: 'Thêm vài trăm năm thọ nguyên.' },
+  dihua_dan: { id: 'dihua_dan', n: 'Dị Hóa Niết Bàn Đan', k: 'mutate', tier: 4, v: 1, rec: ['tuduehuyet', 'cuuchuyenhoa', 'loikichmoc'], d: 'Đan dược thượng cổ ngưng tụ từ dị thú tinh huyết, có khả năng trùng tố huyết mạch, phá vỡ xiềng xích định hình con đường tiến hóa, cho phép rẽ sang nhánh tiến hóa khác.' },
 };
 export const PILL_GRADE = PHAM;
 /** Giai của đan theo cảnh giới dùng; đan phàm tục (chữa thương nhẹ, giải độc) là Phàm phẩm. */
@@ -353,10 +507,10 @@ export const MATS: Record<string, Mat> = {
   yeudan: { id: 'yeudan', n: 'Yêu đan', tier: 2, d: 'Tinh hoa tu vi của yêu thú. Phẩm cấp theo yêu thú.' },
   longlan: { id: 'longlan', n: 'Giao long lân', tier: 4, d: 'Vảy giao long, cứng hơn huyền thiết.' },
   linhmoc: { id: 'linhmoc', n: 'Linh mộc tâm', tier: 4, d: 'Lõi cây ngàn năm, luyện linh bảo cực tốt.' },
-  hondonthach: { id: 'hondonthach', n: 'Hỗn Độn Thạch', tier: 9, d: 'Đá ngưng từ khí hỗn độn trước thuở khai thiên, chỉ có ở Hỗn Độn giới. Khi Hỗn Độn Kiếm (Tàn khuyết) đạt Hỗn Độn Linh Bảo cực phẩm, dùng đá này để thăng lên Hỗn Độn Chí Bảo hạ phẩm.' },
-  hondonkim: { id: 'hondonkim', n: 'Hỗn Độn Thần Kim', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, ngưng kết từ tinh hoa kim thiết thuở hồng mông. Dùng để rèn Hỗn Độn Kiếm lên Hỗn Độn Chí Bảo trung phẩm.' },
-  hondonngoc: { id: 'hondonngoc', n: 'Hỗn Độn Đạo Ngọc', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, ẩn chứa đạo vận tiên thiên. Dùng để rèn Hỗn Độn Kiếm lên Hỗn Độn Chí Bảo thượng phẩm.' },
-  hondonhoa: { id: 'hondonhoa', n: 'Hỗn Độn Nguyên Tinh', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, tinh hoa bản nguyên của Hỗn Độn giới. Dùng để rèn Hỗn Độn Kiếm lên Hỗn Độn Chí Bảo cực phẩm.' },
+  hondonthach: { id: 'hondonthach', n: 'Hỗn Độn Thạch', tier: 9, d: 'Đá ngưng từ khí hỗn độn trước thuở khai thiên, chỉ có ở Hỗn Độn giới. Khi Hỗn Độn Kiếm (Tàn khuyết) hoặc Nửa ngọc bội đôi (Tàn khuyết) đạt Hỗn Độn Linh Bảo cực phẩm, dùng đá này để thăng lên Hỗn Độn Chí Bảo hạ phẩm.' },
+  hondonkim: { id: 'hondonkim', n: 'Hỗn Độn Thần Kim', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, ngưng kết từ tinh hoa kim thiết thuở hồng mông. Dùng để rèn Hỗn Độn Kiếm / Ngọc bội đôi lên Hỗn Độn Chí Bảo trung phẩm.' },
+  hondonngoc: { id: 'hondonngoc', n: 'Hỗn Độn Đạo Ngọc', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, ẩn chứa đạo vận tiên thiên. Dùng để rèn Hỗn Độn Kiếm / Ngọc bội đôi lên Hỗn Độn Chí Bảo thượng phẩm.' },
+  hondonhoa: { id: 'hondonhoa', n: 'Hỗn Độn Nguyên Tinh', tier: 9, d: 'Nguyên liệu luyện khí cấp bậc Hỗn Độn, tinh hoa bản nguyên của Hỗn Độn giới. Dùng để rèn Hỗn Độn Kiếm / Ngọc bội đôi lên Hỗn Độn Chí Bảo cực phẩm.' },
   hukhongthach: { id: 'hukhongthach', n: 'Hư không thạch', tier: 6, d: 'Đá sinh ra trong khe nứt không gian.' },
   huyenthiet: { id: 'huyenthiet', n: 'Huyền thiết', tier: 1, d: 'Sắt đen nặng gấp ba sắt thường.' },
   tinhkim: { id: 'tinhkim', n: 'Tinh kim', tier: 2, d: 'Kim loại tinh luyện, dẫn linh lực tốt.' },
@@ -522,6 +676,26 @@ export function mkGear(lv: number, g: number, slot?: number, el?: El | null, q?:
   else if (sl === 4) { gear.def = v(0.4); gear.luck = g >= 3 ? 1 : 0; gear.hp = v(2); }
   return gear;
 }
+export function mkNgocBoiDoi(): Gear {
+  return {
+    uid: Math.random().toString(36).slice(2, 10),
+    slot: 3,
+    n: 'Nửa ngọc bội đôi (Tàn khuyết)',
+    g: 1,
+    q: 0,
+    lv: 0,
+    el: null,
+    atk: 0,
+    def: 0,
+    hp: 0,
+    cult: 5,
+    luck: 2,
+    cap: 10,
+    refined: true,
+    grow: true,
+    growMul: 1,
+  };
+}
 export const gearPrice = (gr: Gear) => Math.round(8 * Math.pow(3.2, gr.lv) * Math.pow(2.4, gr.g) * PQ_MULT[gr.q ?? 1]);
 
 // ---------- Túi trữ vật ----------
@@ -545,12 +719,12 @@ export interface Special {
 }
 export const SPECIALS: Record<string, Special> = {
   tuitruvat: { id: 'tuitruvat', n: 'Túi trữ vật', d: 'Dùng để mở rộng túi đồ thêm 6 ô.', price: 120, use: 'Mở rộng túi' },
-  ngocboidoi: { id: 'ngocboidoi', n: 'Nửa ngọc bội đôi', d: 'Một nửa ngọc bội cũ luôn theo ngươi từ thuở nhỏ. Nửa còn lại đang ở đâu, không ai biết.', price: 0 },
+  ngocboidoi: { id: 'ngocboidoi', n: 'Nửa ngọc bội đôi', d: 'Một nửa ngọc bội cũ luôn theo ngươi từ thuở nhỏ. Nửa còn lại nằm trong tay Nữ chính (chính thất Ngô Thu Phương). Khi dung hợp Hỗn Độn Thạch viên mãn, sẽ thăng hoa thành Ngọc bội đôi - Hỗn Độn Chí Bảo.', price: 0 },
   banddo: { id: 'banddo', n: 'Mảnh bản đồ cổ', d: 'Vẽ dở một vùng hiểm địa. Đủ ba mảnh có thể tìm ra kho báu.', price: 60 },
   ngocgian: { id: 'ngocgian', n: 'Ngọc giản vô danh', d: 'Ngọc giản cũ, thần thức quét vào thấy mơ hồ. Dùng để lĩnh ngộ.', price: 80, use: 'Lĩnh ngộ' },
   linhthach_trung: { id: 'linhthach_trung', n: 'Trung phẩm linh thạch', d: 'Một viên bằng trăm viên hạ phẩm.', price: 100, use: 'Đổi thành 100 linh thạch' },
   linhthach_thuong: { id: 'linhthach_thuong', n: 'Thượng phẩm linh thạch', d: 'Một viên bằng vạn viên hạ phẩm.', price: 10000, use: 'Đổi thành 10.000 linh thạch' },
-  cophu: { id: 'cophu', n: 'Bí tịch chế phù thượng cổ', d: 'Cuốn da thú cũ của Diệp thị Hoang Cổ, chép cách vẽ phù từ thời chưa có tông môn. Phù vẽ theo bí tịch này mạnh gấp mười phù thường.', price: 0 },
+  cophu: { id: 'cophu', n: 'Bí tịch chế phù thượng cổ', d: 'Cuốn da thú cũ của Diệp thị Hoang Cổ, chép cách vẽ phù từ thời chưa có tông môn. Phù vẽ theo bí tịch này mạnh gấp mười phù thường.', price: 0, use: 'Lĩnh ngộ' },
   kiemlenh: { id: 'kiemlenh', n: 'Lệnh bài tiến cử', d: 'Mang lệnh bài này tới một tông môn sẽ được nhận làm đệ tử, bỏ qua khảo hạch tư chất (trừ thánh địa).', price: 300 },
   linhtuyen: { id: 'linhtuyen', n: 'Bình linh tuyền', d: 'Nước suối linh, uống vào tăng tu vi đáng kể.', price: 150, use: 'Uống' },
   thanhoa: { id: 'thanhoa', n: 'Mồi lửa linh hỏa', d: 'Một đốm linh hỏa bị phong ấn. Luyện hóa sẽ tăng tỉ lệ luyện đan, luyện khí vĩnh viễn.', price: 600, use: 'Luyện hóa' },
@@ -561,8 +735,17 @@ export function registerSpecial(sp: Special) {
 }
 
 // ---------- Tâm pháp: kinh tu tâm, hiệu quả bị động, học xong là có ----------
-export interface TamPhap { id: string; n: string; tier: number; pq: number; d: string; tam?: number; ngo?: number; cult?: number; brk?: number; calm?: number }
+export interface TamPhap { id: string; n: string; tier: number; pq: number; d: string; race?: 'human' | 'yao' | 'all'; tam?: number; ngo?: number; cult?: number; brk?: number; calm?: number }
 export const TAMPHAP: Record<string, TamPhap> = {
+  // ===== Tâm Pháp Yêu Tộc =====
+  hungtinhngungtam: { id: 'hungtinhngungtam', n: 'Hung Tính Ngưng Tâm Quyết', tier: 1, pq: 0, race: 'yao', tam: 1, calm: 1, d: 'Tâm pháp sơ giai yêu tộc: Thu liễm dã tính hung bạo trong máu, giữ yêu tâm thanh tỉnh.' },
+  thonnguyetkhaithuc: { id: 'thonnguyetkhaithuc', n: 'Thôn Nguyệt Khai Khiếu Kinh', tier: 1, pq: 1, race: 'yao', cult: 5, d: 'Hấp thụ ánh trăng soi rọi yêu khiếu, giúp tu vi yêu thú tích lũy vững chắc.' },
+  yeuhonngungluyen: { id: 'yeuhonngungluyen', n: 'Yêu Hồn Ngưng Luyện Quyết', tier: 1, pq: 2, race: 'yao', ngo: 1, d: 'Rèn luyện yêu hồn dẻo dai kiên cố, tăng khả năng lĩnh ngộ thần thông bản mệnh.' },
+  manhoangluyenthan: { id: 'manhoangluyenthan', n: 'Man Hoang Luyện Thần Quyết', tier: 2, pq: 0, race: 'yao', tam: 1, calm: 2, d: 'Kế thừa ý chí quật cường của man hoang cự thú, trấn áp tạp niệm ngoại cảnh.' },
+  huyetmachquynguyen: { id: 'huyetmachquynguyen', n: 'Huyết Mạch Quy Nguyên Kinh', tier: 2, pq: 1, race: 'yao', tam: 1, brk: 0.02, d: 'Thanh lọc huyết mạch tạp chất, hỗ trợ yêu thú đột phá bình cảnh dễ dàng hơn.' },
+  yeudanduongtinh: { id: 'yeudanduongtinh', n: 'Yêu Đan Dưỡng Tinh Kinh', tier: 2, pq: 2, race: 'yao', cult: 6, d: 'Ôn dưỡng yêu đan trong đan điền, yêu khí ngưng tụ châu viên ngọc nhuận không tiêu tán.' },
+  thienyeutinhphach: { id: 'thienyeutinhphach', n: 'Thiên Yêu Tĩnh Phách Điển', tier: 3, pq: 2, race: 'yao', tam: 2, calm: 2, d: 'Tâm phách vững như thượng cổ thần sơn, yêu tâm bất động trước mọi huyễn ảnh ma chướng.' },
+  batdietdathuan: { id: 'batdietdathuan', n: 'Bất Diệt Dã Tính Kinh', tier: 4, pq: 3, race: 'yao', tam: 3, calm: 4, d: 'Nung nấu dã tính thành ý chí bất diệt, tâm ma vừa sinh liền bị chiến ý xé rách.' },
   tinhtamkinh: { id: 'tinhtamkinh', n: 'Tĩnh Tâm Kinh', tier: 1, pq: 0, tam: 1, calm: 1, d: 'Kinh nhập môn của mọi tu sĩ: ngồi yên, thở chậm, nhìn tạp niệm trôi qua.' },
   duongkhikinh: { id: 'duongkhikinh', n: 'Dưỡng Khí Kinh', tier: 1, pq: 1, cult: 5, d: 'Dạy cách giữ linh khí không tản mát sau mỗi lần vận công.' },
   ngungthankinh: { id: 'ngungthankinh', n: 'Ngưng Thần Kinh', tier: 1, pq: 2, ngo: 1, d: 'Gom thần thức về một điểm, đọc kinh một lần nhớ mười.' },

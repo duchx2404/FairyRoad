@@ -1,6 +1,6 @@
 // Dữ liệu nền: ngũ hành, cảnh giới, linh căn, thể chất, thiên phú, xuất thân, tên.
 
-export type El = 'kim' | 'moc' | 'thuy' | 'hoa' | 'tho' | 'bang' | 'loi' | 'phong' | 'am' | 'quang' | 'yin' | 'yang' | 'hondon';
+export type El = 'kim' | 'moc' | 'thuy' | 'hoa' | 'tho' | 'bang' | 'loi' | 'phong' | 'am' | 'quang' | 'yin' | 'yang' | 'hondon' | 'none';
 
 export const EL: Record<El, { n: string; c: string }> = {
   kim: { n: 'Kim', c: '#a8862f' },
@@ -16,6 +16,7 @@ export const EL: Record<El, { n: string; c: string }> = {
   yin: { n: 'Âm', c: '#2a2a3a' },
   yang: { n: 'Dương', c: '#e0a030' },
   hondon: { n: 'Hỗn Độn', c: '#a886d8' },
+  none: { n: 'Vô Tính', c: '#888888' },
 };
 export const BASIC_EL: El[] = ['kim', 'moc', 'thuy', 'hoa', 'tho'];
 export const VARIANT_EL: El[] = ['bang', 'loi', 'phong', 'am', 'quang'];
@@ -41,6 +42,7 @@ const KHAC: Record<El, El[]> = {
   yin: ['yang', 'am', 'quang'],
   yang: ['yin', 'am', 'quang'],
   hondon: [],
+  none: [],
 };
 /** a sinh b (tương sinh) — công pháp hệ được sinh vẫn tu được, chậm hơn chút. */
 export const SINH: Partial<Record<El, El>> = { kim: 'thuy', thuy: 'moc', moc: 'hoa', hoa: 'tho', tho: 'kim' };
@@ -217,6 +219,15 @@ export interface Body {
   alch?: number; // cộng tỉ lệ luyện đan
   g?: 'm' | 'f';
 }
+export const BEAST_BODIES: Body[] = [
+  { id: 'yeu_manhoang', n: 'Thượng Cổ Man Hoang Thể', w: 10, hp: 1.45, pow: 1.25, life: 1.2, d: 'Nhục thân man hoang thời viễn cổ, gân cốt cứng như huyền thiết. Khí huyết ×1.45, chiến lực ×1.25, thọ nguyên ×1.2.' },
+  { id: 'yeu_thonglinh', n: 'Thông Thiên Yêu Linh Thể', w: 8, cult: 1.3, pow: 1.15, heal: 1.2, d: 'Linh khiếu thông suốt, thiên sinh yêu linh cảm ứng thiên địa. Tu luyện ×1.3, chiến lực ×1.15, hồi phục ×1.2.' },
+  { id: 'yeu_hungsat', n: 'Hồng Hoang Hung Sát Thể', w: 6, pow: 1.35, hp: 1.2, luck: 1, d: 'Mang sát khí hung bạo khai thiên tích địa, đòn đánh cuồng bạo xé nát càn khôn. Chiến lực ×1.35, khí huyết ×1.2, khí vận +1.' },
+  { id: 'yeu_huyennguyet', n: 'Huyền Nguyệt Tịnh Thể', w: 6, heal: 1.4, cult: 1.2, life: 1.3, d: 'Hấp thu thái âm nguyệt hoa tôi luyện thân xác, thanh lọc thương thế. Hồi phục ×1.4, tu luyện ×1.2, thọ nguyên ×1.3.' },
+  { id: 'yeu_thienvan', n: 'Thiên Mệnh Dị Tượng Thể', w: 4, luck: 3, cult: 1.2, life: 1.25, d: 'Dị tượng che trời khi sinh ra, hưởng khí vận thiên địa bảo hộ. Khí vận +3, tu luyện ×1.2, thọ nguyên ×1.25.' },
+  { id: 'yeu_hondon', n: 'Hỗn Độn Yêu Thai', w: 1, hp: 1.35, pow: 1.3, cult: 1.3, life: 1.35, luck: 2, d: 'Thai nghén từ khí Hỗn Độn sơ khai, tư chất kinh thế hãi tục. Huyết ×1.35, lực ×1.3, tu ×1.3, thọ ×1.35, vận +2.' },
+];
+
 export const BODIES: Body[] = [
   { id: 'pham', n: 'Phàm thể', w: 60, d: 'Thân thể bình thường, không có gì đặc biệt.' },
   { id: 'kimcuong', n: 'Kim Cương Cốt', w: 6, d: 'Xương cứng như sắt, khí huyết dồi dào.', hp: 1.4, pow: 1.1 },
@@ -230,6 +241,7 @@ export const BODIES: Body[] = [
   { id: 'vandoc', n: 'Vạn Độc Thể', w: 3, d: 'Bách độc bất xâm, ngửi thuốc là biết dược tính.', alch: 0.12, heal: 1.3 },
   { id: 'thiendo', n: 'Thiên Đố Chi Thể', w: 1, d: 'Trời đất đố kỵ: vĩnh viễn không thể trúc cơ, nhưng luyện khí không có tầng cuối. Tầng càng cao, sức mạnh và thọ nguyên càng sánh ngang cảnh giới trên — tầng 10 ngang Trúc Cơ, tầng 20 ngang Kết Đan, tầng 35 ngang Nguyên Anh…' },
   { id: 'hondon', n: 'Hỗn Độn Đạo Thai', w: 1, d: 'Truyền thuyết nói là thai nhi của đất trời. Mọi mặt đều vượt người.', cult: 1.35, pow: 1.2, hp: 1.2, life: 1.2 },
+  ...BEAST_BODIES,
 ];
 
 // ---------- Thiên phú (chọn khi đầu thai) ----------
@@ -239,7 +251,22 @@ export interface Perk {
   d: string;
   bad?: boolean;
 }
+export const BEAST_PERKS: Perk[] = [
+  { id: 'yeudan', n: 'Yêu Đan Bản Mệnh', d: 'Đặc tính Yêu tộc: Không có linh căn. Tu luyện bằng Yêu đan và nhục thân. Khí huyết +40%, thủ +20%, đòn đánh tăng 25% uy lực.' },
+  { id: 'yeu_thoaicot', n: 'Thối Cốt Dịch Cân', d: 'Xương cốt tôi luyện như thần binh. Phòng ngự +20%, giảm 10% sát thương nhận vào.' },
+  { id: 'yeu_huyetkhi', n: 'Huyết Khí Bàng Bạc', d: 'Huyết hải cuộn trào sinh cơ bàng bạc. Khí huyết tối đa +25%, căn cốt +2.' },
+  { id: 'yeu_hungtinh', n: 'Hung Tính Bạo Phát', d: 'Dã tính bộc phát khi thương thế trầm trọng. Càng mất máu đánh càng mạnh (tối đa +35% sát thương).' },
+  { id: 'yeu_nguyethoa', n: 'Nguyệt Hoa Thối Thể', d: 'Hấp thu tinh hoa ánh trăng nuôi dưỡng nội đan. Tốc độ bế quan ngưng đan luyện thể +20%.' },
+  { id: 'yeu_uyap', n: 'Bách Thú Uy Áp', d: 'Uy áp dị thú khiến kẻ địch khiếp sợ. Giảm 15% phòng ngự của đối thủ trong giao chiến.' },
+  { id: 'yeu_thoatxac', n: 'Huyễn Ảnh Thoát Xác', d: 'Thân hình thoắt ẩn thoắt hiện. Tỉ lệ chạy trốn nguy nan +30%, tốc độ di chuyển +20%.' },
+  { id: 'yeu_hoangda', n: 'Dã Tính Trực Giác', d: 'Bản năng dã thú nhạy bén phi thường. Khí vận +2, ngộ tính +1, dễ né phục kích và tìm cơ duyên.' },
+  { id: 'yeu_mehoac', n: 'Thiên Sinh Mị Cốt', d: 'Yêu mị câu hồn đoạt phách. Mị lực +3, đạo tâm +1, làm đối phương phân tâm trượt đòn.' },
+  { id: 'yeu_cuongbao', n: 'Huyết Mạch Cuồng Bạo', d: 'Công kích +20%, nhưng tính tình hung hãn dễ sinh tâm ma (đạo tâm −2).', bad: true },
+  { id: 'yeu_thienkich', n: 'Thiên Địch Truy Kích', d: 'Có đại yêu thiên địch hoặc tông môn săn yêu luôn rình rập. Đánh bại nhận thưởng lớn.', bad: true },
+];
+
 export const PERKS: Perk[] = [
+  ...BEAST_PERKS,
   { id: 'kiemtam', n: 'Kiếm tâm', d: 'Kiếm pháp uy lực +20%.' },
   { id: 'dangu', n: 'Đan ngữ', d: 'Luyện đan thành công +10%, đan phẩm chất cao hơn.' },
   { id: 'phusu', n: 'Phù tay', d: 'Chế phù thành công +12%.' },
@@ -256,6 +283,12 @@ export const PERKS: Perk[] = [
   { id: 'tranphap', n: 'Chạy nhanh', d: 'Tỉ lệ chạy trốn +25%, đi đường nhanh hơn 20%.' },
   { id: 'samhoi', n: 'Trường thọ', d: 'Thọ nguyên +15%.' },
   { id: 'cuongchien', n: 'Chiến cuồng', d: 'Càng mất máu càng đánh mạnh.' },
+  { id: 'mahuyet', n: 'Ma Huyết Phệ Hồn', d: 'Đặc tính Ma tộc: Đòn đánh hút 20% sát thương hồi khí huyết. Mất máu tăng thêm sát thương.' },
+  { id: 'vuthe', n: 'Tổ Vu Chiến Thể', d: 'Đặc tính Vu tộc: Thể phách Bàn Cổ giúp huyết tối đa +35%, thủ +25%, giảm 15% mọi sát thương nhận vào.' },
+  { id: 'batkhuat', n: 'Bất Khuất Chiến Hồn', d: 'Đặc tính Hình Thiên: Nhận đòn chí mạng miễn tử 1 lần mỗi trận, hồi 30% khí huyết tiếp tục tử chiến.' },
+  { id: 'hoangdao', n: 'Hoàng Đạo Long Khí', d: 'Đặc tính Hiên Viên: Khí vận +3, đạo tâm +2, công kích +15%, kiếm pháp +20% uy lực, giảm 50% tâm ma.' },
+  { id: 'binhchu', n: 'Binh Chủ Di Phong', d: 'Đặc tính Cửu Lê: Sinh ra biết nghề Luyện khí, công phòng vũ khí +20%, giảm 15% sát thương nhận vào.' },
+  { id: 'yeudan', n: 'Yêu Đan Bản Mệnh', d: 'Đặc tính Yêu tộc: Không có linh căn. Tu luyện bằng cách ngưng tụ Yêu đan và thối luyện nhục thân. Khí huyết +40%, thủ +20%, đòn đánh tăng 25% uy lực.' },
   { id: 'cotrung', n: 'Cô độc', d: 'Không có bạn bè ban đầu, nhưng tu luyện +15%.', bad: true },
   { id: 'xuixeo', n: 'Sao chổi', d: 'Khí vận −3, nhưng mỗi lần đột phá thành công được thưởng thêm tu vi.', bad: true },
   { id: 'benhtat', n: 'Ốm yếu từ nhỏ', d: 'Căn cốt −2, nhưng đạo tâm +2.', bad: true },
@@ -266,7 +299,13 @@ export const PERKS: Perk[] = [
 /** Chủng tộc ở màn đầu thai (bước 1); xuất thân không ghi race thuộc Nhân tộc. */
 export const RACE_GROUPS = ['Nhân tộc', 'Yêu tộc', 'Ma tộc', 'Vu tộc', 'Hiên Viên tộc', 'Hình Thiên tộc', 'Cửu Lê tộc'] as const;
 export const RACE_INFO: Record<string, string> = {
-  'Nhân tộc': 'Sinh làm người ở Thương Lan: từ con nhà nghèo tới đích tử thế gia, thánh tử thánh địa. Các thế gia và thánh địa phải mở bằng điểm Luân Hồi.',
+  'Nhân tộc': 'Sinh làm người ở Thương Lan: từ con nhà nghèo tới đích tử thế gia, thánh tử thánh địa. Lấy ngộ tính và sự cần cù bù đắp thể chất.',
+  'Yêu tộc': 'Dị thú thiên địa: Sinh ra không có linh căn của nhân loại, tu luyện bằng cách ngưng tụ Yêu Đan, rèn luyện thể phách cường hãn và thần thông bản mệnh. Khi đạt tới cảnh giới nhất định sẽ thoát biến tiến hóa lên loài cao hơn theo cây gia phả.',
+  'Ma tộc': 'Dòng dõi Ma đạo: mang thiên phú "Ma Huyết Phệ Hồn", lấy sát phạt dưỡng thân, đòn đánh hút máu hồi phục khí huyết, ma tính dâng trào theo thương thế.',
+  'Vu tộc': 'Huyết mạch Thập Nhị Tổ Vu Bàn Cổ: mang thiên phú "Tổ Vu Chiến Thể", nhục thân vô địch, khí huyết và phòng ngự kinh người (+35% huyết, +25% thủ, giảm 15% sát thương), căn cốt tuyệt đỉnh.',
+  'Hình Thiên tộc': 'Chiến thần viễn cổ: mang thiên phú "Bất Khuất Chiến Hồn", dẫu chém đầu vẫn múa rìu chiến đấu. Miễn tử 1 lần khi chịu đòn chí mạng trong mỗi trận, giữ lại sinh cơ bùng nổ phản kích.',
+  'Hiên Viên tộc': 'Hậu duệ Hiên Viên Hoàng Đế: mang thiên phú "Hoàng Đạo Long Khí", vạn tà bất xâm, thụ thiên mệnh che chở (+3 khí vận, +2 đạo tâm, +15% công, +20% kiếm uy, giảm 50% tâm ma).',
+  'Cửu Lê tộc': 'Hậu duệ Xi Vưu Binh Chủ: mang thiên phú "Chiến Cuồng" và "Binh Chủ Di Phong", mình đồng da sắt, tự biết nghề Luyện khí, tăng 20% công phòng và giảm sát thương nhận vào.',
 };
 export const originRace = (o: { race?: string }) => o.race ?? 'Nhân tộc';
 export interface Origin {
@@ -310,12 +349,12 @@ export const ORIGINS: Origin[] = [
   { id: 'thanhtu_huyennguyen', n: 'Thánh {tu} Huyền Nguyên Thánh Địa', loc: 'huyennguyen', sect: 'huyennguyen', d: 'Huyền Nguyên Thánh Địa suy diễn ba trăm năm mới tìm thấy ngươi trong một làng chài. Từ đó ngươi lớn lên giữa mây núi Thiên Trụ, là người kế thừa thứ chín của Huyền Nguyên Chân Kinh.', money: 300, rootBoost: true, rival: true, startR: 1, gearG: 2, stat: { ngo: 1, tam: 2 }, karma: 160 },
   { id: 'thanhtu_batchu', n: 'Thánh {tu} Bất Chu Thánh Sơn', loc: 'batchu', sect: 'batchu', d: 'Ngươi được nhặt về dưới chân núi gãy, trên người quấn tấm vải khắc cổ văn mà cả Bất Chu Thánh Sơn không ai đọc được. Thánh chủ nói đó là điềm, và phong ngươi làm thánh truyền nhân.', money: 250, rootBoost: true, rival: true, startR: 1, gearG: 2, stat: { can: 2, tam: 1 }, karma: 160 },
   { id: 'chuyenthe', n: 'Chuyển thế đại năng', loc: 'langtrang', d: 'Trong mơ thường thấy một kiếp khác: áo trắng đứng trên mây. Ký ức tiền kiếp mờ nhạt, nhưng bản năng tu luyện vẫn còn.', money: 5, tech: 'thanhtam', rootBoost: true, stat: { ngo: 3, tam: 2 }, karma: 120 },
-  { id: 'cuuli', n: 'Cửu Lê tộc', loc: 'mangoc', race: 'Cửu Lê tộc', forcePerks: ['cuongchien'], d: 'Ngươi sinh trong Cửu Lê tộc, liên minh chín bộ lạc cổ nổi danh về chiến trận, luyện binh và kỹ nghệ. Cửu Lê không có tộc trưởng truyền đời: kẻ mạnh nhất tộc được tôn làm Xi Vưu, thống lĩnh cả chín bộ. Một số bộ lạc còn giữ nghi lễ cổ, nhưng Cửu Lê không đồng nhất với Vu tộc. Máu chiến trong người: tộc nhân nào cũng sinh ra đã mang Chiến cuồng.', money: 30, stat: { can: 2, tam: 1 } },
-  { id: 'wu', n: 'Vu tộc', loc: 'mangoc', race: 'Vu tộc', d: 'Ngươi sinh trong Vu tộc, cổ tộc tôn kính mười hai Tổ Vu: Đế Giang, Câu Mang, Nhục Thu, Cộng Công, Chúc Dung, Thiên Ngô, Huyền Minh, Hậu Thổ, Cường Lương, Chúc Cửu Âm, Xa Bỉ Thi và Hấp Tư. Vu tộc tu luyện bằng tế tự, luyện thể và cảm ứng thiên địa.', money: 20, stat: { can: 1, tam: 1 } },
-  { id: 'ma', n: 'Ma tộc', loc: 'mangoc', race: 'Ma tộc', d: 'Ngươi sinh trong Ma tộc, sinh linh có thể tu luyện ma khí và đi theo ma đạo mà không bị xem là yêu thú hóa hình.', money: 20, stat: { can: 1, ngo: 1 } },
-  { id: 'xingtian', n: 'Hình Thiên tộc', loc: 'mangoc', race: 'Hình Thiên tộc', d: 'Ngươi sinh trong Hình Thiên tộc, chiến tộc cổ xem ý chí và thể phách là căn cơ, dù bại trận vẫn không khuất phục.', money: 25, stat: { can: 2 } },
-  { id: 'xuanyuan', n: 'Hiên Viên tộc', loc: 'mangoc', race: 'Hiên Viên tộc', d: 'Ngươi sinh trong Hiên Viên tộc, một nhánh Nhân tộc cổ ở Hồng Hoang. Tộc nhân lấy lễ, pháp độ và con đường tu hành làm gốc.', money: 25, stat: { ngo: 1, tam: 1 } },
-  { id: 'yaoshou', n: 'Yêu thú Thương Lan', loc: 'mangoc', race: 'Yêu tộc', beastOrigin: true, d: 'Ngươi đầu thai thành một yêu thú bản địa Thương Lan Giới. Loài cụ thể được chọn ngẫu nhiên trong số các loài có huyết mạch thượng cổ hoặc tiềm năng tu luyện phi thăng.', money: 5 },
+  { id: 'cuuli', n: 'Cửu Lê tộc', loc: 'mangoc', race: 'Cửu Lê tộc', forcePerks: ['cuongchien', 'binhchu'], craft: 'forge', d: 'Ngươi sinh trong Cửu Lê tộc, liên minh chín bộ lạc cổ của Binh Chủ Xi Vưu. Mình đồng da sắt, sinh ra đã tinh thông rèn đúc binh khí và mang dòng máu Chiến Cuồng (càng mất máu đánh càng hăng, công thủ vũ khí +20%, giảm 15% sát thương nhận vào).', money: 35, stat: { can: 2, tam: 1 } },
+  { id: 'wu', n: 'Vu tộc', loc: 'mangoc', race: 'Vu tộc', forcePerks: ['vuthe'], d: 'Ngươi sinh trong Vu tộc, cổ tộc kế thừa huyết mạch Thập Nhị Tổ Vu Bàn Cổ. Mang thiên phú "Tổ Vu Chiến Thể", nhục thân vô địch (+35% khí huyết, +25% thủ, giảm 15% sát thương), sinh cơ bàng bạc kết nối thiên địa.', money: 20, stat: { can: 3, tam: 1 } },
+  { id: 'ma', n: 'Ma tộc', loc: 'mangoc', race: 'Ma tộc', forcePerks: ['mahuyet'], d: 'Ngươi sinh trong Ma tộc, sinh linh huyết mạch Ma Tổ viễn cổ, tu luyện ma khí nghịch thiên đoạt mệnh. Mang thiên phú "Ma Huyết Phệ Hồn", đòn đánh hút 20% sát thương thành khí huyết, thương thế càng nặng ma tính càng cuồng bạo.', money: 20, stat: { can: 1, ngo: 2, van: 1 } },
+  { id: 'xingtian', n: 'Hình Thiên tộc', loc: 'mangoc', race: 'Hình Thiên tộc', forcePerks: ['batkhuat'], d: 'Ngươi sinh trong Hình Thiên tộc, chiến tộc cổ truyền thừa ý chí Chiến Thần Hình Thiên. Mang thiên phú "Bất Khuất Chiến Hồn", dẫu chém đầu vẫn múa rìu tử chiến — miễn tử 1 lần khi chịu đòn chí mạng trong mỗi trận, hồi 30% khí huyết tiếp tục chiến đấu.', money: 25, stat: { can: 3, tam: 1 } },
+  { id: 'xuanyuan', n: 'Hiên Viên tộc', loc: 'mangoc', race: 'Hiên Viên tộc', forcePerks: ['hoangdao'], d: 'Ngươi sinh trong Hiên Viên tộc, hậu duệ của Hoàng Đế Hiên Viên. Mang thiên phú "Hoàng Đạo Long Khí", vạn tà bất xâm, thụ thiên mệnh phúc trạch (+3 khí vận, +2 đạo tâm, +15% công kích, tăng 20% uy lực kiếm pháp và công pháp, giảm 50% tâm ma).', money: 30, stat: { ngo: 2, tam: 2, van: 1 } },
+  { id: 'yaoshou', n: 'Yêu thú Thương Lan', loc: 'mangoc', race: 'Yêu tộc', beastOrigin: true, forcePerks: ['yeudan'], stat: { can: 3, tam: 1 }, money: 10, tech: 'thonnguyetquyet', d: 'Ngươi đầu thai thành một yêu thú bản địa Thương Lan Giới. Không có linh căn, tu luyện bằng cách ngưng tụ Yêu Đan, rèn luyện thể phách cường hãn (+40% huyết, +20% thủ, +25% uy lực đòn đánh) và thức tỉnh thần thông bản mệnh. Đạt tới cảnh giới nhất định sẽ thoát biến tiến hóa lên loài cao hơn theo cây gia phả thượng cổ.' },
 ];
 
 

@@ -5,12 +5,14 @@ import { PHAM_BONUS } from '../data/core';
 import { slots } from './slots';
 import { PHAPQUYET, CHANLINH, pqGrade, pqPrice } from '../data/spirit';
 import { getLinh } from './beast-companion';
+import { isMythicBeast } from '../data/beast-lineage';
+export { isMythicBeast };
 // Chỉ số dẫn xuất của nhân vật và quản lý túi đồ.
 import { WORLD, RMAX, worldMult, worldLife, TANG_T, DAO_CO, BODIES, REALMS, ROOTS, HON_DON_ROOT, hiddenRootKind, BATQUAI, EL, SINH, type El, type StatKey, STAGES } from '../data/core';
 import { LOCS, SECTS } from '../data/world';
 import {
   TAMPHAP, tamGrade, tamEffect, tamPrice, TECHS, techSpeed, techPow, pillGrade, talisGrade, techGrade, skillGrade, HERBS, PILLS, MATS, TALIS, SKILLS, SPECIALS, PILL_GRADE, GRADE_MULT, BAG_CAP,
-  herbPrice, pillPrice, matPrice, talisPrice, techPrice, skillPrice, gradeLabel, artGradeLabel, type Gear, type Tech,
+  herbPrice, pillPrice, matPrice, talisPrice, techPrice, skillPrice, gradeLabel, artGradeLabel, mkNgocBoiDoi, type Gear, type Tech,
 } from '../data/items';
 import { s, codexAdd, type BagItem } from './state';
 import { clamp } from '../core/util';
@@ -105,18 +107,50 @@ export function stat(k: StatKey): number {
     v += body().luck || 0;
     v += pqSum('luck') + Math.floor(clSum('luck'));
     for (const g of s.gear) if (g?.refined) v += g.luck;
+    if (has('hoangdao')) v += 3;
   }
+  if (k === 'tam' && has('hoangdao')) v += 2;
+  if (k === 'can' && has('vuthe')) v += 3;
+  if (k === 'can' && has('binhchu')) v += 2;
+  if (k === 'tam' && has('batkhuat')) v += 3;
   return v;
 }
 
+export const isYao = () => s.race === 'Yêu tộc' || !!s.beast || has('yeudan');
+
+export const YAO_LIFE_MULT = 4; // Tỉ lệ tuổi thọ Yêu tộc : Nhân tộc là 4 : 1
+/** Quy đổi tuổi Yêu tộc sang tuổi tương đương của Nhân tộc */
+export const yaoToHumanAge = (yaoYears: number) => yaoYears / YAO_LIFE_MULT;
+/** Quy đổi tuổi Nhân tộc sang tuổi tương đương của Yêu tộc */
+export const humanToYaoAge = (humanYears: number) => humanYears * YAO_LIFE_MULT;
+
 export function maxLife(): number {
   let l = (thienDo() ? realmAt('life', effR()) : REALMS[s.r].life) * (body().life || 1) * worldLife();
+  if (isYao()) l *= YAO_LIFE_MULT;
   if (has('samhoi')) l *= 1.15;
   return Math.round(l + s.lifeBonus + phamSum().life);
 }
 export const lifeLeft = () => maxLife() - age();
 
+export function yeuDanName(r = s.r): string {
+  if (r <= 0) return 'Sơ Kết Yêu Đan';
+  if (r === 1) return 'Nhất Giai Yêu Đan';
+  if (r === 2) return 'Nhị Giai Yêu Đan';
+  if (r === 3) return 'Tam Giai Yêu Đan';
+  if (r === 4) return 'Tứ Giai Yêu Đan';
+  if (r === 5) return 'Ngũ Giai Yêu Đan';
+  if (r === 6) return 'Lục Giai Yêu Đan';
+  if (r === 7) return 'Thất Giai Yêu Đan';
+  if (r === 8) return 'Bát Giai Yêu Đan';
+  if (r === 9) return 'Cửu Giai Yêu Đan';
+  return 'Thần Cấp Yêu Đan';
+}
+
 export function rootLabel(): string {
+  if (isYao()) {
+    const elNames = s.root.els.map((e) => EL[e].n).join(' · ');
+    return `Không có (Ngưng tụ ${yeuDanName()} · ${elNames ? elNames + ' hệ · ' : ''}Bản thể: ${s.beast || 'Yêu thú'})`;
+  }
   const r = root();
   if (s.root.k === 0) return r.n;
   if (hiddenRootKind(s.root.k)) return r.n;
@@ -125,6 +159,12 @@ export function rootLabel(): string {
 
 /** Độ hợp giữa linh căn và công pháp: 0.45 .. 1.3. */
 export function techAff(techId = s.tech): number {
+  if (isYao()) {
+    if (techId === 'thonnguyetquyet' || techId === 'thienyeuluyenthe' || techId === 'thontienyeukinh' || techId === 'vanyeuhoahinh') {
+      return 1.3; // Công pháp bản mệnh Yêu tộc hợp 130%
+    }
+    return 1.1; // Yêu tộc tu luyện bằng Yêu đan và hấp thụ nhật nguyệt tinh hoa
+  }
   if (!techId) return 0.3;
   const t = TECHS[techId];
   if (t.blood === 'diep_hondon') return s.flags.hondonBlood ? 2 : 0.2; // Cửu Chuyển Huyền Công: chỉ dòng chính Hỗn Độn
@@ -151,7 +191,7 @@ export function placeQi(): number {
 
 /** Tu vi tăng mỗi lượt bế quan (đơn vị: % một tiểu cảnh giới). */
 export function cultRate(): number {
-  const rm = root().m;
+  const rm = isYao() ? 1.0 : root().m;
   if (rm <= 0) return 0;
   let g = 9 * rm;
   const t = s.tech ? TECHS[s.tech] : null;
@@ -174,21 +214,32 @@ export function cultRate(): number {
   g *= 1 + phamSum().cult / 100;
   if (s.flags.hondonBlood) g *= 1.15; // huyết mạch Hỗn Độn
   g *= Math.max(0.5, 1 + slots.kmCult()); // kinh mạch
+  if (isYao()) g *= 0.45; // Yêu tộc tu luyện chậm hơn nhân loại (đổi lại thọ nguyên dài gấp 4 lần và thể phách cường hãn)
   return Math.max(0.5, g);
 }
 
 // ---------- Chiến lực ----------
 /** Tiên khí tàn khuyết: chỉ số tính lại theo cảnh giới (tương đương) và giới hiện tại. */
 setGrowStateReader(() => ({ r: s ? effRi() : 0, st: s?.st ?? 0, w: s?.world ?? WORLD.lv }));
-function growGear(g: Gear) {
+function growGear(g: Gear, targetRealm?: number) {
   const oldG = g.g, oldQ = g.q; limitGear(g, s.world ?? 0);
-  const lv = Math.max(1, effRi());
+  const lv = Math.max(1, targetRealm ?? effRi());
   const m = g.growMul ?? 1;
-  if (g.lv === lv && g.gw === WORLD.lv && (g.gm ?? 1) === m && g.g === oldG && g.q === oldQ && g.atk > 0) return;
+  const isJade = /ngọc bội/i.test(g.n) || g.slot === 3;
+  if (g.lv === lv && g.gw === WORLD.lv && (g.gm ?? 1) === m && g.g === oldG && g.q === oldQ && (isJade ? g.hp > 0 : g.atk > 0)) return;
   const base = (REALMS[lv].pow * 0.25 * (1 + g.g * 0.45) + 2) * (1 + (g.q ?? 0) * 0.12) * 1.3 * worldMult();
-  g.atk = Math.round(base * 1.2 * m);
-  g.hp = Math.round(base * 1.5 * m);
-  g.def = Math.round(base * 0.5 * (m - 1)); // bản đã sửa mới có thủ
+  if (isJade) {
+    g.hp = Math.round(base * 2.2 * m);
+    g.def = Math.round(base * 0.8 * m);
+    g.atk = Math.round(base * 0.4 * m);
+    g.cult = Math.round((4 + g.g * 1.5) * m);
+    g.luck = Math.max(g.luck || 0, 2 + Math.floor(g.g / 3));
+    g.cap = Math.round(10 + g.g * 2);
+  } else {
+    g.atk = Math.round(base * 1.2 * m);
+    g.hp = Math.round(base * 1.5 * m);
+    g.def = Math.round(base * 0.5 * (m - 1));
+  }
   g.lv = lv;
   g.gw = WORLD.lv;
   g.gm = m;
@@ -196,11 +247,17 @@ function growGear(g: Gear) {
 /** Tính lại chỉ số pháp bảo lớn theo tu vi (gọi ngay sau khi đổi tỷ lệ trưởng thành). */
 export function regrowGear() {
   for (const g of [...s.gear, ...s.gearBag]) if (g?.grow) growGear(g);
+  for (const n of s.npcs || []) {
+    if (n.kit?.gear) {
+      for (const g of n.kit.gear) if (g?.grow) growGear(g, n.r);
+    }
+  }
 }
 function gearSum(k: 'atk' | 'def' | 'hp' | 'cap'): number {
   let v = 0;
   for (const g of s.gear) if (g?.grow) growGear(g);
   for (const g of s.gear) if (g?.refined) v += g[k];
+
   return v;
 }
 export function basePow(): number {
@@ -215,6 +272,10 @@ export function basePow(): number {
   p *= 1 + phamSum().atk / 100;
   p *= slots.daoPow();
   p *= worldMult();
+  // Yêu thú có cơ sở truyền thuyết sở hữu uy áp thần thú thượng cổ (+25% chiến lực so với loài biến sinh)
+  if (s.beast && isMythicBeast(s.beast)) {
+    p *= 1.25;
+  }
   return p;
 }
 /** Công pháp truyền thụ một võ công (lấy công pháp phẩm cao nhất mà ngươi tiếp cận được). */
@@ -239,11 +300,11 @@ export function skEff(id: string): { tier: number; pq: number } {
   return { tier: src.tier, pq: src.pq ?? 0 };
 }
 export const skGradeOf = (id: string) => { const e = skEff(id); return artGradeLabel(e.tier, e.pq); };
-export const atkOf = () => Math.round((basePow() + gearSum('atk')) * (1 + (pqSum('atk') + clSum('atk')) / 100) * (1 + slots.kmAtk()));
-export const defOf = () => Math.round((basePow() * 0.35 * ((s.tech && TECHS[s.tech].def) || 1) + gearSum('def')) * (1 + (pqSum('def') + clSum('def')) / 100));
+export const atkOf = () => Math.round((basePow() + gearSum('atk')) * (1 + (pqSum('atk') + clSum('atk')) / 100) * (1 + slots.kmAtk()) * (has('binhchu') ? 1.2 : 1) * (has('hoangdao') ? 1.15 : 1));
+export const defOf = () => Math.round((basePow() * 0.35 * ((s.tech && TECHS[s.tech].def) || 1) + gearSum('def')) * (1 + (pqSum('def') + clSum('def')) / 100) * (has('vuthe') ? 1.25 : 1) * (has('binhchu') ? 1.2 : 1) * (has('yeudan') ? 1.2 : 1));
 export function maxHp(): number {
   const t = s.tech ? TECHS[s.tech] : null;
-  return Math.round((basePow() * 8 * (1 + (stat('can') - 5) * 0.06) * (body().hp || 1) * (t?.hp || 1) + gearSum('hp')) * (1 + clSum('hp') / 100) * (1 + phamSum().hp / 100));
+  return Math.round((basePow() * 8 * (1 + (stat('can') - 5) * 0.06) * (body().hp || 1) * (t?.hp || 1) + gearSum('hp')) * (1 + clSum('hp') / 100) * (1 + phamSum().hp / 100) * (has('vuthe') ? 1.35 : 1) * (has('yeudan') ? 1.4 : 1));
 }
 /** Chỉ số tổng hợp để so sánh nhanh. */
 export const powerScore = () => Math.round(atkOf() + defOf() * 1.2 + maxHp() / 8);
@@ -293,20 +354,82 @@ export function itemTier(id: string): number {
   }
   return 1;
 }
+
+export type ArtRace = 'human' | 'yao' | 'all';
+
+export function getArtRace(id: string): ArtRace {
+  const [pfx, key] = id.split(':');
+  if (pfx === 'cp') {
+    const t = TECHS[key];
+    if (!t) return 'all';
+    if (t.race) return t.race;
+    if (t.tier >= 5 || ['hondonkinh', 'thaicuc', 'batchu', 'vanmakinh', 'daiquangminhkinh', 'honnguyenkinh'].includes(key)) return 'all';
+    return 'human';
+  }
+  if (pfx === 'tp') {
+    const tp = TAMPHAP[key];
+    if (!tp) return 'all';
+    if (tp.race) return tp.race;
+    if (tp.tier >= 5 || ['tuphukinh', 'huyennguyentam', 'cuuchuyentam'].includes(key)) return 'all';
+    return 'human';
+  }
+  if (pfx === 'fq') {
+    const fq = PHAPQUYET[key];
+    if (!fq) return 'all';
+    if (fq.race) return fq.race;
+    if (['liemtuc', 'thodon', 'tambao', 'tuphongbo', 'phapthien', 'thienlythuc', 'vanphaptu'].includes(key)) return 'all';
+    return 'human';
+  }
+  if (pfx === 'sk') {
+    const sk = SKILLS[key];
+    if (!sk) return 'all';
+    if (sk.race) return sk.race;
+    if (key.startsWith('yeu_')) return 'yao';
+    if (sk.tier >= 5 || ['khaithien', 'thaicucan', 'nguhanhan'].includes(key)) return 'all';
+    return 'human';
+  }
+  return 'all';
+}
+
+export function checkArtRacePermission(id: string): { ok: boolean; reason?: string } {
+  const r = getArtRace(id);
+  if (r === 'all') return { ok: true };
+  if (r === 'yao' && !isYao()) {
+    return {
+      ok: false,
+      reason: 'Ngươi mang thân thể nhân loại, không có yêu đan và yêu mạch, không thể vận hành yêu lực để tu luyện pháp môn của Yêu tộc.'
+    };
+  }
+  if (r === 'human' && isYao()) {
+    return {
+      ok: false,
+      reason: 'Ngươi là Yêu tộc thân mang yêu khí và yêu đan, không có linh căn đan điền nhân loại, không thể vận hành linh lực theo kinh mạch nhân tộc.'
+    };
+  }
+  return { ok: true };
+}
+
 export function itemDesc(id: string): string {
   const [k, key] = id.split(':');
+  let desc = '';
   switch (k) {
     case 'h': { const h = HERBS[key]; return h ? `Linh thảo ${h.tier} phẩm, thuộc tính ${EL[h.el].n}.` : ''; }
     case 'p': return PILLS[key]?.d || '';
     case 'm': return MATS[key]?.d || '';
     case 't': return TALIS[key]?.d || '';
-    case 'cp': return TECHS[key]?.d || '';
-    case 'sk': return SKILLS[key]?.d || '';
+    case 'cp': desc = TECHS[key]?.d || ''; break;
+    case 'sk': desc = SKILLS[key]?.d || ''; break;
     case 'x': return SPECIALS[key]?.d || '';
-    case 'tp': return TAMPHAP[key] ? `${TAMPHAP[key].d} (${tamEffect(TAMPHAP[key])})` : '';
-    case 'fq': return PHAPQUYET[key]?.d || '';
+    case 'tp': desc = TAMPHAP[key] ? `${TAMPHAP[key].d} (${tamEffect(TAMPHAP[key])})` : ''; break;
+    case 'fq': desc = PHAPQUYET[key]?.d || ''; break;
+    default: return '';
   }
-  return '';
+  if (k === 'cp' || k === 'sk' || k === 'tp' || k === 'fq') {
+    const r = getArtRace(id);
+    const tag = r === 'yao' ? '【Yêu Tộc】 ' : r === 'human' ? '【Nhân Tộc】 ' : '【Thông Dụng】 ';
+    return tag + desc;
+  }
+  return desc;
 }
 export function itemPrice(id: string, g = 1): number {
   const [k, key] = id.split(':');
@@ -362,8 +485,22 @@ export function addGear(g: Gear): boolean {
   return true;
 }
 
-export const sortBag = () =>
-  s.bag.sort((a, b) => a.id.localeCompare(b.id) || (b.g ?? 1) - (a.g ?? 1));
+export const sortBag = () => {
+  for (const b of s.bag) {
+    if (b.id === 'x:cophu') {
+      b.id = 'fq:cophu';
+      b.g = 1;
+    }
+  }
+  const hasNbGear = [...s.gear, ...s.gearBag].some(g => g && /ngọc bội/i.test(g.n));
+  if (!hasNbGear && s.bag.some(b => b.id === 'x:ngocboidoi')) {
+    const nb = mkNgocBoiDoi();
+    if (!s.gear[3]) s.gear[3] = nb;
+    else s.gearBag.push(nb);
+  }
+  s.bag = s.bag.filter(b => b.id !== 'x:ngocboidoi');
+  return s.bag.sort((a, b) => a.id.localeCompare(b.id) || (b.g ?? 1) - (a.g ?? 1));
+};
 
 export function bagItemLabel(b: BagItem) {
   return itemName(b.id, b.g) + (b.n > 1 ? ` ×${b.n}` : '');

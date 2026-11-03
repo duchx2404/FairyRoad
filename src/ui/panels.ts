@@ -11,7 +11,12 @@ import { weaponKind } from './arena';
 import { master } from '../engine/core';
 import { worldName } from '../data/core';
 import { kmPanel, confirmStow } from './kmpanel';
-import { askConfirm } from './dialog';
+import { askConfirm, notice } from './dialog';
+import { BEAST_INNATE_SKILLS } from '../data/items';
+import { applyEvolutionChoice, getAvailableEvolutionBranches, type EvolutionBranch } from '../engine/beast-evolution';
+import { isMythicBeast } from '../data/beast-lineage';
+import { save } from '../engine/state';
+import { addLog, mark } from '../engine/core';
 import { h, $, btn, bar } from './dom';
 import { s, meta } from '../engine/state';
 import { daoluTitle, isPrimaryDaolu } from '../engine/relationships';
@@ -19,7 +24,7 @@ import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO
 import { CHAU, whereOf, ownerTxt, LOC_TYPE, EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, VUC, LOCS, LOC_LIST, SECTS, BEASTS, beastRoot, REGIONS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, rankLabel } from '../data/world';
 import { courtTitle } from '../engine/court';
 import { TECHS, SKILLS, skHue, hueBg, SLOTS, GEAR_GRADE_C, TIER_N, TIER_C, gearLabel, techGrade, skillGrade, techSpeed, PILLS, HERBS, MATS, TALIS, SPECIALS, REFINE_Y, TECH_SPEED, MAX_SKILLS, type Gear } from '../data/items';
-import { stat, age, maxLife, rootLabel, techAff, atkOf, defOf, maxHp, powerScore, cultRate, body, bagCap, bagUsed, itemName, itemDesc, sortBag, stageName, daoCoInfo, phams, phamSum } from '../engine/char';
+import { stat, age, maxLife, rootLabel, techAff, checkArtRacePermission, atkOf, defOf, maxHp, powerScore, cultRate, body, bagCap, bagUsed, itemName, itemDesc, sortBag, stageName, daoCoInfo, phams, phamSum, yeuDanName, isYao, yaoToHumanAge, humanToYaoAge } from '../engine/char';
 import { phamProbs } from '../engine/core';
 import { laws, daos, daoOf, daoPow, R_CHUANTHANH } from '../engine/dao';
 import type { NPC } from '../engine/state';
@@ -70,7 +75,7 @@ const NAV_GLYPH: Record<string, string> = {
   char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower',
   log: 'navLog', hist: 'navHist', ach: 'navAch', set: 'navSet', help: 'navHelp',
 };
-export const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : TAG_N[n.tag];
+export const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : (n.id === s.flags.heroineId || (n as any).heroine ? 'Nữ chính' : TAG_N[n.tag]);
 const navIcon = (id: string) => glyphSvg(NAV_GLYPH[id] || 'none', 22, 1.7);
 const open = new Map<string, { el: HTMLElement; tab: number }>();
 let zTop = 10;
@@ -307,6 +312,105 @@ export function openFeedModal() {
   openModal(`Nuôi Dưỡng · ${cl.name}`, modalBox, { wide: true, seal: 'paw' });
 }
 
+export function showBeastBranchModal(branches?: EvolutionBranch[]) {
+  const currentBranches = branches || (s.flags.pendingBeastBranches as EvolutionBranch[]) || (s.beast ? getAvailableEvolutionBranches(s.beast, s.flags.beastNodeId) : []);
+  if (!currentBranches || currentBranches.length === 0) {
+    notice('Hiện tại huyết mạch của ngươi chưa đến lúc mở ra các đạo lộ tiến hóa mới.', 'Huyết Mạch Yêu Tộc');
+    return;
+  }
+
+  const modalBox = h('div', { class: 'beast-branch-modal' });
+
+  const intro = h('div', { class: 'card', style: { marginBottom: '16px', padding: '12px', lineHeight: '1.6' } },
+    h('div', { style: { fontSize: '15px', fontWeight: 'bold', marginBottom: '6px', color: '#e6c374' } },
+      `Bản thể hiện tại: 【${s.beast || 'Yêu thú'}】`
+    ),
+    h('p', { class: 'small', style: { margin: '0 0 8px 0' } },
+      'Huyết mạch viễn cổ cuộn trào trong yêu đan, mở ra các ngã rẽ tiến hóa độc nhất vô nhị. Mỗi con đường đều mang thuộc tính nguyên tố và thần thông bản mệnh riêng biệt.'
+    ),
+    h('div', { class: 'small', style: { color: '#ef4444', fontStyle: 'italic' } },
+      '⚠️ Lưu ý: Một khi đã chọn con đường nào, ngươi phải theo con đường đó đến cùng để tiến hóa lên Thần Thú tối cao, trừ khi gặp đại cơ duyên dùng 【Dị Hóa Niết Bàn Đan】 để biến dị huyết mạch!'
+    )
+  );
+  modalBox.append(intro);
+
+  const branchList = h('div', { style: { display: 'flex', flexDirection: 'column', gap: '12px' } });
+
+  currentBranches.forEach((b) => {
+    const elInfo = EL[b.targetEl] || { n: 'Vô Tính', c: '#888888' };
+    const skillId = BEAST_INNATE_SKILLS[b.targetEl];
+    const skill = skillId ? SKILLS[skillId] : undefined;
+    const reqRealm = REALMS[b.minRealm]?.n || 'Trúc Cơ';
+    const reqWorld = worldName(b.minWorld);
+
+    const card = h('div', {
+      class: 'card',
+      style: {
+        padding: '12px 14px',
+        border: '1px solid var(--line)',
+        borderRadius: '6px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+        background: 'rgba(255, 255, 255, 0.03)'
+      }
+    },
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' } },
+          h('span', {
+            style: {
+              background: elInfo.c,
+              color: '#fff',
+              fontSize: '11px',
+              padding: '2px 6px',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              textShadow: '0 1px 2px rgba(0,0,0,0.6)'
+            }
+          }, elInfo.n),
+          h('b', { style: { fontSize: '16px' } }, b.targetName),
+          (b.myth || isMythicBeast(b.targetName))
+            ? h('span', { class: 'pill', style: { background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', fontSize: '11px', fontWeight: 'bold' }, title: 'Thần Thú có cơ sở truyền thuyết thượng cổ (Sơn Hải Kinh / Thần thoại). Uy áp huyết mạch mạnh hơn 25% so với loài cùng bậc!' }, '👑 Thần Thoại')
+            : h('span', { class: 'pill', style: { background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', fontSize: '11px' }, title: 'Dị thú do thiên địa biến sinh trong game. Thực lực cơ bản yếu hơn loài có cơ sở truyền thuyết cùng bậc.' }, '🌱 Biến Sinh'),
+        ),
+        h('span', { class: 'small muted' }, `Đỉnh cao: `, h('b', { style: { color: '#e6c374' } }, b.ultimateAncestor)),
+      ),
+      h('div', { class: 'small', style: { color: '#bbb' } },
+        `Đạo lộ: `,
+        h('span', { class: 'muted' }, b.fullLineage.slice().reverse().join(' ➔ '))
+      ),
+      skill ? h('div', { class: 'small' },
+        `Thần thông thức tỉnh: `,
+        h('b', { style: { color: elInfo.c } }, `«${skill.n}»`),
+        h('span', { class: 'muted' }, ` (${skill.d || 'Bản mệnh thần thông'})`)
+      ) : null,
+      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' } },
+        h('span', { class: 'small muted' }, `Cảnh giới: ${reqRealm} · ${reqWorld}`),
+        btn('Chọn Đạo Lộ Này', () => {
+          askConfirm(
+            `Ngươi có chắc chắn chọn đạo lộ tiến hóa thành 【${b.targetName}】 (${elInfo.n} hệ)?\n\nHuyết mạch sẽ khóa chặt vào nhánh này hướng tới đỉnh cao 【${b.ultimateAncestor}】!`,
+            () => {
+              const resMsg = applyEvolutionChoice(s, b);
+              delete s.flags.pendingBeastBranches;
+              addLog(resMsg, 'good');
+              mark(`Huyết mạch thoát biến: ${s.beast}`);
+              save();
+              closeModal();
+              refresh();
+              notice(resMsg, 'Huyết Mạch Thoát Biến Thành Công');
+            },
+            { title: 'Định Đoạt Đạo Lộ Huyết Mạch', ok: 'Chấp Nhận Tiến Hóa' }
+          );
+        }, 'prime')
+      )
+    );
+    branchList.append(card);
+  });
+
+  modalBox.append(branchList);
+  openModal('⚡ Huyết Mạch Thoát Biến · Chọn Đạo Lộ', modalBox, { wide: true, seal: 'paw' });
+}
+
 function charPanel(): HTMLElement[] {
   const b = body();
   const org = ORIGINS.find((o) => o.id === s.origin);
@@ -323,6 +427,15 @@ function charPanel(): HTMLElement[] {
   out.push(kv('Giới tính', s.g === 'm' ? '♂ Nam' : '♀ Nữ'));
   if (s.race) out.push(kv('Chủng tộc', s.beast ? `${s.race} · ${s.beast}` : s.race));
   out.push(kv('Tuổi thân thể', `${fmt(age())} / ${fmt(maxLife())}`, 'Tuổi thân thể hiện tại / thọ nguyên — thân thể về một tuổi mỗi lần phi thăng'));
+  if (isYao()) {
+    const hAge = +(yaoToHumanAge(age())).toFixed(1);
+    const hLife = +(yaoToHumanAge(maxLife())).toFixed(1);
+    out.push(kv(
+      'Quy đổi tuổi',
+      `${fmt(age())} tuổi Yêu tộc ≈ ${fmt(hAge)} tuổi Nhân tộc`,
+      `Tỉ lệ thọ nguyên 4:1 (1 năm Nhân tộc = 4 năm Yêu tộc; 100 tuổi Yêu tộc ≈ 25 tuổi Nhân tộc, ngược lại 100 tuổi Nhân tộc = 400 tuổi Yêu tộc). Thọ nguyên tương đương Nhân tộc: ${fmt(hLife)} năm.`
+    ));
+  }
   if (s.world) {
     out.push(kv('Tuổi linh hồn', fmt(soulAge()), 'Tính từ lần sinh đầu tiên, không bao giờ đặt lại'));
     out.push(kv('Thọ cộng dồn', `${fmt(lifeLived())} năm qua ${(s.world ?? 0) + 1} giới`, 'Tổng số năm đã sống ở mọi giới'));
@@ -338,13 +451,34 @@ function charPanel(): HTMLElement[] {
   if (laws().length || daos().length || s.r >= R_CHUANTHANH) out.push(kv('Pháp tắc · Đại đạo', [...laws().filter((e) => !daos().includes(e)).map((e) => daoOf(e).n), ...daos().map((e) => daoOf(e).dao)].join(' · ') || 'chưa ngộ', `Công phạt ×${daoPow().toFixed(2)}. Thánh Nhân cần ≥1 pháp tắc, Hợp Đạo cần ≥1 đại đạo, Đạo chủ cần ≥3 đại đạo.`));
   // ---- tư chất ----
   out.push(sec('Tư chất'));
-  out.push(kv('Linh căn', h('span', {}, s.root.els.length ? elTags(s.root.els) : '', ' ', rootLabel().split(' (')[0]), ROOTS[s.root.k].d + (hiddenRootKind(s.root.k) ? (s.flags.thapKnown ? ' Thiên hạ đã biết.' : ' Hiện người đời vẫn tưởng ngươi là phế linh căn.') : '')));
+  if (isYao()) {
+    out.push(kv('Yêu Đan', h('span', {}, s.root.els.length ? elTags(s.root.els) : '', ' ', yeuDanName()), `Yêu tộc không có linh căn người phàm. Ngưng tụ Yêu Đan (${s.root.els.map((e) => EL[e].n).join(' · ')} hệ) và tôi luyện nhục thân.`));
+    const isMyth = isMythicBeast(s.beast);
+    const mythBadge = s.beast ? (isMyth
+      ? h('span', { class: 'pill', style: { background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', fontSize: '11px', marginLeft: '6px' }, title: 'Thần thú có cơ sở truyền thuyết thượng cổ (Chiến lực & khí huyết +25%)' }, '👑 Thần Thoại')
+      : h('span', { class: 'pill', style: { background: 'rgba(148, 163, 184, 0.15)', color: '#94a3b8', fontSize: '11px', marginLeft: '6px' }, title: 'Dị thú biến sinh trong game (Yếu hơn loài có cơ sở truyền thuyết cùng bậc)' }, '🌱 Biến Sinh')
+    ) : null;
+    const beastVal = h('span', {},
+      s.beast || 'Yêu thú',
+      mythBadge,
+      (s.flags.pendingBeastBranches && s.flags.pendingBeastBranches.length > 0)
+        ? [' ', btn('⚡ Chọn đạo lộ', () => showBeastBranchModal(), 'small prime')]
+        : null
+    );
+    out.push(kv('Bản thể', beastVal, s.flags.beastBlood || 'Huyết mạch dị thú Thương Lan. Khi đột phá đại cảnh giới sẽ thoát biến tiến hóa theo phả hệ thượng cổ.'));
+  } else {
+    out.push(kv('Linh căn', h('span', {}, s.root.els.length ? elTags(s.root.els) : '', ' ', rootLabel().split(' (')[0]), ROOTS[s.root.k].d + (hiddenRootKind(s.root.k) ? (s.flags.thapKnown ? ' Thiên hạ đã biết.' : ' Hiện người đời vẫn tưởng ngươi là phế linh căn.') : '')));
+  }
   for (const k of STAT_KEYS) out.push(kv(STATS[k].n, String(stat(k)), STATS[k].d));
   const perks = s.perks.map((p) => PERKS.find((x) => x.id === p)).filter(Boolean);
   if (perks.length) out.push(h('div', { class: 'cp-chips' }, ...perks.map((p) => h('span', { class: 'cp-chip' + (p!.bad ? ' bad' : ''), title: p!.d }, p!.n))));
   // ---- thể chất ----
   out.push(sec('Thể chất'));
-  out.push(h('div', { class: 'cp-card' }, h('div', { class: 'cp-ic body', html: glyphSvg('body', 24, 1.9) }), h('div', {}, h('b', {}, b.n), h('small', {}, b.d))));
+  if (isYao()) {
+    out.push(h('div', { class: 'cp-card' }, h('div', { class: 'cp-ic body', html: glyphSvg('body', 24, 1.9) }), h('div', {}, h('b', {}, 'Yêu Thú Thể Phách (Cường Hãn)'), h('small', {}, 'Nhục thân dẻo dai bẩm sinh: Khí huyết +40%, thủ +20%, đòn đánh tăng 25% uy lực.'))));
+  } else {
+    out.push(h('div', { class: 'cp-card' }, h('div', { class: 'cp-ic body', html: glyphSvg('body', 24, 1.9) }), h('div', {}, h('b', {}, b.n), h('small', {}, b.d))));
+  }
   // ---- tông môn ----
   if (s.sect) {
     const sc = SECTS[s.sect.id];
@@ -471,7 +605,7 @@ function bagPanel(): HTMLElement[] {
         h('div', { class: 'acts' },
           canUpgradeChaosSword(g) ? repairBtn(g, act) : null,
           g.refined ? btn('Mang', () => act(equip(g.uid)), 'small') : btn('Luyện hóa', () => act(startRefine(g.uid)), 'small', { dis: !!s.refining, title: `Mất ${yearsTxt(REFINE_Y[g.g])}` }),
-          btn('Vứt', () => askConfirm(`Vứt ${g.n}?`, () => act(discardGear(g.uid)), { title: 'Vứt pháp bảo', ok: 'Vứt', danger: true }), 'small ghost'))));
+          !g.grow && !/ngọc bội/i.test(g.n) ? btn('Vứt', () => askConfirm(`Vứt ${g.n}?`, () => act(discardGear(g.uid)), { title: 'Vứt pháp bảo', ok: 'Vứt', danger: true }), 'small ghost') : null)));
     }
   } else if (tab === 1) {
     sortBag();
@@ -530,7 +664,7 @@ function repairBtn(g: Gear, act: (m: string) => void) {
   const ok = count('m:' + matKey) > 0;
   return btn('Rèn', () => act(repairChaosSword(g.uid)), 'small prime', {
     dis: !ok,
-    title: ok ? `Dùng ${matName} để rèn Hỗn Độn Kiếm lên phẩm kế tiếp` : `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn ở Hỗn Độn giới)`,
+    title: ok ? `Dùng ${matName} để rèn ${g.n} lên phẩm kế tiếp` : `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn ở Hỗn Độn giới)`,
   });
 }
 /** Dòng phẩm chất các cảnh giới đã đột phá: "Cực phẩm Trúc Cơ · Trung phẩm Kết Đan · … (khí huyết +x%, công phạt +y%)". */
@@ -568,6 +702,15 @@ function openPhamInfo(r: number) {
   ].filter(Boolean) as HTMLElement[]);
 }
 function confirmTech(key: string) {
+  const perm = checkArtRacePermission('cp:' + key);
+  if (!perm.ok) {
+    showScene({
+      title: 'Không thể chuyển tu',
+      text: perm.reason || 'Công pháp này không phù hợp với chủng tộc của ngươi.',
+      choices: [{ t: 'Đã hiểu', fn: () => 'Ngươi cất bí kíp lại.' }],
+    });
+    return;
+  }
   const t = TECHS[key];
   const cur = s.tech ? TECHS[s.tech] : null;
   showScene({
@@ -956,7 +1099,7 @@ function codexBody(t: 'root' | 'loc' | 'beast' | 'item', query = ''): HTMLElemen
         onkeydown: expandable ? (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDescendants(e); } } : undefined,
       },
         h('div', { class: 'ic', style: { background: known ? EL[b.el].c : '#c9b994' }, html: glyphSvg('paw', 18) }),
-        h('div', { class: 'nm' }, h('b', {}, expandable ? h('span', { class: 'tc-beast-caret', 'aria-hidden': 'true' }, expanded ? '▾ ' : '▸ ') : null, b.n), ' ', h('span', { class: 'pill' }, EL[b.el].n), known || b.codexOnly ? null : h('span', { class: 'muted small' }, ' · chưa gặp'),
+        h('div', { class: 'nm' }, h('b', {}, expandable ? h('span', { class: 'tc-beast-caret', 'aria-hidden': 'true' }, expanded ? '▾ ' : '▸ ') : null, b.n), ' ', h('span', { class: 'pill' }, EL[b.el].n), (b.myth || isMythicBeast(b.n)) ? h('span', { class: 'pill', style: { background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', fontSize: '10px' }, title: 'Có cơ sở truyền thuyết thượng cổ (Uy áp +25%)' }, '👑 Thần Thoại') : null, known || b.codexOnly ? null : h('span', { class: 'muted small' }, ' · chưa gặp'),
           h('small', {}, `Quần thể: ${b.population.toLocaleString('vi-VN')} cá thể.`),
           h('small', {}, `${strength} ${origin}${b.anc ? ` · dòng ${beastRoot(b)}` : ''}`), b.shj ? h('small', {}, b.shj) : null,
           ...hits.map((x) => h('small', { class: 'mine-tag' }, x))));

@@ -1,7 +1,7 @@
 // Trạng thái một kiếp (s) và dữ liệu xuyên kiếp (meta). Lưu localStorage.
 import { EVERY_EL, HON_DON_ROOT } from '../data/core';
 import type { El, StatKey } from '../data/core';
-import type { Gear } from '../data/items';
+import { mkNgocBoiDoi, type Gear } from '../data/items';
 
 export interface BagItem {
   id: string; // 'h:' linh thảo · 'p:' đan · 'm:' vật liệu · 't:' phù · 'cp:' bí kíp công pháp · 'sk:' sách thuật · 'x:' vật đặc biệt
@@ -27,6 +27,7 @@ export interface NPC {
   sect: string | null;
   rel: number; // -100..100
   tag: NpcTag;
+  heroine?: boolean;
   luck?: number;
   spouseRole?: 'primary' | 'concubine';
   how: string;
@@ -163,7 +164,13 @@ export let s: State = null as unknown as State;
 export const setState = (n: State) => {
   s = n;
   if (EVERY_EL.every(e => s.root.els.includes(e))) s.root.k = HON_DON_ROOT;
-  if (!s.bag.some((item) => item.id === 'x:ngocboidoi')) s.bag.push({ id: 'x:ngocboidoi', n: 1 });
+  const hasNb = [...(s.gear || []), ...(s.gearBag || [])].some(g => g && /ngọc bội/i.test(g.n));
+  if (!hasNb) {
+    const nb = mkNgocBoiDoi();
+    if (!s.gear?.[3]) (s.gear ||= [null, null, null, null, null])[3] = nb;
+    else (s.gearBag ||= []).push(nb);
+  }
+  if (s.bag) s.bag = s.bag.filter(item => item.id !== 'x:ngocboidoi');
 };
 
 export const meta: Meta = loadMeta();
@@ -224,6 +231,14 @@ export function load(): boolean {
     }
     st.flags.rankV2 = true;
     if (EVERY_EL.every(e => st.root.els.includes(e))) st.root.k = HON_DON_ROOT;
+    for (const b of st.bag || []) if (b.id === 'x:cophu') b.id = 'fq:cophu';
+    const hasNbGear = [...(st.gear || []), ...(st.gearBag || [])].some(g => g && /ngọc bội/i.test(g.n));
+    if (!hasNbGear) {
+      const nb = mkNgocBoiDoi();
+      if (!st.gear?.[3]) (st.gear ||= [null, null, null, null, null])[3] = nb;
+      else (st.gearBag ||= []).push(nb);
+    }
+    st.bag = (st.bag || []).filter(item => item.id !== 'x:ngocboidoi');
     s = st;
     return true;
   } catch {

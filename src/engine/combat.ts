@@ -9,7 +9,7 @@ import { worldDefinitions } from '../data/local-items';
 import { skSrcMul } from './char';
 import { kmSkMul } from './kinhmach';
 import { RMAX, npcCap, LAST_WORLD, EL, REALMS, STAGES, elMult, type El } from '../data/core';
-import { BEASTS, LOCS, beastRoot } from '../data/world';
+import { BEASTS, LOCS, beastRoot, isMythicBeast } from '../data/world';
 import { SKILLS, TALIS, PILLS, TECHS, GRADE_MULT, MATS, mkGear, type Skill } from '../data/items';
 import { s, codexAdd } from './state';
 import { atkOf, defOf, maxHp, has, stat, npcPow, count, removeItem, addItem, addGear, itemName, root, pqSum, clSum, myLinh, age, maxLife, effRi, stageName } from './char';
@@ -107,7 +107,7 @@ const BEAST_SKILLS: Record<string, Skill> = {
   gam: { id: 'gam', n: 'Gầm thét', el: null, tier: 1, k: 'atk', m: 1.6, cd: 0, d: '' },
 };
 const ELEM_BEAST_SKILL: Record<El, string> = {
-  kim: 'kimtien', moc: 'dangleo', thuy: 'thuytien', hoa: 'hoacau', tho: 'thothuan', bang: 'hanbangtien', loi: 'loiquang', phong: 'phongnhan', am: 'uanhthich', quang: 'quangkiem', yin: 'phehon', yang: 'dieunhat', hondon: 'khaithien',
+  kim: 'kimtien', moc: 'dangleo', thuy: 'thuytien', hoa: 'hoacau', tho: 'thothuan', bang: 'hanbangtien', loi: 'loiquang', phong: 'phongnhan', am: 'uanhthich', quang: 'quangkiem', yin: 'phehon', yang: 'dieunhat', hondon: 'khaithien', none: 'cau',
 };
 
 /** Linh lực mỗi lần thi triển chiêu thức. */
@@ -124,6 +124,9 @@ export function mkFoe(spec: FoeSpec, rng: Rng = Math.random): Fighter {
   const rr = spec.dao ? spec.r : Math.min(spec.r, npcCap()); // Đại Đạo chỉ có một
   let p = npcPow(rr, st) * (spec.mult ?? 1) * R(0.9, 1.1);
   if (kind === 'mortal') p = Math.max(3, p * 0.6);
+  if (kind === 'beast' && isMythicBeast(spec.name)) {
+    p *= 1.25; // Dị thú có cơ sở truyền thuyết thượng cổ mạnh hơn 25% so với loài thường cùng bậc
+  }
   const skills: Skill[] = [];
   if (spec.skills) for (const k of spec.skills) if (SKILLS[k]) skills.push(SKILLS[k]);
   if (!spec.skills) {
@@ -249,6 +252,7 @@ export class Battle {
   interactive = false;
   private foeQueue: Fighter[] = [];
   private pillUsed = false;
+  private xingtianUsed = false;
 
   constructor(spec: FoeSpec | Fighter, opts: FightOpts, seed: number) {
     this.rng = mkRng(seed);
@@ -306,6 +310,7 @@ export class Battle {
   skMul(sk: Skill): number {
     let m = sk.m;
     if (sk.sword && has('kiemtam')) m *= 1.2;
+    if (sk.sword && has('hoangdao')) m *= 1.2;
     if (sk.el && s.root.els.includes(sk.el) && /^(Thập|Dị)/.test(root().n)) m *= 1.15; // linh căn đặc biệt
     m *= skSrcMul(sk.id); // phẩm công pháp truyền thụ
     m *= kmSkMul(sk.id); // kinh mạch: thông / nghịch / huyệt / hợp mệnh; chưa xếp ×0,85
@@ -322,6 +327,10 @@ export class Battle {
     let d = p.atk * m * em * this.uyMul() * Math.pow(1.5, this.burns) * daoMult({ laws: p.laws || [], daos: p.daos || [] }, { laws: f.laws || [], daos: f.daos || [] });
     if (this.contempt && this.round === 1) d *= 1.6;
     if (has('cuongchien')) d *= 1 + (1 - p.hp / p.maxHp) * 0.5;
+    if (has('mahuyet')) d *= 1 + (1 - p.hp / p.maxHp) * 0.3;
+    if (has('hoangdao')) d *= 1.15;
+    if (has('binhchu')) d *= 1.15;
+    if (has('yeudan')) d *= 1.25;
     d = Math.max(d * 0.15, d - f.def * 0.5) * (sk.k === 'multi' ? 3 : 1) * (sk.all ? this.foeSide().length || 1 : 1);
     return { v: Math.round(d), k: 'dmg', em };
   }
@@ -355,14 +364,30 @@ export class Battle {
       dmg *= this.uyMul() * Math.pow(1.5, this.burns);
       if (this.contempt && this.round === 1) dmg *= 1.6; // đối phương khinh địch, không phòng bị
       if (has('cuongchien')) dmg *= 1 + (1 - a.hp / a.maxHp) * 0.5;
+      if (has('mahuyet')) dmg *= 1 + (1 - a.hp / a.maxHp) * 0.3;
+      if (has('hoangdao')) dmg *= 1.2;
+      if (has('binhchu')) dmg *= 1.2;
+      if (has('yeudan')) dmg *= 1.25;
     } else if (d.player) {
       dmg *= this.foeDmgMul() * (this.guard ? 0.6 : 1);
+      if (has('vuthe')) dmg = Math.round(dmg * 0.85);
+      if (has('binhchu')) dmg = Math.round(dmg * 0.85);
     }
     const crit = this.ch(0.07 + (a.player ? clamp(stat('van') - 5, 0, 10) * 0.008 : 0));
     if (crit) dmg *= 1.6;
     dmg = Math.round(Math.max(dmg * 0.15, dmg - d.def * 0.5));
     if (d.shield > 0) { const ab = Math.min(d.shield, dmg); d.shield -= ab; dmg -= ab; }
     d.hp -= dmg;
+    if (a.player && has('mahuyet') && dmg > 0) {
+      const leach = Math.round(dmg * 0.2);
+      a.hp = Math.min(a.maxHp, a.hp + leach);
+      this.log.push(`Ma Huyết Phệ Hồn: ${a.name} cắn nuốt tinh huyết, hồi phục ${leach} khí huyết.`);
+    }
+    if (d.player && d.hp <= 0 && has('batkhuat') && !this.xingtianUsed) {
+      this.xingtianUsed = true;
+      d.hp = Math.max(1, Math.round(d.maxHp * 0.3));
+      this.log.push(`Hình Thiên Bất Khuất: Thân thể ngã xuống nhưng chiến ý gầm thét xé trời! ${d.name} múa khiên rìu tử chiến, hồi sinh với ${d.hp} khí huyết!`);
+    }
     const em = elMult(el ?? a.el, d.el);
     this.log.push(`${a.name} dùng ${label}${em > 1 ? ' (khắc hệ)' : em < 1 ? ' (bị khắc)' : ''}${crit ? ', bạo kích' : ''}: ${d.name} mất ${dmg} khí huyết.`);
     return dmg;

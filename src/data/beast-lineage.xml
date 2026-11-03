@@ -1,0 +1,966 @@
+<!-- CÂY PHẢ HỆ DỊ THÚ THƯỢNG CỔ -->
+<!-- Cấu trúc: <Loài_Cha> <Loài_Con></Loài_Con> </Loài_Cha> -->
+<!-- Chỉnh sửa trong file này sẽ tự động cập nhật phả hệ và tự động tính lại minRealm, minWorld -->
+<BeastLineage>
+    <Cửu Vĩ Hồ el="hoa" myth="1">
+        <Bát Vĩ Hồ el="hoa" myth="1">
+            <Thất Vĩ Hồ el="hoa" myth="1">
+                <Lục Vĩ Hồ el="hoa" myth="1">
+                    <Ngũ Vĩ Hồ el="hoa" myth="1">
+                        <Tứ Vĩ Hồ el="hoa" myth="1">
+                            <Tam Vĩ Hồ el="hoa" myth="1">
+                                <Nhị Vĩ Hồ el="hoa" myth="1">
+                                    <Nhất Vĩ Hồ el="hoa" myth="1"></Nhất Vĩ Hồ>
+                                </Nhị Vĩ Hồ>
+                            </Tam Vĩ Hồ>
+                        </Tứ Vĩ Hồ>
+                    </Ngũ Vĩ Hồ>
+                </Lục Vĩ Hồ>
+            </Thất Vĩ Hồ>
+        </Bát Vĩ Hồ>
+        <Lung Điệt el="hoa" myth="1"></Lung Điệt>
+        <Bát Vĩ Tuyết Ảnh Hồ el="bang">
+            <Thất Vĩ Tuyết Ảnh Hồ el="bang">
+                <Lục Vĩ Tuyết Ảnh Hồ el="bang">
+                    <Ngũ Vĩ Tuyết Ảnh Hồ el="bang">
+                        <Tứ Vĩ Tuyết Ảnh Hồ el="bang">
+                            <Tam Vĩ Tuyết Ảnh Hồ el="bang">
+                                <Nhị Vĩ Tuyết Ảnh Hồ el="bang">
+                                    <Nhất Vĩ Tuyết Ảnh Hồ el="bang"></Nhất Vĩ Tuyết Ảnh Hồ>
+                                    <Tuyết Ảnh Hồ el="bang"></Tuyết Ảnh Hồ>
+                                </Nhị Vĩ Tuyết Ảnh Hồ>
+                            </Tam Vĩ Tuyết Ảnh Hồ>
+                        </Tứ Vĩ Tuyết Ảnh Hồ>
+                    </Ngũ Vĩ Tuyết Ảnh Hồ>
+                </Lục Vĩ Tuyết Ảnh Hồ>
+            </Thất Vĩ Tuyết Ảnh Hồ>
+        </Bát Vĩ Tuyết Ảnh Hồ>
+        <Bát Vĩ Xích Diễm Hồ el="hoa">
+            <Thất Vĩ Xích Diễm Hồ el="hoa">
+                <Lục Vĩ Xích Diễm Hồ el="hoa">
+                    <Ngũ Vĩ Xích Diễm Hồ el="hoa">
+                        <Tứ Vĩ Xích Diễm Hồ el="hoa">
+                            <Tam Vĩ Xích Diễm Hồ el="hoa">
+                                <Nhị Vĩ Xích Diễm Hồ el="hoa">
+                                    <Nhất Vĩ Xích Diễm Hồ el="hoa"></Nhất Vĩ Xích Diễm Hồ>
+                                    <Xích Diễm Hồ el="hoa"></Xích Diễm Hồ>
+                                </Nhị Vĩ Xích Diễm Hồ>
+                            </Tam Vĩ Xích Diễm Hồ>
+                        </Tứ Vĩ Xích Diễm Hồ>
+                    </Ngũ Vĩ Xích Diễm Hồ>
+                </Lục Vĩ Xích Diễm Hồ>
+            </Thất Vĩ Xích Diễm Hồ>
+        </Bát Vĩ Xích Diễm Hồ>
+        <Bát Vĩ Tinh Hồ el="quang">
+            <Thất Vĩ Tinh Hồ el="quang">
+                <Lục Vĩ Tinh Hồ el="quang">
+                    <Ngũ Vĩ Tinh Hồ el="quang">
+                        <Tứ Vĩ Tinh Hồ el="quang">
+                            <Tam Vĩ Tinh Hồ el="quang">
+                                <Nhị Vĩ Tinh Hồ el="quang">
+                                    <Nhất Vĩ Tinh Hồ el="quang"></Nhất Vĩ Tinh Hồ>
+                                    <Tinh Hồ el="quang"></Tinh Hồ>
+                                </Nhị Vĩ Tinh Hồ>
+                            </Tam Vĩ Tinh Hồ>
+                        </Tứ Vĩ Tinh Hồ>
+                    </Ngũ Vĩ Tinh Hồ>
+                </Lục Vĩ Tinh Hồ>
+            </Thất Vĩ Tinh Hồ>
+        </Bát Vĩ Tinh Hồ>
+        <Bát Vĩ Ngân Nguyệt Hồ el="quang">
+            <Thất Vĩ Ngân Nguyệt Hồ el="quang">
+                <Lục Vĩ Ngân Nguyệt Hồ el="quang">
+                    <Ngũ Vĩ Ngân Nguyệt Hồ el="quang">
+                        <Tứ Vĩ Ngân Nguyệt Hồ el="quang">
+                            <Tam Vĩ Ngân Nguyệt Hồ el="quang">
+                                <Nhị Vĩ Ngân Nguyệt Hồ el="quang">
+                                    <Nhất Vĩ Ngân Nguyệt Hồ el="quang"></Nhất Vĩ Ngân Nguyệt Hồ>
+                                    <Ngân Nguyệt Hồ el="quang"></Ngân Nguyệt Hồ>
+                                </Nhị Vĩ Ngân Nguyệt Hồ>
+                            </Tam Vĩ Ngân Nguyệt Hồ>
+                        </Tứ Vĩ Ngân Nguyệt Hồ>
+                    </Ngũ Vĩ Ngân Nguyệt Hồ>
+                </Lục Vĩ Ngân Nguyệt Hồ>
+            </Thất Vĩ Ngân Nguyệt Hồ>
+        </Bát Vĩ Ngân Nguyệt Hồ>
+        <Bát Vĩ Ảnh Hồ el="am">
+            <Thất Vĩ Ảnh Hồ el="am">
+                <Lục Vĩ Ảnh Hồ el="am">
+                    <Ngũ Vĩ Ảnh Hồ el="am">
+                        <Tứ Vĩ Ảnh Hồ el="am">
+                            <Tam Vĩ Ảnh Hồ el="am">
+                                <Nhị Vĩ Ảnh Hồ el="am">
+                                    <Nhất Vĩ Ảnh Hồ el="am"></Nhất Vĩ Ảnh Hồ>
+                                    <Ảnh Hồ el="am"></Ảnh Hồ>
+                                </Nhị Vĩ Ảnh Hồ>
+                            </Tam Vĩ Ảnh Hồ>
+                        </Tứ Vĩ Ảnh Hồ>
+                    </Ngũ Vĩ Ảnh Hồ>
+                </Lục Vĩ Ảnh Hồ>
+            </Thất Vĩ Ảnh Hồ>
+        </Bát Vĩ Ảnh Hồ>
+    </Cửu Vĩ Hồ>
+    <Tổ Long el="thuy" myth="1">
+        <Chân Long el="thuy">
+            <Kim Long el="kim">
+                <Ứng Long el="kim" myth="1">
+                    <Chúc Long el="kim">
+                        <Thanh Long el="kim">
+                            <Giao Long Vương el="kim">
+                                <Kim Giao el="kim">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Kim Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Kim Long>
+            <Mộc Long el="moc" myth="1">
+                <Ứng Long el="moc" myth="1">
+                    <Chúc Long el="moc">
+                        <Thanh Long el="moc">
+                            <Giao Long Vương el="moc">
+                                <Mộc Giao el="moc">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Mộc Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Mộc Long>
+            <Thủy Long el="thuy" myth="1">
+                <Ứng Long el="thuy" myth="1">
+                    <Chúc Long el="thuy">
+                        <Thanh Long el="thuy">
+                            <Giao Long Vương el="thuy">
+                                <Hải Giao el="thuy">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Hải Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Thủy Long>
+            <Hỏa Long el="hoa" myth="1">
+                <Ứng Long el="hoa" myth="1">
+                    <Chúc Long el="hoa">
+                        <Thanh Long el="hoa">
+                            <Giao Long Vương el="hoa">
+                                <Hỏa Giao el="hoa">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Hỏa Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Hỏa Long>
+            <Thổ Long el="tho" myth="1">
+                <Ứng Long el="tho" myth="1">
+                    <Chúc Long el="tho">
+                        <Thanh Long el="tho">
+                            <Giao Long Vương el="tho">
+                                <Thổ Giao el="tho">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Thổ Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Thổ Long>
+            <Lôi Long el="loi">
+                <Ứng Long el="loi" myth="1">
+                    <Chúc Long el="loi">
+                        <Thanh Long el="loi">                            
+                            <Giao Long Vương el="loi">
+                                <Lôi Giao el="loi">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Lôi Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Lôi Long>
+            <Phong Long el="phong">
+                <Ứng Long el="phong" myth="1">
+                    <Chúc Long el="phong">
+                        <Thanh Long el="phong">
+                            <Giao Long Vương el="phong">
+                                <Phong Giao el="phong">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Phong Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Phong Long>
+            <Băng Long el="bang" myth="1">
+                <Ứng Long el="bang" myth="1">
+                    <Chúc Long el="bang">
+                        <Thanh Long el="bang">
+                            <Giao Long Vương el="bang">
+                                <Băng Giao el="bang">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Băng Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Băng Long>
+            <Quang Long el="quang">
+                <Ứng Long el="quang" myth="1">
+                    <Chúc Long el="quang">
+                        <Thanh Long el="quang">
+                            <Giao Long Vương el="quang">
+                                <Quang Giao el="quang">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </Quang Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Quang Long>
+            <Ám Long el="am">
+                <Ứng Long el="am" myth="1">
+                    <Chúc Long el="am">
+                        <Thanh Long el="am">
+                            <Giao Long Vương el="am">
+                                <U Giao el="am">
+                                    <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                                </U Giao>
+                            </Giao Long Vương>
+                        </Thanh Long>
+                    </Chúc Long>
+                </Ứng Long>
+            </Ám Long>
+            <Ứng Long el="thuy" myth="1">
+                <Chúc Long el="hoa">
+                    <Thanh Long el="moc">                            
+                        <Giao Long Vương el="thuy">
+                            <Thần Giao el="loi">
+                                <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                            </Thần Giao>
+                            <Hải Giao el="thuy">
+                                <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                            </Hải Giao>
+                            <Lôi Giao el="loi">
+                                <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                            </Lôi Giao>
+                        </Giao Long Vương>
+                    </Thanh Long>
+                </Chúc Long>
+            </Ứng Long>
+            <Tù Ngưu el="moc" myth="1">
+                <Linh Âm Thần Long el="moc">
+                    <Cầm Huyền Long el="moc">
+                        <Thanh Âm Giao el="moc">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Thanh Âm Giao>
+                    </Cầm Huyền Long>
+                </Linh Âm Thần Long>
+            </Tù Ngưu>
+            <Nhai Tí el="kim">
+                <Huyết Nhận Thần Long el="kim">
+                    <Binh Nhận Long el="kim">
+                        <Sát Khí Giao el="kim">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Sát Khí Giao>
+                    </Binh Nhận Long>
+                </Huyết Nhận Thần Long>
+            </Nhai Tí>
+            <Trào Phong el="phong">
+                <Ngự Phong Thần Long el="phong">
+                    <Phi Thiên Long el="phong">
+                        <Dực Giao el="phong">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Dực Giao>
+                    </Phi Thiên Long>
+                </Ngự Phong Thần Long>
+            </Trào Phong>
+            <Bồ Lao el="loi" myth="1">
+                <Chấn Hải Thần Long el="loi">
+                    <Lôi Âm Long el="loi">
+                        <Minh Khiếu Giao el="loi">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Minh Khiếu Giao>
+                    </Lôi Âm Long>
+                </Chấn Hải Thần Long>
+            </Bồ Lao>
+            <Toan Nghê el="hoa">
+                <Hương Hỏa Thần Long el="hoa">
+                    <Diễm Sư Long el="hoa">
+                        <Kim Diễm Giao el="hoa">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Kim Diễm Giao>
+                    </Diễm Sư Long>
+                </Hương Hỏa Thần Long>
+            </Toan Nghê>
+            <Bá Hạ el="tho" myth="1">
+                <Trấn Nhạc Thần Long el="tho">
+                    <Bí Hí Long el="tho">
+                        <Trọng Giáp Giao el="tho">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Trọng Giáp Giao>
+                    </Bí Hí Long>
+                </Trấn Nhạc Thần Long>
+            </Bá Hạ>
+            <Bệ Ngạn el="quang" myth="1">
+                <Trảm Tà Thần Long el="quang">
+                    <Trọng Tài Long el="quang">
+                        <Chính Khí Giao el="quang">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Chính Khí Giao>
+                    </Trọng Tài Long>
+                </Trảm Tà Thần Long>
+            </Bệ Ngạn>
+            <Phụ Hí el="moc" myth="1">
+                <Thanh Giản Thần Long el="moc">
+                    <Văn Hoa Long el="moc">
+                        <Bích Văn Giao el="moc">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Bích Văn Giao>
+                    </Văn Hoa Long>
+                </Thanh Giản Thần Long>
+            </Phụ Hí>
+            <Si Vẫn el="thuy" myth="1">
+                <Thôn Hỏa Thần Long el="thuy">
+                    <Thao Lãng Long el="thuy">
+                        <Ngư Long Giao el="thuy">
+                            <Thanh Lân Mãng el="none"></Thanh Lân Mãng>
+                        </Ngư Long Giao>
+                    </Thao Lãng Long>
+                </Thôn Hỏa Thần Long>
+            </Si Vẫn>
+        </Chân Long>
+    </Tổ Long>
+
+    <Chân Phượng el="hoa" myth="1">
+        <Phượng Hoàng el="hoa" myth="1">
+            <Hỏa Phượng el="hoa" myth="1">
+                <Chu Tước el="hoa" myth="1">
+                    <Xích Hỏa Thanh Điểu el="hoa">
+                        <Hỏa Linh Tước el="hoa">
+                            <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                        </Hỏa Linh Tước>
+                    </Xích Hỏa Thanh Điểu>
+                </Chu Tước>
+                <Tất Phương el="hoa" myth="1">
+                    <Hỏa Vũ Điểu el="hoa">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </Hỏa Vũ Điểu>
+                </Tất Phương>
+            </Hỏa Phượng>
+            <Băng Phượng el="bang" myth="1">
+                <Băng Loan el="bang">
+                    <Hàn Sương Điểu el="bang">
+                        <Băng Linh Tước el="bang">
+                            <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                        </Băng Linh Tước>
+                    </Hàn Sương Điểu>
+                </Băng Loan>
+            </Băng Phượng>
+            <Thanh Loan el="phong">
+                <Cửu Thiên Phong Phượng el="phong">
+                    <Thanh Vũ Điêu el="phong">
+                        <Phong Linh Điểu el="phong">
+                            <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                        </Phong Linh Điểu>
+                    </Thanh Vũ Điêu>
+                </Cửu Thiên Phong Phượng>
+            </Thanh Loan>
+            <Thái Dương Thần Điểu el="quang" myth="1">
+                <Tam Túc Kim Ô el="quang">
+                    <Kim Ô Linh Điểu el="quang">
+                        <Quang Linh Điểu el="quang">
+                            <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                        </Quang Linh Điểu>
+                    </Kim Ô Linh Điểu>
+                </Tam Túc Kim Ô>
+            </Thái Dương Thần Điểu>
+            <Lôi Đình Linh Phượng el="loi" myth="1">
+                <Tử Điện Điêu el="loi">
+                    <Lôi Linh Tước el="loi">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </Lôi Linh Tước>
+                </Tử Điện Điêu>
+            </Lôi Đình Linh Phượng>
+            <Bạch Phượng el="kim" myth="1">
+                <Kim Sí Linh Điểu el="kim">
+                    <Kim Linh Điểu el="kim">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </Kim Linh Điểu>
+                </Kim Sí Linh Điểu>
+            </Bạch Phượng>
+            <Thanh Phượng el="moc" myth="1">
+                <Bích Vũ Tước el="moc">
+                    <Mộc Linh Điểu el="moc">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </Mộc Linh Điểu>
+                </Bích Vũ Tước>
+            </Thanh Phượng>
+            <Hoàng Phượng el="tho" myth="1">
+                <Trấn Địa Tước el="tho">
+                    <Hoàng Vũ Điểu el="tho">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </Hoàng Vũ Điểu>
+                </Trấn Địa Tước>
+            </Hoàng Phượng>
+            <Thủy Loan el="thuy" myth="1">
+                <Bích Hải Tước el="thuy">
+                    <Thủy Linh Điểu el="thuy">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </Thủy Linh Điểu>
+                </Bích Hải Tước>
+            </Thủy Loan>
+            <U Minh Phượng el="am" myth="1">
+                <Minh Tước el="am">
+                    <U Dạ Điểu el="am">
+                        <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                    </U Dạ Điểu>
+                </Minh Tước>
+            </U Minh Phượng>
+            <Ngũ Sắc Linh Phượng el="hoa" myth="1">
+                <Thải Vũ Điểu el="hoa">
+                    <Linh Vũ Điểu el="none"></Linh Vũ Điểu>
+                </Thải Vũ Điểu>
+            </Ngũ Sắc Linh Phượng>
+        </Phượng Hoàng>
+    </Chân Phượng>
+
+    <Thủy Kỳ Lân el="thuy" myth="1">
+        <Kỳ Lân el="thuy" myth="1">
+            <Bích Thủy Kỳ Lân el="thuy">
+                <Hải Kỳ Lân el="thuy">
+                    <Thủy Lân Thú el="thuy">
+                        <Linh Lân Thú el="none"></Linh Lân Thú>
+                    </Thủy Lân Thú>
+                </Hải Kỳ Lân>
+            </Bích Thủy Kỳ Lân>
+            <Hỏa Kỳ Lân el="hoa" myth="1">
+                <Xích Diễm Kỳ Lân el="hoa">
+                    <Hỏa Kỳ Lân Thú el="hoa">
+                        <Linh Lân Thú el="none"></Linh Lân Thú>
+                    </Hỏa Kỳ Lân Thú>
+                </Xích Diễm Kỳ Lân>
+            </Hỏa Kỳ Lân>
+            <Kim Lân Thú el="kim">
+                <Bạch Kim Kỳ Lân el="kim">
+                    <Lân Mã el="kim">
+                        <Linh Lân Thú el="none"></Linh Lân Thú>
+                    </Lân Mã>
+                </Bạch Kim Kỳ Lân>
+            </Kim Lân Thú>
+            <Tử Điện Kỳ Lân el="loi" myth="1">
+                <Cuồng Lôi Kỳ Lân el="loi">
+                    <Lôi Lân Thú el="loi">
+                        <Linh Lân Thú el="none"></Linh Lân Thú>
+                    </Lôi Lân Thú>
+                </Cuồng Lôi Kỳ Lân>
+            </Tử Điện Kỳ Lân>
+            <Mặc Kỳ Lân el="tho" myth="1">
+                <Trấn Địa Kỳ Lân el="tho">
+                    <Thổ Lân Thú el="tho">
+                        <Linh Lân Thú el="none"></Linh Lân Thú>
+                    </Thổ Lân Thú>
+                </Trấn Địa Kỳ Lân>
+            </Mặc Kỳ Lân>
+            <Ngự Phong Kỳ Lân el="phong" myth="1">
+                <Phong Lân Thú el="phong">
+                    <Linh Lân Thú el="none"></Linh Lân Thú>
+                </Phong Lân Thú>
+            </Ngự Phong Kỳ Lân>
+            <Hàn Băng Kỳ Lân el="bang" myth="1">
+                <Băng Lân Thú el="bang">
+                    <Linh Lân Thú el="none"></Linh Lân Thú>
+                </Băng Lân Thú>
+            </Hàn Băng Kỳ Lân>
+            <Thanh Mộc Kỳ Lân el="moc" myth="1">
+                <Mộc Lân Thú el="moc">
+                    <Linh Lân Thú el="none"></Linh Lân Thú>
+                </Mộc Lân Thú>
+            </Thanh Mộc Kỳ Lân>
+            <Thánh Quang Kỳ Lân el="quang" myth="1">
+                <Quang Lân Thú el="quang">
+                    <Linh Lân Thú el="none"></Linh Lân Thú>
+                </Quang Lân Thú>
+            </Thánh Quang Kỳ Lân>
+            <Ám Dạ Kỳ Lân el="am" myth="1">
+                <U Minh Lân Thú el="am">
+                    <Linh Lân Thú el="none"></Linh Lân Thú>
+                </U Minh Lân Thú>
+            </Ám Dạ Kỳ Lân>
+        </Kỳ Lân>
+    </Thủy Kỳ Lân>
+
+    <Côn Bằng el="thuy" myth="1">
+        <Bắc Minh Cự Côn el="thuy" myth="1">
+            <Cự Côn el="thuy" myth="1">
+                <Thâm Hải Ngư el="thuy">
+                    <Côn Ngư el="none"></Côn Ngư>
+                </Thâm Hải Ngư>
+            </Cự Côn>
+        </Bắc Minh Cự Côn>
+        <Kim Sí Đại Bằng el="phong" myth="1">
+            <Đại Bằng Điểu el="phong">
+                <Thanh Vũ Điêu el="phong">
+                    <Côn Ngư el="none"></Côn Ngư>
+                </Thanh Vũ Điêu>
+            </Đại Bằng Điểu>
+        </Kim Sí Đại Bằng>
+        <Lôi Bằng el="loi">
+            <Lôi Kình Ngư el="loi">
+                <Côn Ngư el="none"></Côn Ngư>
+            </Lôi Kình Ngư>
+        </Lôi Bằng>
+        <Băng Bằng el="bang">
+            <Hàn Hải Côn el="bang">
+                <Côn Ngư el="none"></Côn Ngư>
+            </Hàn Hải Côn>
+        </Băng Bằng>
+    </Côn Bằng>
+
+    <Huyền Vũ el="thuy" myth="1">
+        <Huyền Quy Thần el="thuy" myth="1">
+            <Huyền Quy el="thuy" myth="1">
+                <Huyền Giáp Quy el="thuy">
+                    <Bích Hải Quy el="thuy">
+                        <Linh Quy el="none"></Linh Quy>
+                    </Bích Hải Quy>
+                </Huyền Giáp Quy>
+            </Huyền Quy>
+            <Hàn Băng Cổ Quy el="bang">
+                <Băng Quy el="bang">
+                    <Linh Quy el="none"></Linh Quy>
+                </Băng Quy>
+            </Hàn Băng Cổ Quy>
+            <Trấn Địa Cổ Quy el="tho">
+                <Thạch Giáp Quy el="tho">
+                    <Linh Quy el="none"></Linh Quy>
+                </Thạch Giáp Quy>
+            </Trấn Địa Cổ Quy>
+            <Cửu U Thần Quy el="am" myth="1">
+                <U Minh Quy el="am">
+                    <Linh Quy el="none"></Linh Quy>
+                </U Minh Quy>
+            </Cửu U Thần Quy>
+        </Huyền Quy Thần>
+    </Huyền Vũ>
+
+    <Bạch Hổ el="kim" myth="1">
+        <Bạch Hổ Vương el="kim" myth="1">
+            <Cương Thiết Hổ el="kim">
+                <Thiết Trảo Hổ el="kim">
+                    <Linh Hổ el="none"></Linh Hổ>
+                </Thiết Trảo Hổ>
+            </Cương Thiết Hổ>
+            <Liệt Diễm Hổ el="hoa">
+                <Hỏa Văn Hổ el="hoa">
+                    <Linh Hổ el="none"></Linh Hổ>
+                </Hỏa Văn Hổ>
+            </Liệt Diễm Hổ>
+            <Ám Dạ Ma Hổ el="am">
+                <U Minh Hổ el="am">
+                    <Linh Hổ el="none"></Linh Hổ>
+                </U Minh Hổ>
+            </Ám Dạ Ma Hổ>
+            <Hàn Sương Hổ el="bang">
+                <Băng Tinh Hổ el="bang">
+                    <Linh Hổ el="none"></Linh Hổ>
+                </Băng Tinh Hổ>
+            </Hàn Sương Hổ>
+            <Phong Báo Hổ el="phong">
+                <Cuồng Phong Hổ el="phong">
+                    <Linh Hổ el="none"></Linh Hổ>
+                </Cuồng Phong Hổ>
+            </Phong Báo Hổ>
+            <Cuồng Lôi Hổ el="loi">
+                <Lôi Điện Hổ el="loi">
+                    <Linh Hổ el="none"></Linh Hổ>
+                </Lôi Điện Hổ>
+            </Cuồng Lôi Hổ>
+        </Bạch Hổ Vương>
+    </Bạch Hổ>
+
+    <Bạch Trạch el="quang" myth="1">
+        <Bạch Trạch Thánh Thú el="quang" myth="1">
+            <Bạch Trạch Linh Thú el="quang" myth="1">
+                <Bạch Trạch Dị Thú el="quang">
+                    <Ấu Bạch Trạch el="none"></Ấu Bạch Trạch>
+                </Bạch Trạch Dị Thú>
+            </Bạch Trạch Linh Thú>
+        </Bạch Trạch Thánh Thú>
+    </Bạch Trạch>
+
+    <Thiên Cẩu el="kim" myth="1">
+        <Ngân Nguyệt Lang Vương el="kim" myth="1">
+            <Thanh Phong Lang el="phong">
+                <Tật Phong Lang el="phong">
+                    <Hắc Phong Lang el="phong">
+                        <Dã Lang el="none"></Dã Lang>
+                    </Hắc Phong Lang>
+                </Tật Phong Lang>
+            </Thanh Phong Lang>
+            <Ngân Nguyệt Lang el="kim">
+                <Bạch Kim Lang el="kim">
+                    <Dã Lang el="none"></Dã Lang>
+                </Bạch Kim Lang>
+            </Ngân Nguyệt Lang>
+            <Hồng Hoang Hung Lang el="am">
+                <U Minh Lang el="am">
+                    <Dã Lang el="none"></Dã Lang>
+                </U Minh Lang>
+            </Hồng Hoang Hung Lang>
+            <Hàn Băng Lang Vương el="bang">
+                <Tuyết Ảnh Lang el="bang">
+                    <Dã Lang el="none"></Dã Lang>
+                </Tuyết Ảnh Lang>
+            </Hàn Băng Lang Vương>
+            <Cuồng Lôi Lang Vương el="loi">
+                <Lôi Linh Lang el="loi">
+                    <Dã Lang el="none"></Dã Lang>
+                </Lôi Linh Lang>
+            </Cuồng Lôi Lang Vương>
+            <Liệt Hỏa Lang Vương el="hoa">
+                <Xích Diễm Lang el="hoa">
+                    <Dã Lang el="none"></Dã Lang>
+                </Xích Diễm Lang>
+            </Liệt Hỏa Lang Vương>
+        </Ngân Nguyệt Lang Vương>
+    </Thiên Cẩu>
+
+    <Chu Yếm el="kim" myth="1">
+        <Thông Thiên Viên el="moc">
+            <Tinh Tinh el="moc">
+                <Linh Hầu el="none"></Linh Hầu>
+            </Tinh Tinh>
+        </Thông Thiên Viên>
+        <Ma Hầu el="am">
+            <Ung Hòa el="am">
+                <Linh Hầu el="none"></Linh Hầu>
+            </Ung Hòa>
+        </Ma Hầu>
+        <Chiến Hống Sơn Viên el="kim">
+            <Bạch Đầu Xích Túc Viên el="kim">
+                <Linh Hầu el="none"></Linh Hầu>
+            </Bạch Đầu Xích Túc Viên>
+        </Chiến Hống Sơn Viên>
+    </Chu Yếm>
+
+    <Ảnh Báo el="am">
+        <Dạ Ảnh Báo el="am">
+            <Dạ Xoa Ảnh Báo el="am">
+                <Linh Báo el="none"></Linh Báo>
+            </Dạ Xoa Ảnh Báo>
+        </Dạ Ảnh Báo>
+        <Phong Ảnh Báo el="phong">
+            <Tật Phong Báo el="phong">
+                <Linh Báo el="none"></Linh Báo>
+            </Tật Phong Báo>
+        </Phong Ảnh Báo>
+        <Lôi Ảnh Báo el="loi">
+            <Tử Điện Báo el="loi">
+                <Linh Báo el="none"></Linh Báo>
+            </Tử Điện Báo>
+        </Lôi Ảnh Báo>
+    </Ảnh Báo>
+
+    <Băng Hùng el="bang">
+        <Huyền Băng Hùng el="bang">
+            <Băng Phách Hùng el="bang">
+                <Linh Hùng el="none"></Linh Hùng>
+            </Băng Phách Hùng>
+        </Huyền Băng Hùng>
+        <Trấn Sơn Hùng el="tho">
+            <Đại Địa Bạo Hùng el="tho">
+                <Linh Hùng el="none"></Linh Hùng>
+            </Đại Địa Bạo Hùng>
+        </Trấn Sơn Hùng>
+    </Băng Hùng>
+
+    <Sa Hạt el="tho">
+        <Sa Hạt Vương el="tho">
+            <Thổ Hoàng Hạt el="tho">
+                <Linh Hạt el="none"></Linh Hạt>
+            </Thổ Hoàng Hạt>
+        </Sa Hạt Vương>
+        <Băng Phách Hạt el="bang">
+            <Hàn Sương Hạt el="bang">
+                <Linh Hạt el="none"></Linh Hạt>
+            </Hàn Sương Hạt>
+        </Băng Phách Hạt>
+    </Sa Hạt>
+
+    <Sư Tử el="hoa">
+        <Liệt Diễm Sư el="hoa">
+            <Xích Diễm Sư el="hoa">
+                <Linh Sư el="none"></Linh Sư>
+            </Xích Diễm Sư>
+        </Liệt Diễm Sư>
+        <Hàn Băng Sư el="bang">
+            <Tuyết Sư el="bang">
+                <Linh Sư el="none"></Linh Sư>
+            </Tuyết Sư>
+        </Hàn Băng Sư>
+        <Cửu Đầu Sư Vương el="kim" myth="1">
+            <Kim Mao Sư el="kim">
+                <Linh Sư el="none"></Linh Sư>
+            </Kim Mao Sư>
+        </Cửu Đầu Sư Vương>
+    </Sư Tử>
+
+    <Tê Ngưu el="tho">
+        <Thủy Tê el="thuy">
+            <Bích Lân Tê el="thuy">
+                <Độc Giác Thủy Tê el="thuy">
+                    <Linh Tê el="none"></Linh Tê>
+                </Độc Giác Thủy Tê>
+            </Bích Lân Tê>
+        </Thủy Tê>
+        <Trọng Giáp Tê el="tho">
+            <Huyền Nham Tê el="tho">
+                <Linh Tê el="none"></Linh Tê>
+            </Huyền Nham Tê>
+        </Trọng Giáp Tê>
+    </Tê Ngưu>
+
+    <Thôn Kim Thử el="kim">
+        <Phệ Kim Thử el="kim">
+            <Phệ Kim Thú el="kim">
+                <Linh Thử el="none"></Linh Thử>
+            </Phệ Kim Thú>
+        </Phệ Kim Thử>
+    </Thôn Kim Thử>
+
+    <Thụ Yêu el="moc">
+        <Thanh Mộc Thụ Yêu el="moc">
+            <Cổ Mộc Thụ Yêu el="moc">
+                <Linh Mộc el="none"></Linh Mộc>
+            </Cổ Mộc Thụ Yêu>
+        </Thanh Mộc Thụ Yêu>
+    </Thụ Yêu>
+
+    <Thượng Cổ Trùng el="moc">
+        <Kim Giáp Ngô Công el="kim">
+            <Ấu Trùng el="none"></Ấu Trùng>
+        </Kim Giáp Ngô Công>
+        <Hư Linh Trùng el="loi">
+            <Hư Không Trùng el="loi">
+                <Ấu Trùng el="none"></Ấu Trùng>
+            </Hư Không Trùng>
+        </Hư Linh Trùng>
+    </Thượng Cổ Trùng>
+
+    <Thi Quỷ el="am">
+        <Âm Trạch Thi Quỷ el="am">
+            <Âm Thi el="none"></Âm Thi>
+        </Âm Trạch Thi Quỷ>
+    </Thi Quỷ>
+
+    <Lôi Thú el="loi">
+        <Tử Điện Thú el="loi">
+            <Lôi Linh Thú el="loi">
+                <Ấu Lôi Thú el="none"></Ấu Lôi Thú>
+            </Lôi Linh Thú>
+        </Tử Điện Thú>
+    </Lôi Thú>
+
+    <Hải Kình el="thuy">
+        <Bạch Kình el="thuy">
+            <Hàn Hải Kình el="bang">
+                <Ấu Kình el="none"></Ấu Kình>
+            </Hàn Hải Kình>
+        </Bạch Kình>
+        <Lôi Kình el="loi">
+            <Ấu Kình el="none"></Ấu Kình>
+        </Lôi Kình>
+    </Hải Kình>
+
+    <!-- HUNG THÚ & DỊ THÚ THƯỢNG CỔ SƠN HẢI KINH -->
+    <Thôn Thiên Cự Thú el="am" myth="1">
+        <Thôn Thiên Ma Kình el="am">
+            <Thôn Hải Thú el="am">
+                <Ấu Hải Thú el="none"></Ấu Hải Thú>
+            </Thôn Hải Thú>
+        </Thôn Thiên Ma Kình>
+    </Thôn Thiên Cự Thú>
+
+    <Đế Giang el="am" myth="1">
+        <Lục Túc Tứ Dực Đế Giang el="am" myth="1">
+            <Hỗn Độn Nang Thú el="none"></Hỗn Độn Nang Thú>
+        </Lục Túc Tứ Dực Đế Giang>
+    </Đế Giang>
+
+    <Bào Hào el="am">
+        <Nách Mục Nhân Diện Thao Thú el="am" myth="1">
+            <Hổ Nha Thực Nhân Dương el="am">
+                <Phệ Hồn Ma Ảnh el="none"></Phệ Hồn Ma Ảnh>
+            </Hổ Nha Thực Nhân Dương>
+        </Nách Mục Nhân Diện Thao Thú>
+    </Bào Hào>
+
+    <Cùng Kỳ el="phong" myth="1">
+        <Thiết Mao Khiếu Ngưu el="phong" myth="1">
+            <Hống Thiên Thực Nhân Thú el="none"></Hống Thiên Thực Nhân Thú>
+        </Thiết Mao Khiếu Ngưu>
+    </Cùng Kỳ>
+
+    <Lục Ngô el="kim" myth="1">
+        <Cửu Vĩ Nhân Diện Hổ el="kim" myth="1">
+            <Côn Lôn Thủ Viên el="none"></Côn Lôn Thủ Viên>
+        </Cửu Vĩ Nhân Diện Hổ>
+    </Lục Ngô>
+
+    <Quỳ el="loi" myth="1">
+        <Phong Vũ Chấn Hải Quỳ el="loi" myth="1">
+            <Thanh Thân Độc Túc Lôi Ngưu el="none"></Thanh Thân Độc Túc Lôi Ngưu>
+        </Phong Vũ Chấn Hải Quỳ>
+    </Quỳ>
+
+    <Ngung Cường el="thuy" myth="1">
+        <Điểu Thân Chấp Xà Thần el="thuy" myth="1">
+            <Bắc Hải Đạp Xà Thú el="none"></Bắc Hải Đạp Xà Thú>
+        </Điểu Thân Chấp Xà Thần>
+    </Ngung Cường>
+
+    <Thừa Hoàng el="kim" myth="1">
+        <Bối Sinh Độc Giác Hồ el="kim" myth="1">
+            <Thiên Thọ Linh Hồ el="none"></Thiên Thọ Linh Hồ>
+        </Bối Sinh Độc Giác Hồ>
+    </Thừa Hoàng>
+
+    <Phì Di el="hoa">
+        <Lục Túc Tứ Dực Xà el="hoa" myth="1">
+            <Hạn Hỏa Phi Xà el="none"></Hạn Hỏa Phi Xà>
+        </Lục Túc Tứ Dực Xà>
+    </Phì Di>
+
+    <Vũ La el="quang" myth="1">
+        <Báo Văn Ngọc Xỉ Thần el="quang" myth="1">
+            <Kim Hoàn Linh Quan el="none"></Kim Hoàn Linh Quan>
+        </Báo Văn Ngọc Xỉ Thần>
+    </Vũ La>
+
+    <Tranh el="kim">
+        <Ngũ Vĩ Độc Giác Báo el="kim" myth="1">
+            <Xích Văn Toái Thạch Báo el="none"></Xích Văn Toái Thạch Báo>
+        </Ngũ Vĩ Độc Giác Báo>
+    </Tranh>
+
+    <Ngao Yết el="tho" myth="1">
+        <Tứ Giác Bạch Ngưu el="tho" myth="1">
+            <Tơi Mao Thực Nhân Ngưu el="none"></Tơi Mao Thực Nhân Ngưu>
+        </Tứ Giác Bạch Ngưu>
+    </Ngao Yết>
+
+    <Bác el="kim">
+        <Nhất Sừng Hắc Đuôi Bác Mã el="kim" myth="1">
+            <Hổ Nha Thực Báo Mã el="none"></Hổ Nha Thực Báo Mã>
+        </Nhất Sừng Hắc Đuôi Bác Mã>
+    </Bác>
+
+    <Hoan Sơ el="bang" myth="1">
+        <Vân Văn Độc Giác Mã el="bang" myth="1">
+            <Tị Hỏa Linh Câu el="none"></Tị Hỏa Linh Câu>
+        </Vân Văn Độc Giác Mã>
+    </Hoan Sơ>
+
+    <Trường Xà el="tho" myth="1">
+        <Bách Trượng Trư Mao Xà el="tho" myth="1">
+            <Canh Dạ Minh Xà el="tho">
+                <Cửu Đầu Xà el="none" myth="1"></Cửu Đầu Xà>
+            </Canh Dạ Minh Xà>
+        </Bách Trượng Trư Mao Xà>
+    </Trường Xà>
+
+    <Á Dủ el="thuy" myth="1">
+        <Xích Diện Nhân Thân Ngưu el="thuy" myth="1">
+            <Mã Đề Khốc Ngưu el="none"></Mã Đề Khốc Ngưu>
+        </Xích Diện Nhân Thân Ngưu>
+    </Á Dủ>
+
+    <Chư Hoài el="bang" myth="1">
+        <Tứ Giác Nhân Mục Ngưu el="bang" myth="1">
+            <Trư Nhĩ Minh Hoài Thú el="none"></Trư Nhĩ Minh Hoài Thú>
+        </Tứ Giác Nhân Mục Ngưu>
+    </Chư Hoài>
+
+    <Thiên Mã el="phong">
+        <Bạch Đầu Phi Thiên Khuyển el="phong" myth="1">
+            <Hắc Thủng Vân Cẩu el="none"></Hắc Thủng Vân Cẩu>
+        </Bạch Đầu Phi Thiên Khuyển>
+    </Thiên Mã>
+
+    <Toan Dư el="am" myth="1">
+        <Tứ Dực Lục Mục Xà el="am" myth="1">
+            <Tam Túc Kinh Dị Xà el="none"></Tam Túc Kinh Dị Xà>
+        </Tứ Dực Lục Mục Xà>
+    </Toan Dư>
+
+    <Tinh Vệ el="thuy" myth="1">
+        <Hoa Đầu Bạch Chủy Điểu el="thuy" myth="1">
+            <Tinh Vệ Điền Hải Điểu el="none"></Tinh Vệ Điền Hải Điểu>
+        </Hoa Đầu Bạch Chủy Điểu>
+    </Tinh Vệ>
+
+    <Linh Linh el="thuy">
+        <Hổ Văn Nhân Thanh Ngưu el="thuy" myth="1">
+            <Đại Thủy Báo Linh Ngưu el="none"></Đại Thủy Báo Linh Ngưu>
+        </Hổ Văn Nhân Thanh Ngưu>
+    </Linh Linh>
+
+    <Hợp Dũ el="thuy" myth="1">
+        <Nhân Diện Kim Vĩ Trư el="thuy" myth="1">
+            <Thực Trùng Phệ Xà Trư el="thuy">
+                <Thiết Bối Trư el="none"></Thiết Bối Trư>
+            </Thực Trùng Phệ Xà Trư>
+        </Nhân Diện Kim Vĩ Trư>
+    </Hợp Dũ>
+
+    <Phỉ el="am" myth="1">
+        <Bạch Đầu Độc Mục Xà Ngưu el="am" myth="1">
+            <Khô Vinh Ôn Ngưu el="none"></Khô Vinh Ôn Ngưu>
+        </Bạch Đầu Độc Mục Xà Ngưu>
+    </Phỉ>
+
+    <Lương Cừ el="kim" myth="1">
+        <Bạch Đầu Hổ Trảo Miêu el="kim" myth="1">
+            <Binh Tai Sơn Miêu el="none"></Binh Tai Sơn Miêu>
+        </Bạch Đầu Hổ Trảo Miêu>
+    </Lương Cừ>
+
+    <Lung Chất el="hoa" myth="1">
+        <Độc Giác Khiếu Trư el="hoa" myth="1">
+            <Khốc Thanh Thực Nhân Trư el="none"></Khốc Thanh Thực Nhân Trư>
+        </Độc Giác Khiếu Trư>
+    </Lung Chất>
+
+    <Thổ Lâu el="tho" myth="1">
+        <Tứ Giác Thực Nhân Dương el="tho" myth="1">
+            <Xích Mục Thạch Dương el="none"></Xích Mục Thạch Dương>
+        </Tứ Giác Thực Nhân Dương>
+    </Thổ Lâu>
+
+    <Khâm Nguyên el="moc">
+        <Tử Vũ Độc Phong el="moc" myth="1">
+            <Khô Mộc Chích Phong el="none"></Khô Mộc Chích Phong>
+        </Tử Vũ Độc Phong>
+    </Khâm Nguyên>
+
+    <Cổ Điêu el="phong" myth="1">
+        <Độc Giác Khốc Điêu el="phong" myth="1">
+            <Huyết Vũ Thực Nhân Điêu el="none"></Huyết Vũ Thực Nhân Điêu>
+        </Độc Giác Khốc Điêu>
+    </Cổ Điêu>
+
+    <Bác Thi el="tho">
+        <Cửu Vĩ Tứ Nhãn Dương el="tho" myth="1">
+            <Bối Mục Sơn Dương el="none"></Bối Mục Sơn Dương>
+        </Cửu Vĩ Tứ Nhãn Dương>
+    </Bác Thi>
+
+    <Trệ el="tho" myth="1">
+        <Ngưu Vĩ Khiếu Hổ el="tho" myth="1">
+            <Hổ Vĩ Thực Nhân Trệ el="none"></Hổ Vĩ Thực Nhân Trệ>
+        </Ngưu Vĩ Khiếu Hổ>
+    </Trệ>
+
+</BeastLineage>

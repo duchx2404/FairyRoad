@@ -3,10 +3,11 @@ import { askConfirm, notice } from './dialog';
 import { glyphSvg } from './glyph';
 import { h, $, btn } from './dom';
 import { s, meta, saveMeta, load } from '../engine/state';
-import { setSurname, ORIGINS, originName, RACE_GROUPS, RACE_INFO, originRace, PERKS, ROOTS, BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, hiddenRootKind, rootKindOf, type El } from '../data/core';
-import { LOCS } from '../data/world';
+import { setSurname, ORIGINS, originName, RACE_GROUPS, RACE_INFO, originRace, PERKS, BEAST_PERKS, ROOTS, BODIES, BEAST_BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, hiddenRootKind, rootKindOf, type El } from '../data/core';
+import { LOCS, beastLeafNodes } from '../data/world';
 import { rollFate, fitRoot, newLife, rerolls, freeMode, UPGRADES, upLv, buyUpgrade, originUnlocked, unlockOrigin, scoreParts, lastLife, perkAllowed, type Fate } from '../engine/life';
 import { mkName } from '../engine/core';
+import { pick } from '../core/util';
 import { biography, aiBlockReason } from '../ai/ollama';
 import { avatarSvg, playerPortrait } from './hud';
 
@@ -69,11 +70,21 @@ export function creation() {
   let name = mkName(g);
   let origin = ORIGINS.filter((o) => !o.karma)[Math.floor(Math.random() * 10)].id;
   let race: string = originRace(ORIGINS.find((o) => o.id === origin)!);
-  const pickOrigin = (o: (typeof ORIGINS)[number]) => { origin = o.id; perks = perks.filter((x) => perkAllowed(origin, x)); fate.root = { ...baseRoot }; fitRoot(fate, o); draw(); };
-  let fate: Fate = rollFate(false, g);
+  const isBeast = () => race === 'Yêu tộc' || !!ORIGINS.find((o) => o.id === origin)?.beastOrigin;
+  const leafNodes = beastLeafNodes();
+  let chosenBeast: { n: string; el: El; reg?: string[]; home?: string } | null = isBeast() ? pick(leafNodes) : null;
+  const pickOrigin = (o: (typeof ORIGINS)[number]) => {
+    origin = o.id;
+    perks = perks.filter((x) => perkAllowed(origin, x));
+    fate.root = { ...baseRoot };
+    fitRoot(fate, o);
+    if (isBeast() && !chosenBeast) chosenBeast = pick(leafNodes);
+    draw();
+  };
+  let fate: Fate = rollFate(false, g, isBeast());
   let left = rerolls();
   let perks: string[] = [];
-  const perkN = freeMode() ? PERKS.length : 2 + upLv('perk'); // chế độ tự chọn: không giới hạn
+  const perkN = freeMode() ? (isBeast() ? BEAST_PERKS.length : PERKS.length) : 2 + upLv('perk'); // chế độ tự chọn: không giới hạn
   const freePicker = () => {
     const toggleEl = (e: El) => {
       const els = fate.root.els.includes(e) ? fate.root.els.filter((x) => x !== e) : [...fate.root.els, e];
@@ -91,7 +102,7 @@ export function creation() {
       h('div', { class: 'small muted' }, rk.d),
       hiddenRootKind(fate.root.k) ? h('div', { class: 'small', style: { color: 'var(--seal)', marginTop: '4px' } }, 'Ngươi tu luyện được ngay, với tư chất vượt trội. Nhưng các hệ cân bằng khiến đá trắc linh không sáng: thiên hạ coi ngươi là phế linh căn — tiên sư không thu, tông môn không nhận, người đời khinh rẻ — cho tới khi bí mật bị lộ.') : null,
     );
-    const bodyFx = (b: (typeof BODIES)[number]) => {
+    const bodyFx = (b: (typeof BODIES)[number] | (typeof BEAST_BODIES)[number]) => {
       const f: string[] = [];
       if (b.cult) f.push(`tu luyện ×${b.cult}`);
       if (b.life) f.push(`thọ nguyên ×${b.life}`);
@@ -100,9 +111,28 @@ export function creation() {
       if (b.luck) f.push(`khí vận +${b.luck}`);
       if (b.heal) f.push(`hồi phục ×${b.heal}`);
       if (b.alch) f.push(`luyện đan +${Math.round(b.alch * 100)}%`);
-      if (b.g) f.push(b.g === 'f' ? 'chỉ nữ' : 'chỉ nam');
+      if ('g' in b && b.g) f.push(b.g === 'f' ? 'chỉ nữ' : 'chỉ nam');
       return f.join(' · ') || 'không có gì đặc biệt';
     };
+    if (isBeast()) {
+      return h('div', { class: 'free-pick' },
+        h('h4', {}, 'Bản thể Yêu Thú & Yêu Đan Bản Mệnh (Hậu duệ xa nhất)'),
+        h('div', { class: 'card verdict' },
+          h('div', { class: 'small muted' }, 'Hậu duệ sơ khai trong cây gia phả'),
+          h('div', { class: 'v-name' }, chosenBeast ? chosenBeast.n : 'Yêu thú',
+            chosenBeast ? h('span', { class: 'v-els' }, h('span', { class: 'el', style: { background: EL[chosenBeast.el].c } }, EL[chosenBeast.el].n)) : null
+          ),
+          h('div', { class: 'small' }, `Yêu tộc không có linh căn nhân loại. Tu luyện bằng cách ngưng tụ Yêu Đan (${chosenBeast ? EL[chosenBeast.el].n : ''} hệ) và rèn luyện thể phách.`),
+          h('div', { class: 'small muted' }, 'Theo cảnh giới và thế giới, huyết mạch sẽ thức tỉnh và thoát biến tiến hóa lên các bậc cao hơn trong gia phả.'),
+          h('div', { style: { marginTop: '8px' } },
+            btn('🎲 Đổi loài ngẫu nhiên', () => { chosenBeast = pick(leafNodes); draw(); }, 'small'),
+          ),
+        ),
+        h('h4', {}, 'Thể chất Yêu Tộc'),
+        h('div', { class: 'opts' }, ...BEAST_BODIES.map((b) => h('button', { class: 'opt' + (fate.body === b.id ? ' on' : ''), onclick: () => { fate.body = b.id; draw(); } },
+          h('b', {}, b.n), h('small', {}, bodyFx(b)), h('small', {}, b.d)))),
+      );
+    }
     const elBtn = (e: El) => {
       const on = fate.root.els.includes(e);
       return h('button', { class: 'opt el-opt' + (on ? ' on' : ''), style: { borderColor: on ? EL[e].c : undefined }, onclick: () => toggleEl(e) },
@@ -125,7 +155,8 @@ export function creation() {
     const org = ORIGINS.find((o) => o.id === origin)!;
     const forced = org.forcePerks ?? [];
     const root = ROOTS[fate.root.k];
-    const body = BODIES.find((b) => b.id === fate.body)!;
+    const body = (isBeast() ? BEAST_BODIES.find((b) => b.id === fate.body) : null) || BODIES.find((b) => b.id === fate.body) || (isBeast() ? BEAST_BODIES[0] : BODIES[0]);
+    const perkList = isBeast() ? BEAST_PERKS : PERKS;
     if (org.clan && !name.startsWith(org.clan + ' ')) name = setSurname(name, org.clan); // xuất thân thế gia: họ theo gia tộc
     const nameIn = h('input', { type: 'text', value: name, maxlength: 20, oninput: (e: Event) => (name = (e.target as HTMLInputElement).value) });
     showScreen(
@@ -143,7 +174,23 @@ export function creation() {
       h('div', { class: 'opts' }, ...RACE_GROUPS.map((r) => {
         const list = ORIGINS.filter((o) => originRace(o) === r);
         const locked = list.filter((o) => !originUnlocked(o.id)).length;
-        return h('button', { class: 'opt' + (r === race ? ' on' : ''), onclick: () => { if (r === race) return; race = r; pickOrigin(list.find((o) => originUnlocked(o.id)) ?? list[0]); } },
+        return h('button', { class: 'opt' + (r === race ? ' on' : ''), onclick: () => {
+          if (r === race) return;
+          race = r;
+          const nextOrg = list.find((o) => originUnlocked(o.id)) ?? list[0];
+          origin = nextOrg.id;
+          perks = [];
+          if (isBeast()) {
+            chosenBeast = pick(leafNodes);
+            fate = rollFate(false, g, true);
+          } else {
+            chosenBeast = null;
+            fate = rollFate(false, g, false);
+          }
+          baseRoot = { ...fate.root };
+          fitRoot(fate, nextOrg);
+          draw();
+        } },
           h('b', {}, r), h('small', {}, `${list.length} xuất thân${locked ? ` · ${locked} cần điểm Luân Hồi` : ''}`));
       })),
       RACE_INFO[race] ? h('p', { class: 'small', style: { fontStyle: 'italic' } }, RACE_INFO[race]) : null,
@@ -162,14 +209,36 @@ export function creation() {
         h('div', { class: 'stats5' }, ...STAT_KEYS.map((k) => h('div', { title: STATS[k].d }, h('b', {}, String(fate.stats[k] + (org.stat?.[k] || 0))), h('span', { class: 'small' }, STATS[k].n),
           freeMode() ? h('div', {}, btn('−', () => { fate.stats[k] = Math.max(1, fate.stats[k] - 1); draw(); }, 'small'), ' ', btn('+', () => { fate.stats[k] = Math.min(10, fate.stats[k] + 1); draw(); }, 'small'), ' ', btn('Max', () => { fate.stats[k] = 10; draw(); }, 'small', { title: `${STATS[k].n} tối đa (10)` })) : null))),
         freeMode() ? freePicker() : null,
-        freeMode() ? null : h('p', {}, h('b', {}, 'Linh căn: '), root.n, fate.root.els.length ? ` (${fate.root.els.map((e) => EL[e].n).join(' · ')})` : '', h('br', {}), h('span', { class: 'small muted' }, root.d)),
-        freeMode() ? null : h('p', {}, h('b', {}, 'Thể chất: '), body.n, h('br', {}), h('span', { class: 'small muted' }, body.d)),
-        freeMode() ? null : h('div', { class: 'center' }, btn(`Gieo lại mệnh số (còn ${left})`, () => { if (left > 0) { left--; fate = rollFate(!!org.rootBoost, g); baseRoot = { ...fate.root }; fitRoot(fate, org); perks = []; draw(); } }, '', { dis: left <= 0 })),
+        freeMode() ? null : (isBeast()
+          ? h('p', {},
+              h('b', {}, 'Bản thể khởi đầu: '),
+              chosenBeast ? h('span', { style: { fontWeight: 'bold', color: 'var(--prime)' } }, chosenBeast.n) : 'Yêu thú',
+              ' ',
+              chosenBeast ? h('span', { class: 'el', style: { background: EL[chosenBeast.el].c } }, EL[chosenBeast.el].n) : null,
+              ' ',
+              btn('🎲 Đổi loài thú', () => { chosenBeast = pick(leafNodes); draw(); }, 'small'),
+              h('br', {}),
+              h('span', { class: 'small muted' }, `Không có linh căn. Tu luyện bằng cách ngưng tụ Yêu Đan (${chosenBeast ? EL[chosenBeast.el].n : ''} hệ), rèn luyện nhục thân và thần thông. Đạt đủ cảnh giới sẽ tiến hóa lên loài cao hơn theo cây gia phả.`))
+          : h('p', {}, h('b', {}, 'Linh căn: '), root.n, fate.root.els.length ? ` (${fate.root.els.map((e) => EL[e].n).join(' · ')})` : '', h('br', {}), h('span', { class: 'small muted' }, root.d))),
+        freeMode() ? null : (isBeast()
+          ? h('p', {}, h('b', {}, 'Thể chất Yêu Tộc: '), body.n, h('br', {}), h('span', { class: 'small muted' }, body.d))
+          : h('p', {}, h('b', {}, 'Thể chất: '), body.n, h('br', {}), h('span', { class: 'small muted' }, body.d))),
+        freeMode() ? null : h('div', { class: 'center' }, btn(`Gieo lại mệnh số (còn ${left})`, () => {
+          if (left > 0) {
+            left--;
+            fate = rollFate(!!org.rootBoost, g, isBeast());
+            baseRoot = { ...fate.root };
+            fitRoot(fate, org);
+            perks = [];
+            if (isBeast()) chosenBeast = pick(leafNodes);
+            draw();
+          }
+        }, '', { dis: left <= 0 })),
       ),
       h('h3', {}, freeMode() ? `Thiên phú — chọn tùy ý (đã chọn ${perks.length})` : `Thiên phú — chọn ${perkN}`),
-      freeMode() ? h('div', { style: { margin: '0 0 8px' } }, btn('Chọn hết thiên phú tốt', () => { perks = PERKS.filter((p) => !p.bad).map((p) => p.id); draw(); }, 'small'), ' ', btn('Chọn tất cả', () => { perks = PERKS.map((p) => p.id); draw(); }, 'small'), ' ', btn('Bỏ chọn hết', () => { perks = []; draw(); }, 'small ghost')) : null,
-      h('div', { class: 'opts' }, ...(freeMode() ? PERKS.map((p) => p.id) : [...forced.filter((x) => !fate.perkOffer.includes(x)), ...fate.perkOffer]).map((id) => {
-        const p = PERKS.find((x) => x.id === id)!;
+      freeMode() ? h('div', { style: { margin: '0 0 8px' } }, btn('Chọn hết thiên phú tốt', () => { perks = perkList.filter((p) => !p.bad).map((p) => p.id); draw(); }, 'small'), ' ', btn('Chọn tất cả', () => { perks = perkList.map((p) => p.id); draw(); }, 'small'), ' ', btn('Bỏ chọn hết', () => { perks = []; draw(); }, 'small ghost')) : null,
+      h('div', { class: 'opts' }, ...(freeMode() ? perkList.map((p) => p.id) : [...forced.filter((x) => !fate.perkOffer.includes(x)), ...fate.perkOffer]).map((id) => {
+        const p = perkList.find((x) => x.id === id) || PERKS.find((x) => x.id === id)!;
         const must = forced.includes(id); // thiên phú bắt buộc của xuất thân: luôn bật, không bỏ được, không tính vào số được chọn
         const on = must || perks.includes(id);
         const blocked = !perkAllowed(origin, id); // vd. huyết hải thâm thù không đi cùng Diệp gia Hỗn Độn
@@ -181,7 +250,14 @@ export function creation() {
         btn('Bước vào nhân gian', () => {
           if (!name.trim()) return notice('Hãy đặt tên cho nhân vật.', 'Thiếu tên');
           if ((freeMode() ? perks.length + forced.length : perks.filter((x) => !forced.includes(x)).length) < (freeMode() ? 1 : perkN)) return notice(`Hãy chọn ${freeMode() ? 'ít nhất 1' : 'đủ ' + perkN} thiên phú.`, 'Thiếu thiên phú');
-          newLife({ name: name.trim(), g, origin, fate, perks: [...new Set([...perks, ...forced])] });
+          newLife({
+            name: name.trim(),
+            g,
+            origin,
+            fate,
+            perks: [...new Set([...perks, ...forced])],
+            beast: isBeast() ? (chosenBeast?.n ?? pick(leafNodes).n) : undefined,
+          });
           s.flags.introPending = true;
           if (org.rootBoost && fate.root.k < 3) { /* xuất thân tốt đã được ưu tiên khi gieo */ }
           hideScreen();

@@ -59,6 +59,7 @@ export function statUp(k: StatKey, n = 1): string {
   return ` (${STATS[k].n} ${n >= 0 ? '+' : ''}${n})`;
 }
 export function tamma(n: number): string {
+  if (has('hoangdao') && n > 0) n = Math.floor(n * 0.5);
   s.tamma = clamp(s.tamma + n, 0, 100);
   return n > 0 ? ' (Tâm ma tăng)' : ' (Tâm cảnh thanh tịnh hơn)';
 }

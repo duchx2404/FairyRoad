@@ -18,7 +18,7 @@ import { allyFollow } from './ally';
 
 // ---------- Công pháp độc môn ----------
 /** Công pháp phổ thông: dù có tông dùng làm nhập môn, nơi khác vẫn truyền. */
-const COMMON_TECH = new Set(['thanhtam', 'kimcuongquyet', 'thanhmocquyet', 'nhuocthuyquyet', 'liethoaquyet', 'bangphachquyet', 'loidinhquyet', 'thanhphongquyet', 'liemtucthuat', 'thanquangquyet', 'trongsonquyet', 'canhphongquyet', 'kinhloiquyet', 'uamquyet', 'luuquangquyet', 'nguhanhquyet', 'tinhhaiquyet', 'phonglangquyet', 'baisonkinh']);
+const COMMON_TECH = new Set(['thanhtam', 'thonnguyetquyet', 'bachthutoithe', 'thietgiapyeubao', 'thanhmanthonmoc', 'giaolongphucthuy', 'xichdiemhoadieu', 'hauthuhungvuong', 'hanbangbachlang', 'loibaotrucquyet', 'thanhungnguphong', 'uamxaanh', 'kimquangthanloc', 'kimcuongquyet', 'thanhmocquyet', 'nhuocthuyquyet', 'liethoaquyet', 'bangphachquyet', 'loidinhquyet', 'thanhphongquyet', 'liemtucthuat', 'thanquangquyet', 'trongsonquyet', 'canhphongquyet', 'kinhloiquyet', 'uamquyet', 'luuquangquyet', 'nguhanhquyet', 'tinhhaiquyet', 'phonglangquyet', 'baisonkinh']);
 export const techOwners = (id: string) => Object.values(SECTS).filter((x) => x.tech === id).map((x) => x.id);
 /** Công pháp trấn tông: chỉ tông sở hữu mới truyền. */
 export const isExclusiveTech = (id: string) => !COMMON_TECH.has(id) && techOwners(id).length > 0;
@@ -156,7 +156,7 @@ export function sectWares(): SectWare[] {
   const sks = worldDefinitions('sk').filter((k) => !k.peak && ((k.tier <= sc.tier + 1 && (!k.el || sc.el.includes(k.el) || sc.el.length === 0)) || skillOwners(k.id).includes(sc.id)) && sectCanTeachSkill(k.id, sc.id));
   for (const k of sks) out.push({ id: 'sk:' + k.id, n: k.n, cost: 25 * Math.pow(3.5, k.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][Math.min(6, k.tier)] });
   for (const x of worldDefinitions('tp')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
-  for (const x of worldDefinitions('fq')) if (x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
+  for (const x of worldDefinitions('fq')) if (!x.exclusive && x.tier <= Math.min(6, sc.tier + 2)) out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
   
   // Đan dược: Bảo khố bày đủ các cấp đan dược (đột phá, hỗ trợ, tu luyện, thọ nguyên...)
   const artCap = Math.min(6, worldArtCap());

@@ -387,6 +387,7 @@ export interface Beast {
   codexHidden?: boolean; // biến thể chiến đấu, không phải một loài riêng trong Đồ giám
   codexOrder?: number;
   shjLineage?: boolean; // tổ tiên của một nhánh được ghi trong Sơn Hải Kinh
+  myth?: boolean; // có cơ sở truyền thuyết (Sơn Hải Kinh / Thần thoại)
 }
 export const BEASTS: Beast[] = [
   { n: 'Hắc Phong Lang', el: 'phong', lv: [0, 1], reg: ['trungtho', 'bacminh'], mat: 'longthu' },
@@ -973,151 +974,8 @@ for (const [n, el, r, home, d] of SHJ_BEASTS) {
   loc.lv = Math.max(loc.lv ?? 0, Math.min(7, r - 1));
   loc.qi = Math.max(loc.qi, 1.4 + r * 0.12);
 }
-type BeastLineageNode = { n: string; parent?: string; el: El; order: number; shjLineage?: boolean };
-const BEAST_LINEAGE: BeastLineageNode[] = [
-  { n: 'Tổ Long', el: 'thuy', order: 0 },
-  { n: 'Chân Long', parent: 'Tổ Long', el: 'thuy', order: 0 },
-  ...(['Kim', 'Hỏa', 'Thủy', 'Thổ', 'Mộc', 'Lôi', 'Băng', 'Phong', 'Ám', 'Quang'] as const).map((n, i) => ({
-    n: `${n} Long`, parent: 'Chân Long', el: ({ Kim: 'kim', Hỏa: 'hoa', Thủy: 'thuy', Thổ: 'tho', Mộc: 'moc', Lôi: 'loi', Băng: 'bang', Phong: 'phong', Ám: 'am', Quang: 'quang' } as const)[n], order: i,
-  })),
-  { n: 'Ứng Long', parent: 'Chân Long', el: 'thuy', order: 10 },
-  { n: 'Chúc Long', parent: 'Ứng Long', el: 'hoa', order: 0 },
-  { n: 'Thanh Long', parent: 'Chúc Long', el: 'moc', order: 0 },
-  { n: 'Giao Long', parent: 'Thanh Long', el: 'thuy', order: 0 },
-  { n: 'Hải Giao', parent: 'Giao Long', el: 'thuy', order: 0 },
-  { n: 'Lôi Giao', parent: 'Giao Long', el: 'loi', order: 1 },
-  { n: 'Giao Long Vương', parent: 'Giao Long', el: 'thuy', order: 2 },
-  { n: 'Thần Giao', parent: 'Giao Long', el: 'loi', order: 3 },
-  { n: 'Thanh Lân Mãng', parent: 'Giao Long', el: 'moc', order: 4 },
-  ...(['Tù Ngưu', 'Nhai Tí', 'Trào Phong', 'Bồ Lao', 'Toan Nghê', 'Bá Hạ', 'Bệ Ngạn', 'Phụ Hí', 'Si Vẫn'] as const).map((n, i) => ({ n, parent: 'Chân Long', el: 'thuy' as El, order: 1 + i })),
-  { n: 'Chân Phượng', el: 'hoa', order: 0, shjLineage: true },
-  { n: 'Phượng Hoàng', parent: 'Chân Phượng', el: 'hoa', order: 0 },
-  { n: 'Hỏa Vũ Điểu', parent: 'Phượng Hoàng', el: 'hoa', order: 1 },
-  { n: 'Xích Hỏa Thanh Điểu', parent: 'Phượng Hoàng', el: 'hoa', order: 2 },
-  { n: 'Hỏa Linh Tước', parent: 'Phượng Hoàng', el: 'hoa', order: 3 },
-  { n: 'Tất Phương', parent: 'Phượng Hoàng', el: 'hoa', order: 4 },
-  { n: 'Kim Ô Linh Điểu', parent: 'Phượng Hoàng', el: 'quang', order: 5 },
-  { n: 'Ngũ Sắc Linh Phượng', parent: 'Phượng Hoàng', el: 'hoa', order: 6 },
-  { n: 'Thanh Loan', parent: 'Phượng Hoàng', el: 'phong', order: 7 },
-  { n: 'Chu Tước', parent: 'Phượng Hoàng', el: 'hoa', order: 8 },
-  { n: 'Tử Điện Điêu', parent: 'Phượng Hoàng', el: 'loi', order: 9 },
-  { n: 'Hỏa Phượng', parent: 'Chu Tước', el: 'hoa', order: 0 },
-  { n: 'Băng Phượng', parent: 'Thanh Loan', el: 'bang', order: 0 },
-  { n: 'Thủy Kỳ Lân', el: 'thuy', order: 0, shjLineage: true },
-  { n: 'Kỳ Lân', parent: 'Thủy Kỳ Lân', el: 'thuy', order: 0 },
-  { n: 'Hỏa Kỳ Lân', parent: 'Kỳ Lân', el: 'hoa', order: 0 },
-  { n: 'Hỏa Kỳ Lân Thú', parent: 'Kỳ Lân', el: 'hoa', order: 1 },
-  { n: 'Kim Lân Thú', parent: 'Kỳ Lân', el: 'kim', order: 2 },
-  { n: 'Lân Mã', parent: 'Kỳ Lân', el: 'kim', order: 3 },
-  { n: 'Tê Ngưu', el: 'tho', order: 0 },
-  { n: 'Thủy Tê', parent: 'Tê Ngưu', el: 'thuy', order: 0 },
-  { n: 'Bích Lân Tê', parent: 'Thủy Tê', el: 'thuy', order: 0 },
-  { n: 'Độc Giác Thủy Tê', parent: 'Bích Lân Tê', el: 'thuy', order: 0 },
-  { n: 'Nguyên Lang', el: 'phong', order: 0 },
-  { n: 'Thanh Phong Lang', parent: 'Nguyên Lang', el: 'phong', order: 0 },
-  { n: 'Tuyết Ảnh Lang', parent: 'Thanh Phong Lang', el: 'bang', order: 0 },
-  { n: 'U Minh Lang', parent: 'Nguyên Lang', el: 'am', order: 1 },
-  { n: 'Thần Điểu', el: 'quang', order: 0 },
-  { n: 'Hỏa Hạc', parent: 'Thần Điểu', el: 'hoa', order: 0 },
-  { n: 'Kim Vũ Hạc', parent: 'Hỏa Hạc', el: 'kim', order: 0 },
-  { n: 'Thanh Vân Điểu', parent: 'Thần Điểu', el: 'phong', order: 1 },
-  { n: 'Hải Kình', el: 'thuy', order: 0 },
-  { n: 'Bạch Kình', parent: 'Hải Kình', el: 'thuy', order: 0 },
-  { n: 'Hàn Hải Kình', parent: 'Bạch Kình', el: 'bang', order: 0 },
-  { n: 'Lôi Kình', parent: 'Hải Kình', el: 'loi', order: 1 },
-  { n: 'Sư Tử', el: 'hoa', order: 0 },
-  { n: 'Xích Diễm Sư', parent: 'Sư Tử', el: 'hoa', order: 0 },
-  { n: 'Liệt Diễm Sư', parent: 'Xích Diễm Sư', el: 'hoa', order: 0 },
-  { n: 'Tuyết Sư', parent: 'Sư Tử', el: 'bang', order: 1 },
-  { n: 'Cổ Quy', el: 'thuy', order: 0 },
-  { n: 'Huyền Giáp Quy', parent: 'Cổ Quy', el: 'tho', order: 0 },
-  { n: 'Bích Hải Quy', parent: 'Huyền Giáp Quy', el: 'thuy', order: 0 },
-  { n: 'Bạch Hổ', el: 'kim', order: 0 },
-  { n: 'Thiết Trảo Hổ', parent: 'Bạch Hổ', el: 'kim', order: 0 },
-  { n: 'U Minh Hổ', parent: 'Thiết Trảo Hổ', el: 'am', order: 0 },
-  { n: 'Hỏa Văn Hổ', parent: 'Bạch Hổ', el: 'hoa', order: 1 },
-  { n: 'Thuần Long', el: 'thuy', order: 0 },
-  { n: 'Thanh Lân Long', parent: 'Thuần Long', el: 'moc', order: 0 },
-  { n: 'Hải Thiên Long', parent: 'Thanh Lân Long', el: 'thuy', order: 0 },
-  { n: 'Xích Viêm Long', parent: 'Thuần Long', el: 'hoa', order: 1 },
-  { n: 'Cự Ngư', el: 'thuy', order: 0 },
-  { n: 'Thâm Hải Cự Ngư', parent: 'Cự Ngư', el: 'thuy', order: 0 },
-  { n: 'Thôn Hải Thú', parent: 'Thâm Hải Cự Ngư', el: 'am', order: 0 },
-  { n: 'Băng Ngạc Ngư', parent: 'Cự Ngư', el: 'bang', order: 1 },
-  { n: 'Thượng Cổ Trùng', el: 'moc', order: 0 },
-  { n: 'Kim Giáp Ngô Công', parent: 'Thượng Cổ Trùng', el: 'kim', order: 0 },
-  { n: 'Hư Linh Trùng', parent: 'Thượng Cổ Trùng', el: 'loi', order: 1 },
-  { n: 'Hư Không Trùng', parent: 'Hư Linh Trùng', el: 'loi', order: 0 },
-  { n: 'Sa Hạt', el: 'tho', order: 0 },
-  { n: 'Sa Hạt Vương', parent: 'Sa Hạt', el: 'tho', order: 0 },
-  { n: 'Thổ Hoàng Hạt', parent: 'Sa Hạt', el: 'tho', order: 1 },
-  { n: 'Băng Phách Hạt', parent: 'Thổ Hoàng Hạt', el: 'bang', order: 0 },
-  { n: 'Băng Hùng', el: 'bang', order: 0 },
-  { n: 'Huyền Băng Hùng', parent: 'Băng Hùng', el: 'bang', order: 0 },
-  { n: 'Băng Phách Hùng', parent: 'Huyền Băng Hùng', el: 'bang', order: 0 },
-  { n: 'Lôi Thú', el: 'loi', order: 0 },
-  { n: 'Tử Điện Thú', parent: 'Lôi Thú', el: 'loi', order: 0 },
-  { n: 'Lôi Linh Thú', parent: 'Tử Điện Thú', el: 'loi', order: 0 },
-  { n: 'Thụ Yêu', el: 'moc', order: 0 },
-  { n: 'Thanh Mộc Thụ Yêu', parent: 'Thụ Yêu', el: 'moc', order: 0 },
-  { n: 'Cổ Mộc Thụ Yêu', parent: 'Thanh Mộc Thụ Yêu', el: 'moc', order: 0 },
-  { n: 'Thi Quỷ', el: 'am', order: 0 },
-  { n: 'Âm Trạch Thi Quỷ', parent: 'Thi Quỷ', el: 'am', order: 0 },
-  { n: 'Ảnh Báo', el: 'am', order: 0 },
-  { n: 'Dạ Ảnh Báo', parent: 'Ảnh Báo', el: 'am', order: 0 },
-  { n: 'Dạ Xoa Ảnh Báo', parent: 'Dạ Ảnh Báo', el: 'am', order: 0 },
-  { n: 'Thôn Kim Thử', el: 'kim', order: 0 },
-  { n: 'Phệ Kim Thử', parent: 'Thôn Kim Thử', el: 'kim', order: 0 },
-  { n: 'Phệ Kim Thú', parent: 'Phệ Kim Thử', el: 'kim', order: 0 },
-  { n: 'Côn Bằng', el: 'thuy', order: 0, shjLineage: true },
-  { n: 'Côn Ngư', parent: 'Côn Bằng', el: 'thuy', order: 0 },
-  { n: 'Kim Sí Đại Bằng', parent: 'Côn Bằng', el: 'phong', order: 1 },
-  { n: 'Thanh Vũ Điêu', parent: 'Côn Bằng', el: 'phong', order: 2 },
-  { n: 'Huyền Vũ', el: 'thuy', order: 0, shjLineage: true },
-  { n: 'Huyền Quy', parent: 'Huyền Vũ', el: 'thuy', order: 0 },
-  { n: 'Huyền Quy Thần', parent: 'Huyền Quy', el: 'thuy', order: 0 },
-  { n: 'Bạch Trạch', el: 'quang', order: 0 },
-  { n: 'Bạch Trạch Thánh Thú', parent: 'Bạch Trạch', el: 'quang', order: 0 },
-  { n: 'Bạch Trạch Linh Thú', parent: 'Bạch Trạch Thánh Thú', el: 'quang', order: 0 },
-  { n: 'Bạch Trạch Dị Thú', parent: 'Bạch Trạch Linh Thú', el: 'quang', order: 0 },
-  { n: 'Cửu Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Bát Vĩ Hồ', parent: 'Cửu Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Thất Vĩ Hồ', parent: 'Bát Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Lục Vĩ Hồ', parent: 'Thất Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Ngũ Vĩ Hồ', parent: 'Lục Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Tứ Vĩ Hồ', parent: 'Ngũ Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Tam Vĩ Hồ', parent: 'Tứ Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Nhị Vĩ Hồ', parent: 'Tam Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Nhất Vĩ Hồ', parent: 'Nhị Vĩ Hồ', el: 'hoa', order: 0 },
-  { n: 'Xích Diễm Hồ', parent: 'Cửu Vĩ Hồ', el: 'hoa', order: 1 },
-  { n: 'Tuyết Ảnh Hồ', parent: 'Cửu Vĩ Hồ', el: 'bang', order: 2 },
-  { n: 'Ngân Nguyệt Hồ', parent: 'Cửu Vĩ Hồ', el: 'quang', order: 3 },
-  { n: 'Tinh Hồ', parent: 'Cửu Vĩ Hồ', el: 'quang', order: 4 },
-  { n: 'Ảnh Hồ', parent: 'Cửu Vĩ Hồ', el: 'am', order: 5 },
-  { n: 'Lung Điệt', parent: 'Cửu Vĩ Hồ', el: 'hoa', order: 6 },
-  { n: 'Thiên Cẩu', el: 'kim', order: 0, shjLineage: true },
-  { n: 'Ngân Nguyệt Lang Vương', parent: 'Thiên Cẩu', el: 'kim', order: 0, shjLineage: true },
-  { n: 'Hắc Phong Lang', parent: 'Ngân Nguyệt Lang Vương', el: 'phong', order: 0 },
-  { n: 'Linh Lang', parent: 'Ngân Nguyệt Lang Vương', el: 'phong', order: 1 },
-  { n: 'Hồng Hoang Hung Lang', parent: 'Ngân Nguyệt Lang Vương', el: 'am', order: 2 },
-  { n: 'Ngân Nguyệt Lang', parent: 'Ngân Nguyệt Lang Vương', el: 'kim', order: 3 },
-  { n: 'Tật Phong Lang', parent: 'Ngân Nguyệt Lang', el: 'phong', order: 0 },
-  { n: 'Chu Yếm', el: 'kim', order: 0, shjLineage: true },
-  { n: 'Tinh Tinh', parent: 'Chu Yếm', el: 'moc', order: 0 },
-  { n: 'Ung Hòa', parent: 'Chu Yếm', el: 'am', order: 1 },
-];
-/** Gắn các nhánh phả hệ đã định danh và họ nền dùng cho dị thú bản địa. */
-/** Concrete descendant species, keeping ancestor names separate from the animal's own species. */
-export function beastDescendants(ancestor: string): { n: string; el: El }[] {
-  const descendants = new Set<string>([ancestor]);
-  for (let changed = true; changed;) {
-    changed = false;
-    for (const node of BEAST_LINEAGE) if (node.parent && descendants.has(node.parent) && !descendants.has(node.n)) {
-      descendants.add(node.n); changed = true;
-    }
-  }
-  return BEAST_LINEAGE.filter(node => node.n !== ancestor && descendants.has(node.n) && !BEAST_LINEAGE.some(child => child.parent === node.n));
-}
+import { BEAST_LINEAGE, beastDescendants, beastLeafNodes, isMythicBeast, type BeastLineageNode } from './beast-lineage';
+export { BEAST_LINEAGE, beastDescendants, beastLeafNodes, isMythicBeast, type BeastLineageNode };
 export function linkBeastFamilies(beasts: Beast[]) {
   for (const node of BEAST_LINEAGE) {
     let beast = beasts.find((b) => b.n === node.n);
@@ -1129,6 +987,7 @@ export function linkBeastFamilies(beasts: Beast[]) {
     else delete beast.anc;
     beast.codexOrder = node.order;
     if (node.shjLineage) beast.shjLineage = true;
+    if (node.myth) beast.myth = true;
   }
   const pending = new Set(beasts);
   while (pending.size) {
