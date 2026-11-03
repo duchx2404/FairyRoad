@@ -1,6 +1,6 @@
 // Pháp quyết (bí thuật tiện ích, học xong là có) và Chân linh (linh thú đồng hành).
 import type { El } from './core';
-import { gradeLabel } from './items';
+import { gradeLabel, registerSpecial } from './items';
 
 // ---------- Pháp quyết ----------
 export interface PhapQuyet {
@@ -67,6 +67,14 @@ export const CHANLINH: Record<string, ChanLinh> = {
   hacky: { id: 'hacky', n: 'Hắc Kỳ Lân', el: 'am', ic: 'qilin', minR: 5, d: 'Kỳ lân đen của bóng tối, uy áp làm yêu thú quỳ rạp.', atk: 22, def: 12, hp: 15, mount: 4 },
   chuoc: { id: 'chuoc', n: 'Chu Tước Ấu Điểu', el: 'hoa', ic: 'phoenix', minR: 6, d: 'Chim lửa con mang huyết mạch thần thú. Lửa của nó không bao giờ tắt.', atk: 30, cult: 6, luck: 3, mount: 5 },
 };
+// Lồng linh thú ('x:trung_<id>'): đăng ký sẵn để bảo khố, túi đồ, save cũ luôn có tên/mô tả.
+for (const b of Object.values(CHANLINH)) registerSpecial({
+  id: 'trung_' + b.id,
+  n: `Lồng linh thú: ${b.n} (Ấu niên)`,
+  d: `Phong ấn ấu thú ${b.n} mang huyết mạch linh thú. Dùng để thuần phục và ký kết khế ước làm chân linh tọa kỵ.`,
+  price: Math.round((650 + b.mount * 350) * 0.4),
+  use: 'Ký khế ước linh thú',
+});
 // ---------- Tọa kỵ: chân linh chở chủ đi đường ----------
 export const MOUNT_GRADE = ['', 'Hoàng giai', 'Huyền giai', 'Địa giai', 'Thiên giai', 'Tiên giai'];
 /** Hệ số nhanh hơn đi thường theo phẩm. Tiên giai: cự ly ngắn tới ngay, cự ly dài chỉ 1–3 tháng. */

@@ -8,7 +8,7 @@ import { HERBS, PILLS, PILL_GRADE } from '../data/items';
 import { s, type Pin } from './state';
 import { wedDaolu } from './relationships';
 import { moneyScale, effRi, pqSum, cultRate, atBottleneck, addItem, has, stat, root, M, itemName, maxHp, itemPrice, removeItem, stageName, perfectBody, myLinh } from './char';
-import { missionProg, trucCoKind, cultivateTurn, passTime, btChance, failBonus, breakthrough, pillBonusOf, addLog, addProg, mark, setLoc, travelYears, travelBlock, needsShip, shipFare, dist, travelSpeed, spawnPin, nearestLoc, mkNpc, addNpc, relChange, findNpc, npcRealm, daolu } from './core';
+import { missionProg, trucCoKind, cultivateTurn, passTime, btChance, failBonus, breakthrough, pillBonusOf, addLog, addProg, mark, setLoc, travelYears, travelBlock, needsShip, shipFare, dist, travelSpeed, spawnPin, nearestLoc, mkNpc, addNpc, relChange, findNpc, npcRealm, daolu, realmOpen, nextOpen } from './core';
 import { stoneForRealm, STONE_NAMES, STONE_VALUE } from './stones';
 import { EVENTS, pickEvent, markSeen, evTitle, type Choice, type GameEvent, type Where } from './events';
 import { fight, fightSummary, beastFoe, dangerLabel, fightLogs, type FightResult, type FoeSpec } from './combat';
@@ -303,7 +303,7 @@ export function beastEncounter(lv: number): Scene {
     title: `Gặp ${spec.name}`,
     text: `Bụi cây rung lên. Một con ${spec.name} (${spec.r ? REALMS[spec.r].n : 'yêu thú cấp thấp'}) chặn đường, mắt đỏ ngầu. Đánh giá: ${dangerLabel(spec)}.`,
     choices: [
-      { t: 'Giao chiến', cls: 'prime', fn: () => { const r = fight(spec); return fightSummary(r) + (r.loot.length ? ` Thu được ${r.loot.map((m) => itemName('m:' + m)).join(', ')}.` : ''); } },
+      { t: 'Giao chiến', cls: 'prime', fn: () => { const r = fight(spec); return fightSummary(r); } },
       { t: 'Lặng lẽ lui đi', fn: () => (ch(0.65 + (stat('van') - 5) * 0.04 + (has('nhangiac') ? 0.2 : 0) + pqSum('hide')) ? 'Ngươi nín thở lùi lại, nó không đuổi theo.' : (() => { const r = fight(spec); return 'Nó phát hiện ra ngươi! ' + fightSummary(r); })()) },
     ],
   };
@@ -591,8 +591,8 @@ export function teahouse(): Scene {
   const lines: string[] = [];
   const realms = Object.values(LOCS).filter((l) => l.type === 'realm').sort((a, b) => Math.hypot(a.x - s.x, a.y - s.y) - Math.hypot(b.x - s.x, b.y - s.y));
   for (const r of realms.slice(0, 2)) {
-    const open = Math.floor(s.year) % r.open![0] < r.open![1];
-    lines.push(open ? `"Nghe nói ${r.n} đang mở! Chỉ ${REALMS[r.minRealm || 0].n} trở lên mới vào được."` : `"${r.n} phải tới năm ${Math.floor(s.year) - (Math.floor(s.year) % r.open![0]) + r.open![0]} mới mở lại."`);
+    const open = realmOpen(r);
+    lines.push(open ? `"Nghe nói ${r.n} đang mở! Chỉ ${REALMS[r.minRealm || 0].n} trở lên mới vào được."` : `"${r.n} phải tới năm ${nextOpen(r)} mới mở lại."`);
   }
   const auc = Object.values(LOCS).filter((l) => l.auction);
   const a = pick(auc);

@@ -689,7 +689,7 @@ export class Battle {
         const addLootItem = (id: string, qty = 1, g?: number) => {
           const added = addItem(id, qty, g);
           if (added > 0) {
-            loot.push(id.replace(/^[a-z]+:/, ''));
+            loot.push(id);
             lootParts.push(`${added > 1 ? `${added}x ` : ''}${itemName(id, g)}`);
           }
         };
@@ -737,7 +737,7 @@ export class Battle {
             addLootItem(f.r >= 6 ? 'm:cotuhuyet' : 'm:tuduehuyet', 1);
           }
           // Vật liệu chỉ định riêng của loài
-          if (this.spec?.mat && !loot.includes(this.spec.mat)) {
+          if (this.spec?.mat && !loot.includes('m:' + this.spec.mat)) {
             addLootItem('m:' + this.spec.mat, 1);
           }
 

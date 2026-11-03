@@ -32,7 +32,7 @@ const nguy = (f: FoeSpec) => `${f.name} · ${f.r ? realmN(f.r) : 'chưa khai lin
 function duel(spec: FoeSpec, o: { win: (r: FightResult) => Outcome; flee?: (r: FightResult) => Outcome; lose?: (r: FightResult) => Outcome; lethal?: boolean; noFlee?: boolean }): Outcome {
   const r = fight(spec, { lethal: o.lethal, noFlee: o.noFlee });
   let t = fightSummary(r);
-  if (r.win && r.loot.length) t += ` Thu được ${r.loot.map((m) => itemName('m:' + m)).join(', ')}.`;
+  // Chiến lợi phẩm đã được liệt kê trong r.lootDesc (fightSummary).
   const join = (x: Outcome): Outcome => (typeof x === 'string' ? t + ' ' + x : { ...x, text: t + ' ' + x.text });
   if (r.died) return t;
   if (r.win) return join(o.win(r));
