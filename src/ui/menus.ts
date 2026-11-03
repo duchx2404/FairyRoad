@@ -214,7 +214,7 @@ function lotRow(lot: Lot, redraw: () => void) {
   const desc = lot.gear
     ? `${gearLabel(lot.gear)} · ${SLOTS[lot.gear.slot]} · ${REALMS[lot.gear.lv].n} · ${gearLine(lot.gear)}`
     : bDef
-    ? `${bDef.d} · Tọa kỵ ${MOUNT_GRADE[bDef.mount]} · ${clEffect(bDef)}`
+    ? `${bDef.d} · ${bDef.mount ? 'Tọa kỵ ' + MOUNT_GRADE[bDef.mount] : 'Chiến sủng'} · ${clEffect(bDef)}`
     : itemDesc(lot.id);
   const row = h('div', { class: 'item' }, lot.gear ? gearIcon(lot.gear) : icon(lot.id, lot.g), h('div', { class: 'nm' }, lot.n, h('small', {}, desc)));
   const acts = h('div', { class: 'acts' });

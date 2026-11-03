@@ -38,6 +38,9 @@ import { centerOn } from './map';
 import { openCelestial } from './celestial';
 import { CELESTIAL } from '../data/celestial';
 import { fmt, yearsTxt } from '../core/util';
+import { getBeastTerritory, getGhostDomain } from '../engine/wild-territory';
+import { openBeastTerritoryModal, openGhostDomainModal, openTerritoryClashModal, openTreasureModal } from './wild-modal';
+import { checkYaoTerritoryStatus, getTerritoryDominantSpecies } from '../engine/yao-territory';
 import { avatarSvg, npcPic, npcPicWanted, playerPortrait } from './portrait';
 import { openPortrait } from './hud';
 import { weaponKind } from './arena';
@@ -291,6 +294,45 @@ export function openPlace(id = s.loc) {
       cards.push({ t: 'Tìm tổ thú', sub: `${yearsTxt(T() * 0.5)} · ${names}`, dis: !ok, why: ok ? undefined : 'Tổ thú vừa lộ diện, phải chờ thêm nhiều năm', fn: after(() => run(() => { passTime(T() * 0.5); return eventScene(ev); })) });
     }
     cards.push({ t: 'Hái dược', sub: `${yearsTxt(T() * 0.5)} · dược liệu cấp ${REALMS[Math.min(RMAX(), (l.lv ?? 1) + 1)].n}`, fn: after(() => run(() => gatherScene(false))) });
+    const bTerr = getBeastTerritory(l.id);
+    if (bTerr) {
+      cards.push({
+        t: 'Lãnh Thổ Yêu Thú',
+        sub: 'Ý thức lãnh thổ loài thú · Săn yêu đan & Thuần phục tọa kỵ',
+        hl: true,
+        fn: () => openBeastTerritoryModal(bTerr),
+      });
+    }
+    const gDom = getGhostDomain(l.id);
+    if (gDom) {
+      cards.push({
+        t: 'Quỷ Vực Âm Sát',
+        sub: 'Quỷ Vương > Quỷ Soái > Quỷ Tướng... · Siêu độ & Khiêu chiến',
+        hl: true,
+        fn: () => openGhostDomainModal(gDom),
+      });
+    }
+
+    const domSpec = getTerritoryDominantSpecies(l.id);
+    if (domSpec) {
+      cards.push({
+        t: `✨ Thiên Tài Địa Bảo · ${domSpec.treasure.name}`,
+        sub: `Canh giữ bởi ${domSpec.treasure.guardian} · Thu hoạch / Cường đoạt`,
+        hl: true,
+        fn: () => openTreasureModal(domSpec, () => openPlace(id)),
+      });
+    }
+
+    const yaoCheck = checkYaoTerritoryStatus(l.id);
+    if (yaoCheck.dominantSpecies && yaoCheck.clash) {
+      cards.unshift({
+        t: `⚔️ Đụng độ cương thổ · ${yaoCheck.dominantSpecies.name}`,
+        sub: 'Xâm phạm địa bàn loài khác! Quyết đấu trấn áp hoặc cống nạp kết minh',
+        hl: true,
+        edge: '#b91c1c',
+        fn: () => openTerritoryClashModal(yaoCheck.dominantSpecies!, () => openPlace(id)),
+      });
+    }
   }
   if (l.gate) cards.unshift({ t: `Tới ${CELESTIAL[l.gate].n}`, sub: `${CELESTIAL[l.gate].kind} · xem bản đồ, chức vụ và người đương nhiệm`, hl: true, fn: () => openCelestial(l.gate!) });
   if (s.craft.alch || s.craft.talis || s.craft.forge) cards.push({ t: 'Luyện chế', sub: 'Luyện đan, chế phù, luyện khí', fn: after(() => openCraft()) });
@@ -301,6 +343,14 @@ export function openPlace(id = s.loc) {
     ...placeHeader(l),
     h('p', { class: 'pl-desc' }, l.type === 'sect' ? sectDesc(l) : l.d),
   ];
+  const yaoCheckLoc = checkYaoTerritoryStatus(l.id);
+  if (yaoCheckLoc.dominantSpecies) {
+    if (yaoCheckLoc.clash) {
+      body.push(h('div', { style: { background: 'rgba(185, 28, 28, 0.08)', border: '1px solid #b91c1c', borderRadius: '4px', padding: '8px 12px', marginBottom: '8px', color: '#991b1b', fontSize: '12.5px', fontWeight: '500' } }, `⚠️ ${yaoCheckLoc.msg}`));
+    } else {
+      body.push(h('div', { style: { background: 'rgba(22, 101, 52, 0.06)', border: '1px solid #16a34a', borderRadius: '4px', padding: '8px 12px', marginBottom: '8px', color: '#15803d', fontSize: '12.5px' } }, `🌿 ${yaoCheckLoc.msg}`));
+    }
+  }
   const dl = dangerLine(l);
   if (dl) body.push(dl);
   body.push(grid(cards));

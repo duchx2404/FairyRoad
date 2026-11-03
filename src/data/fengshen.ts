@@ -186,7 +186,7 @@ export const FENGSHEN_ROSTER: FengshenGod[] = [
     ['Đặng Hoa', 'Mộc Phủ Tinh', XIEN],
     ['Dư Nguyên', 'Thủy Phủ Tinh', TIET],
     ['Hỏa Linh Thánh Mẫu', 'Hỏa Phủ Tinh', TIET, 'f'],
-    ['Thổ Hành Tôn', 'Thổ Phủ Tinh', XIEN],
+    ['Thổ Tôn (Đạo hiệu: Thổ Hành Tôn)', 'Thổ Phủ Tinh', XIEN],
     ['Đặng Thiền Ngọc', 'Lục Hợp Tinh', TAY_KY, 'f'],
     ['Đỗ Nguyên Tiển', 'Bác Sĩ Tinh', DAI_THUONG],
     ['Ô Văn Hóa', 'Lực Sĩ Tinh', DAI_THUONG],

@@ -106,13 +106,13 @@ export function outfit(n: NPC, why = 'gia nhập') {
   const cur = K.tech ? TECHS[K.tech] : null;
   let want = sc && TECHS[sc.tech] ? TECHS[sc.tech] : null;
   if (!want && !sc) {
-    const pool = worldDefinitions('cp').filter((x) => !x.blood && !x.evil && !isExclusiveTech(x.id) && x.tier <= Math.max(1, Math.ceil((n.r + 1) / 2)) && (x.el.includes(n.el) || !x.el.length));
+    const pool = worldDefinitions('cp').filter((x) => !x.blood && !x.evil && !x.celestial && !isExclusiveTech(x.id) && x.tier <= Math.max(1, Math.ceil((n.r + 1) / 2)) && (x.el.includes(n.el) || !x.el.length));
     want = pool.sort((a, b) => b.tier - a.tier || (b.pq ?? 0) - (a.pq ?? 0))[0] || null;
   }
   if (want && (!cur || want.tier > cur.tier)) { K.tech = want.id; for (const sid of want.skills) if (!K.known.includes(sid)) K.known.push(sid); }
   // chiêu: đủ số chiêu theo cảnh giới (Luyện Khí 2, Trúc Cơ 3, Kết Đan trở lên 4); chỉ chiêu thế lực mình truyền được (độc môn của tông khác thì không)
   const need = Math.min(4, 1 + Math.min(3, n.r));
-  const pool = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.max(1, Math.ceil(n.r / 2)) && n.r >= learnReq(k.tier) && !K.known.includes(k.id) && (k.el === n.el || k.el === null) && (sc ? sectCanTeachSkill(k.id, sc.id) : !skillOwners(k.id).length));
+  const pool = worldDefinitions('sk').filter((k) => !k.peak && !k.celestial && k.tier <= Math.max(1, Math.ceil(n.r / 2)) && n.r >= learnReq(k.tier) && !K.known.includes(k.id) && (k.el === n.el || k.el === null) && (sc ? sectCanTeachSkill(k.id, sc.id) : !skillOwners(k.id).length));
   pool.sort((a, b) => b.tier - a.tier || b.m - a.m);
   while (K.known.filter((k) => SKILLS[k]).length < need && pool.length) K.known.push(pool.shift()!.id);
   // pháp khí: đủ 5 ô, cấp theo cảnh giới, phẩm theo gia thế; chỉ thay khi mạnh hơn
@@ -232,13 +232,13 @@ export function compAdventure(n: NPC, y: number) {
     return;
   }
   if (roll <= 6) {
-    const pool = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.ceil((n.r + 1) / 2) && (k.el === n.el || k.el === null) && !K.known.includes(k.id));
+    const pool = worldDefinitions('sk').filter((k) => !k.peak && !k.celestial && k.tier <= Math.ceil((n.r + 1) / 2) && (k.el === n.el || k.el === null) && !K.known.includes(k.id));
     if (pool.length) { const k = pick(pool); K.known.push(k.id); addLog(`${n.name} lĩnh ngộ ${k.n} trong một lần kỳ ngộ.`); }
     return;
   }
   if (roll <= 7) {
     const cur = K.tech ? TECHS[K.tech] : null;
-    const pool = worldDefinitions('cp').filter((t) => !t.blood && !t.evil && t.tier <= Math.ceil((n.r + 1) / 2) && (!cur || t.tier > cur.tier) && t.el.some((e) => e === n.el));
+    const pool = worldDefinitions('cp').filter((t) => !t.blood && !t.evil && !t.celestial && t.tier <= Math.ceil((n.r + 1) / 2) && (!cur || t.tier > cur.tier) && t.el.some((e) => e === n.el));
     if (pool.length) { const t = pick(pool); K.tech = t.id; for (const sid of t.skills) if (!K.known.includes(sid)) K.known.push(sid); addLog(`${n.name} tìm được ${t.n}, chuyển tu.`); }
     return;
   }

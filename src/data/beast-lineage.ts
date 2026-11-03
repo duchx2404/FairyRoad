@@ -116,7 +116,14 @@ export const MYTHIC_BEAST_SET = new Set<string>([
   'Trệ', 'Ngưu Vĩ Khiếu Hổ',
   
   // Khác
-  'Cửu Đầu Xà', 'Cửu Đầu Sư Vương'
+  'Cửu Đầu Xà', 'Cửu Đầu Sư Vương',
+
+  // Hỗn Thế Tứ Hầu & Tây Du Ký Thần Yêu
+  'Linh Minh Thạch Hầu', 'Xích Khào Mã Hầu', 'Thông Tí Viên Hầu', 'Lục Nhĩ Mĩ Hầu',
+  'Hắc Hùng Tinh', 'Bạch Cốt Tinh', 'Độc Giác Thanh Ngưu', 'Lục Nha Bạch Tượng', 'Cổ Cự Tượng',
+  'Bàn Ty Chu Yêu', 'Bách Nhãn Ngô Công', 'Tỳ Bà Độc Hạt', 'Hoàng Phong Điêu Thử',
+  'Tịch Hàn Tam Đầu Tê', 'Bích Ba Cửu Đầu Điểu', 'Ngải Diệp Hoa Báo', 'Bích Khâu Bạch Lộc',
+  'Thái Âm Thần Thố', 'Thái Âm Ngọc Thố', 'Hắc Thủy Cự Ngạc', 'Thanh Hải Thần Long',
 ]);
 
 /** Tự động xác định thế giới tối thiểu dựa theo các mốc trần cảnh giới WORLD_CAP của game. */

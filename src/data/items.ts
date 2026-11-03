@@ -2,6 +2,7 @@
 import { TREASURE_TIERS, ART_TIERS, localTreasureGrade, worldArtCap, growArtGrade, growTreasureGrade } from './treasure-grades';
 import { REALMS, EL, worldMult, type El } from './core';
 import { pick, ri, rf, ch } from '../core/util';
+import type { CelestialId } from './celestial';
 
 // ---------- Giai & phẩm ----------
 // Sáu giai: Hoàng, Huyền, Địa, Thiên, Thần, Tiên; mỗi giai bốn phẩm Hạ/Trung/Thượng/Cực.
@@ -32,6 +33,8 @@ export interface Tech {
   blood?: string; // công pháp huyết mạch: chỉ người mang huyết mạch này tu được, không rơi, không bán
   race?: 'human' | 'yao' | 'all'; // chủng tộc có thể tu luyện
   grow?: boolean; // phẩm trưởng thành theo người dùng: luôn bằng trần phẩm của giới đang ở (Hỗn Nguyên Kinh)
+  celestial?: CelestialId;
+  celestialTier?: 'low' | 'mid' | 'high';
 }
 export const TECHS: Record<string, Tech> = {
   // ===== Công pháp Yêu Tộc =====
@@ -134,6 +137,35 @@ export const TECHS: Record<string, Tech> = {
   daiquangminhkinh: { id: 'daiquangminhkinh', race: 'all', n: 'Đại Quang Minh Kinh', el: ['quang'], tier: 4, skills: ['daiquangminh', 'thanhquang'], d: 'Ánh sáng không sinh không diệt. Người tu thành thì tà ma tránh xa.' },
   thanhvukiem: { id: 'thanhvukiem', n: 'Thanh Vũ Phong Lôi Kiếm', el: ['phong', 'loi'], tier: 4, skills: ['phongloi', 'tutieuloi'], pw: 1.2, d: 'Kiếm thế như mưa xanh, mỗi giọt mang tiếng sấm.' },
   bichhaitrieu: { id: 'bichhaitrieu', n: 'Bích Hải Triều Sinh Kinh', el: ['thuy', 'moc'], tier: 4, skills: ['tinhhailang', 'thuymanthien'], hp: 1.25, d: 'Như thủy triều, rút đi rồi lại về, sinh cơ không cạn.' },
+  // ===== Công Pháp Bốn Thần Giới =====
+  // --- Thiên Đình ---
+  cp_td_ngungkhi: { id: 'cp_td_ngungkhi', n: 'Cửu Thiên Ngưng Khí Quyết', el: ['quang', 'phong'], tier: 1, celestial: 'thiendinh', celestialTier: 'low', skills: ['sk_td_tienquang'], d: 'Pháp môn hít thở mây tía chín tầng trời, linh khí tinh thuần.' },
+  cp_td_tuvi: { id: 'cp_td_tuvi', n: 'Tử Vi Tinh Thần Điển', el: ['quang', 'loi'], tier: 3, celestial: 'thiendinh', celestialTier: 'mid', skills: ['sk_td_phongloi', 'sk_td_tienquang'], pw: 1.15, d: 'Luyện tinh quang Bắc Đẩu vào kinh mạch, hộ thể và ngự khí cửu thiên.' },
+  cp_td_thienha: { id: 'cp_td_thienha', n: 'Thiên Hà Thủy Quân Chân Điển', el: ['thuy', 'quang'], tier: 4, celestial: 'thiendinh', celestialTier: 'high', skills: ['sk_td_thienhathuy'], hp: 1.25, pw: 1.15, d: 'Chân điển thống lĩnh tám vạn thủy binh sông Ngân Hà, khí thế bàng bạc như triều dâng sóng sao.' },
+  cp_td_dausuat: { id: 'cp_td_dausuat', n: 'Thái Thượng Bát Quái Đan Kinh', el: ['hoa', 'moc', 'kim'], tier: 5, celestial: 'thiendinh', celestialTier: 'high', skills: ['sk_td_batquaihoa'], hp: 1.2, pw: 1.2, d: 'Chân truyền lò Bát Quái Đâu Suất Cung của Thái Thượng Lão Quân, luyện chân hỏa tam muội thiêu đốt vạn vật.' },
+  cp_td_linhtieu: { id: 'cp_td_linhtieu', n: 'Cửu Trùng Thiên Ngọc Hoàng Thần Điển', el: ['quang', 'kim', 'loi'], tier: 6, celestial: 'thiendinh', celestialTier: 'high', skills: ['sk_td_linhtieuchuong', 'sk_td_thienhathuy'], pw: 1.3, def: 1.25, d: 'Thần điển chí tôn tam giới ngự trên Lăng Tiêu Bảo Điện, vạn tiên triều bái, kim thân vạn kiếp bất diệt.' },
+
+  // --- Địa Phủ ---
+  cp_dp_hoangtuyen: { id: 'cp_dp_hoangtuyen', n: 'Hoàng Tuyền Dẫn Hồn Quyết', el: ['am', 'thuy'], tier: 1, evil: true, celestial: 'diaphu', celestialTier: 'low', skills: ['sk_dp_cauhon'], d: 'Luyện tử khí ven sông Hoàng Tuyền mở mang kinh mạch, câu hồn định phách.' },
+  cp_dp_hanphach: { id: 'cp_dp_hanphach', n: 'U Minh Hàn Phách Kinh', el: ['am', 'bang'], tier: 3, evil: true, celestial: 'diaphu', celestialTier: 'mid', skills: ['sk_dp_bingan', 'sk_dp_cauhon'], pw: 1.15, def: 1.1, d: 'Hàn khí thấu xương của chín tầng địa phủ, đông cứng cả thần hồn kẻ địch.' },
+  cp_dp_thapdien: { id: 'cp_dp_thapdien', n: 'Thập Điện Diêm La Phán Thế Kinh', el: ['am'], tier: 4, evil: true, celestial: 'diaphu', celestialTier: 'high', skills: ['sk_dp_phanbut'], pw: 1.25, d: 'Chân điển phán xét tội phúc của mười điện âm ty Phong Đô, chấp chưởng sinh tử chi quyền.' },
+  cp_dp_phongdo: { id: 'cp_dp_phongdo', n: 'Phong Đô Quỷ Đế U Minh Điển', el: ['am', 'hoa'], tier: 5, evil: true, celestial: 'diaphu', celestialTier: 'high', skills: ['sk_dp_vongxuyen', 'sk_dp_phanbut'], def: 1.25, hp: 1.2, d: 'Đại điển chúa tể âm ty Phong Đô Đại Đế, ngự trị vạn quỷ, oán khí vạn năm hóa thành hộ thể thần giáp.' },
+  cp_dp_luanhoi: { id: 'cp_dp_luanhoi', n: 'Lục Đạo Luân Hồi Chân Kinh', el: ['am', 'thuy', 'quang'], tier: 6, celestial: 'diaphu', celestialTier: 'high', skills: ['sk_dp_luanhoian', 'sk_dp_vongxuyen'], pw: 1.3, hp: 1.3, d: 'Chí cao chân kinh Địa Phủ xoay chuyển sáu nẻo luân hồi, vượt ra ngoài sinh tử, cải tử hồi sinh.' },
+
+  // --- Yêu Giới ---
+  cp_yg_yeukhi: { id: 'cp_yg_yeukhi', n: 'Yêu Khí Luyện Thể Pháp', el: ['tho', 'phong'], tier: 1, race: 'yao', celestial: 'yeugioi', celestialTier: 'low', skills: ['sk_yg_toicot'], def: 1.12, hp: 1.1, d: 'Dẫn thiên địa yêu khí Thập Vạn Đại Sơn rèn luyện da thịt gân cốt sơ giai.' },
+  cp_yg_hacphong: { id: 'cp_yg_hacphong', n: 'Hắc Phong Thôn Lôi Quyết', el: ['phong', 'am', 'loi'], tier: 3, race: 'yao', celestial: 'yeugioi', celestialTier: 'mid', skills: ['sk_yg_banty', 'sk_yg_toicot'], pw: 1.18, d: 'Tuyệt kỹ Hắc Phong Sơn kết hợp gió đen và sấm sét, công thủ toàn diện.' },
+  cp_yg_tichloi: { id: 'cp_yg_tichloi', n: 'Ma Vân Tích Lôi Thần Điển', el: ['loi', 'hoa'], tier: 4, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', skills: ['sk_yg_tichloibong'], pw: 1.25, hp: 1.15, d: 'Tuyệt học Bình Thiên Đại Thánh Ngưu Ma Vương, chưởng khống ma vân và vạn đạo lôi điện Tích Lôi Sơn.' },
+  cp_yg_hoaqua: { id: 'cp_yg_hoaqua', n: 'Hoa Quả Sơn Thủy Liêm Tiên Kinh', el: ['kim', 'tho'], tier: 5, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', skills: ['sk_yg_hoaquagay'], pw: 1.25, def: 1.2, hp: 1.2, d: 'Chân truyền Mỹ Hầu Vương Tề Thiên Đại Thánh, nhục thân kim cương bất hoại, biến hóa khôn lường.' },
+  cp_yg_yeuhoang: { id: 'cp_yg_yeuhoang', n: 'Thái Cổ Yêu Hoàng Vạn Thú Kinh', el: ['hoa', 'quang', 'phong'], tier: 6, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', skills: ['sk_yg_suda', 'sk_yg_hoaquagay'], pw: 1.3, hp: 1.25, def: 1.2, d: 'Đế vương chi điển của Yêu Hoàng Đế Tuấn, lệnh một tiếng vạn yêu quy phục, huyết mạch chí tôn thượng cổ.' },
+
+  // --- Linh Sơn ---
+  cp_ls_toathien: { id: 'cp_ls_toathien', n: 'Phật Môn Tọa Thiền Quyết', el: ['quang', 'tho'], tier: 1, celestial: 'linhson', celestialTier: 'low', skills: ['sk_ls_kimcuong'], def: 1.15, hp: 1.1, d: 'Ngồi thiền tụng niệm dưới chân Phật sơn, tịnh hóa tạp niệm và tụ khí đan điền.' },
+  cp_ls_vanthu: { id: 'cp_ls_vanthu', n: 'Ngũ Đài Văn Thù Kiếm Điển', el: ['quang', 'kim'], tier: 3, celestial: 'linhson', celestialTier: 'mid', skills: ['sk_ls_batnha', 'sk_ls_kimcuong'], pw: 1.18, def: 1.12, d: 'Kiếm điển trí tuệ Văn Thù Bồ Tát ngự Ngũ Đài Sơn, kiếm khí thanh tịnh chém đứt vô minh phiền não.' },
+  cp_ls_cuuhoa: { id: 'cp_ls_cuuhoa', n: 'Địa Tạng Độ Ách Thần Điển', el: ['quang', 'tho', 'am'], tier: 4, celestial: 'linhson', celestialTier: 'high', skills: ['sk_ls_hanglong'], def: 1.28, hp: 1.22, d: 'Chân điển Địa Tạng Vương Bồ Tát Cửu Hoa Sơn: "Địa ngục chưa trống thề không thành Phật", đại bi vô biên.' },
+  cp_ls_lacgia: { id: 'cp_ls_lacgia', n: 'Phổ Đà Nam Hải Thanh Tịnh Kinh', el: ['quang', 'thuy', 'moc'], tier: 5, celestial: 'linhson', celestialTier: 'high', skills: ['sk_ls_camlo'], hp: 1.35, def: 1.2, d: 'Chân kinh Quan Thế Âm Bồ Tát đạo tràng Phổ Đà Lạc Già Sơn, cam lộ tịnh bình cứu khổ cứu nạn, sinh cơ bất tận.' },
+  cp_ls_nhulai: { id: 'cp_ls_nhulai', n: 'Đại Lôi Âm Như Lai Đại Phật Điển', el: ['quang', 'kim', 'tho'], tier: 6, celestial: 'linhson', celestialTier: 'high', skills: ['sk_ls_nhulaichuong', 'sk_ls_hanglong'], pw: 1.3, def: 1.25, hp: 1.25, d: 'Giáo chủ chi điển của Phật Tổ Như Lai tại Đại Lôi Âm Tự, một bàn tay úp xuống định càn khôn, vạn phật triều tông.' },
+
 };
 export const TECH_SPEED = [0, 1, 1.25, 1.55, 2, 2.5, 3.2, 4, 5, 6.2];
 export const TECH_POW = [0, 1, 1.2, 1.45, 1.8, 2.25, 2.9, 3.6, 4.5, 5.6];
@@ -195,6 +227,11 @@ const TECH_GRADE: Record<string, [number, number]> = {
   thanhvukiem: [4, 1], daiquangminhkinh: [4, 2], thaicuc: [4, 3],
   huyenbang: [5, 0], bichhaitrieu: [5, 0], vanmakinh: [5, 1], vanyeuhoahinh: [5, 1], batchu: [5, 2], huyennguyen: [5, 2], tutieuthan: [5, 3],
   hondonkinh: [6, 2], thaiso: [6, 3],
+  cp_td_ngungkhi: [1, 1], cp_td_tuvi: [3, 2], cp_td_thienha: [4, 2], cp_td_dausuat: [5, 2], cp_td_linhtieu: [6, 3],
+  cp_dp_hoangtuyen: [1, 1], cp_dp_hanphach: [3, 2], cp_dp_thapdien: [4, 2], cp_dp_phongdo: [5, 2], cp_dp_luanhoi: [6, 3],
+  cp_yg_yeukhi: [1, 1], cp_yg_hacphong: [3, 2], cp_yg_tichloi: [4, 2], cp_yg_hoaqua: [5, 2], cp_yg_yeuhoang: [6, 3],
+  cp_ls_toathien: [1, 1], cp_ls_vanthu: [3, 2], cp_ls_cuuhoa: [4, 2], cp_ls_lacgia: [5, 2], cp_ls_nhulai: [6, 3],
+
 };
 for (const [id, [g, q]] of Object.entries(TECH_GRADE)) if (TECHS[id]) { TECHS[id].tier = g; TECHS[id].pq = q; }
 export const techSpeed = (t: Tech) => TECH_SPEED[t.tier] * (1 + (t.pq ?? 0) * 0.06);
@@ -220,6 +257,8 @@ export interface Skill {
   hot?: { m: number; turns: number };
   /** Gây sát thương lên toàn bộ kẻ địch (chỉ với kiểu 'atk'). */
   all?: boolean;
+  celestial?: CelestialId;
+  celestialTier?: 'low' | 'mid' | 'high';
   d: string;
 }
 export type Weapon = 'kiem' | 'dao' | 'thuong' | 'quyen' | 'chuong' | 'cung' | 'kich';
@@ -331,6 +370,35 @@ export const SKILLS: Record<string, Skill> = {
   yeu_hacvu: { id: 'yeu_hacvu', n: 'Thực Hồn Hắc Vụ', el: 'am', tier: 2, k: 'dot', m: 1.0, cd: 3, d: 'Thần thông bản mệnh: Màn sương yêu ám gặm nhấm sinh cơ.' },
   yeu_tinhhoa: { id: 'yeu_tinhhoa', n: 'Nguyệt Hoa Tịnh Thể', el: 'quang', tier: 2, k: 'heal', m: 1.4, cd: 3, d: 'Thần thông bản mệnh: Hấp thụ nguyệt hoa chữa lành vết thương nhục thân.' },
   yeu_vanmoc: { id: 'yeu_vanmoc', n: 'Vạn Mộc Tác Hồn', el: 'moc', tier: 2, k: 'dot', m: 0.95, cd: 3, d: 'Thần thông bản mệnh: Dây leo yêu mộc trói buộc và hút cạn sinh cơ.' },
+  // ===== Thuật Pháp / Võ Kỹ Bốn Thần Giới =====
+  // --- Thiên Đình ---
+  sk_td_tienquang: { id: 'sk_td_tienquang', n: 'Kim Khuyết Tiên Quang', el: 'quang', tier: 2, k: 'atk', m: 1.85, cd: 2, celestial: 'thiendinh', celestialTier: 'low', d: 'Phóng ra luồng tiên quang từ Nam Thiên Môn xuyên phá tà khí.' },
+  sk_td_phongloi: { id: 'sk_td_phongloi', n: 'Cửu Thiên Lôi Độn Kích', el: 'loi', tier: 3, k: 'multi', m: 1.0, cd: 3, celestial: 'thiendinh', celestialTier: 'mid', d: 'Ba luồng tử lôi giáng xuống liên hoàn từ chín tầng mây.' },
+  sk_td_thienhathuy: { id: 'sk_td_thienhathuy', n: 'Thiên Hà Tinh Đào Lạc', el: 'thuy', tier: 4, k: 'atk', all: true, m: 3.2, cd: 3, celestial: 'thiendinh', celestialTier: 'high', d: 'Sóng sao dải Ngân Hà cuộn trào nhấn chìm toàn bộ quân thù.' },
+  sk_td_batquaihoa: { id: 'sk_td_batquaihoa', n: 'Bát Quái Tam Muội Chân Hỏa', el: 'hoa', tier: 5, k: 'dot', m: 1.9, cd: 3, celestial: 'thiendinh', celestialTier: 'high', d: 'Lửa thần lò Bát Quái Đâu Suất Cung thiêu đốt thần hồn và nhục thân.' },
+  sk_td_linhtieuchuong: { id: 'sk_td_linhtieuchuong', n: 'Lăng Tiêu Trấn Thế Thần Chưởng', el: 'quang', tier: 6, k: 'atk', all: true, m: 4.4, cd: 4, celestial: 'thiendinh', celestialTier: 'high', d: 'Bàn tay kim quang của Thiên Đế giáng xuống từ chín tầng trời, nghiền nát càn khôn.' },
+
+  // --- Địa Phủ ---
+  sk_dp_cauhon: { id: 'sk_dp_cauhon', n: 'Hoàng Tuyền Câu Hồn Thích', el: 'am', tier: 2, k: 'atk', m: 1.9, cd: 2, celestial: 'diaphu', celestialTier: 'low', d: 'Liềm câu hồn câu thẳng vào nguyên thần đối thủ.' },
+  sk_dp_bingan: { id: 'sk_dp_bingan', n: 'Bỉ Ngạn Hoa Lạc Huyết Thần', el: 'am', tier: 3, k: 'dot', m: 1.35, cd: 3, celestial: 'diaphu', celestialTier: 'mid', d: 'Ngàn cánh hoa bỉ ngạn nở rộ hút cạn sinh cơ mục tiêu.' },
+  sk_dp_phanbut: { id: 'sk_dp_phanbut', n: 'Sinh Tử Phán Quan Bút', el: 'am', tier: 4, k: 'atk', m: 3.5, cd: 3, celestial: 'diaphu', celestialTier: 'high', d: 'Một nét bút son gạch tên trên sổ sinh tử, đoạn tuyệt thọ mệnh.' },
+  sk_dp_vongxuyen: { id: 'sk_dp_vongxuyen', n: 'Vong Xuyên Nộ Đào Trảm', el: 'thuy', tier: 5, k: 'atk', all: true, m: 3.8, cd: 4, celestial: 'diaphu', celestialTier: 'high', d: 'Sóng nước đỏ thẫm sông Vong Xuyên nhấn chìm và làm tan biến thần hồn toàn bộ kẻ địch.' },
+  sk_dp_luanhoian: { id: 'sk_dp_luanhoian', n: 'Lục Đạo Luân Hồi Tuyệt Diệt Ấn', el: 'am', tier: 6, k: 'atk', all: true, m: 4.5, cd: 4, celestial: 'diaphu', celestialTier: 'high', d: 'Sáu luồng sáng luân hồi nghiền nát thân xác và đày ải hồn phách đối thủ vào ngục vô gián.' },
+
+  // --- Yêu Giới ---
+  sk_yg_toicot: { id: 'sk_yg_toicot', n: 'Hắc Phong Toái Cốt Trảo', el: 'am', tier: 2, k: 'atk', m: 1.95, cd: 2, race: 'yao', celestial: 'yeugioi', celestialTier: 'low', d: 'Vuốt đen cuồng bạo xé nát giáp sắt hộ thể.' },
+  sk_yg_banty: { id: 'sk_yg_banty', n: 'Bàn Ty Thiên La Võng', el: 'moc', tier: 3, k: 'dot', m: 1.35, cd: 3, race: 'yao', celestial: 'yeugioi', celestialTier: 'mid', d: 'Tơ nhện ngàn năm của Bàn Ty Động trói chặt và ăn mòn kẻ địch.' },
+  sk_yg_suda: { id: 'sk_yg_suda', n: 'Sư Đà Liệt Thiên Hống', el: 'tho', tier: 4, k: 'atk', all: true, m: 3.2, cd: 3, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', d: 'Tiếng gầm của Sư Đà Vương làm nứt toác mặt đất, chấn nhiếp toàn bộ quân thù.' },
+  sk_yg_tichloibong: { id: 'sk_yg_tichloibong', n: 'Bình Thiên Hỗn Thiết Bổng', el: 'loi', tier: 5, k: 'atk', m: 3.9, cd: 3, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', d: 'Côn sắt vạn cân mang theo sấm sét Tích Lôi đập nát càn khôn.' },
+  sk_yg_hoaquagay: { id: 'sk_yg_hoaquagay', n: 'Đại Náo Thiên Cung Nhất Kích', el: 'kim', tier: 6, k: 'atk', all: true, m: 4.3, cd: 4, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', d: 'Một gậy Tề Thiên quét ngang đất trời, phá tan vạn pháp hộ thể của kẻ địch.' },
+
+  // --- Linh Sơn ---
+  sk_ls_kimcuong: { id: 'sk_ls_kimcuong', n: 'Kim Cương Hộ Pháp Trảo', el: 'kim', tier: 2, k: 'shield', m: 1.8, cd: 3, celestial: 'linhson', celestialTier: 'low', d: 'Đòn đánh cứng cỏi của hộ pháp kim cương chấn lui yêu ma.' },
+  sk_ls_batnha: { id: 'sk_ls_batnha', n: 'Bát Nhã Tâm Chú', el: 'quang', tier: 3, k: 'heal', m: 1.5, cd: 4, celestial: 'linhson', celestialTier: 'mid', d: 'Tụng niệm tâm chú hồi phục vết thương và thanh tẩy độc tố.' },
+  sk_ls_hanglong: { id: 'sk_ls_hanglong', n: 'Thập Bát La Hán Hàng Long Kích', el: 'kim', tier: 4, k: 'multi', m: 1.25, cd: 3, celestial: 'linhson', celestialTier: 'high', d: 'Mười tám đòn quyền liên hoàn giáng phục chân long.' },
+  sk_ls_camlo: { id: 'sk_ls_camlo', n: 'Nam Hải Cam Lộ Tịnh Thể', el: 'quang', tier: 5, k: 'heal', m: 2.2, cd: 4, hot: { m: 0.35, turns: 5 }, celestial: 'linhson', celestialTier: 'high', d: 'Nước cam lộ cành dương liễu hồi phục cực đại sinh mạng và liên tục hồi phục trong 5 lượt.' },
+  sk_ls_nhulaichuong: { id: 'sk_ls_nhulaichuong', n: 'Vạn Phật Triều Tông Như Lai Chưởng', el: 'quang', tier: 6, k: 'atk', all: true, m: 4.5, cd: 4, celestial: 'linhson', celestialTier: 'high', d: 'Bàn tay Phật Tổ úp xuống hóa thành Ngũ Hành Sơn, phong ấn và tiêu diệt toàn bộ kẻ địch.' },
+
 };
 export const BEAST_INNATE_SKILLS: Record<string, string> = {
   hoa: 'yeu_lietdiem',
@@ -421,6 +489,9 @@ export interface Herb {
   el: El;
 }
 export const HERBS: Record<string, Herb> = {
+  bandao: { id: 'bandao', n: 'Bàn Đào Tiên Quả', tier: 6, reg: ['trungtho'], el: 'moc' },
+  binganhoa: { id: 'binganhoa', n: 'Bỉ Ngạn Hoa Tinh', tier: 5, reg: ['namman'], el: 'hoa' },
+  bodhitu: { id: 'bodhitu', n: 'Bồ Đề Tử', tier: 5, reg: ['tayluong'], el: 'quang' },
   ngungkhithao: { id: 'ngungkhithao', n: 'Ngưng Khí Thảo', tier: 1, reg: ['trungtho', 'vanmong', 'namman', 'bacminh', 'vanyeu'], el: 'moc' },
   xichdiepthao: { id: 'xichdiepthao', n: 'Xích Diệp Thảo', tier: 1, reg: ['tayluong', 'namman', 'trungtho'], el: 'hoa' },
   thanhtamlien: { id: 'thanhtamlien', n: 'Thanh Tâm Liên', tier: 1, reg: ['vanmong', 'trungtho', 'namhai', 'tayhai', 'bachai'], el: 'thuy' },
@@ -499,6 +570,14 @@ export interface Mat {
   d: string;
 }
 export const MATS: Record<string, Mat> = {
+  thienhathuy: { id: 'thienhathuy', n: 'Thiên Hà Thần Thủy', tier: 5, d: 'Nước sông Ngân lấp lánh như tinh tú, dùng tôi luyện pháp bảo thần binh.' },
+  dausuathoa: { id: 'dausuathoa', n: 'Đâu Suất Chân Hỏa', tier: 6, d: 'Tia lửa từ lò Bát Quái của Lão Quân, nung chảy vạn vật, luyện thần binh chí bảo.' },
+  hoangtuyenthuy: { id: 'hoangtuyenthuy', n: 'Hoàng Tuyền Huyết Thủy', tier: 5, d: 'Nước đầu nguồn Hoàng Tuyền, u hàn thấu cốt, dùng luyện chí bảo âm sát.' },
+  tamsinhthach_mat: { id: 'tamsinhthach_mat', n: 'Tam Sinh Thạch Toái Phiến', tier: 6, d: 'Mảnh vỡ đá Tam Sinh thấu suốt tiền kiếp hậu kiếp, dùng luyện bảo hộ mệnh.' },
+  thaicoyaudan: { id: 'thaicoyaudan', n: 'Thái Cổ Yêu Đan', tier: 6, d: 'Yêu đan của đại yêu thời hồng hoang, ẩn chứa khí huyết và yêu lực bàng bạc.' },
+  chanlonghuyet: { id: 'chanlonghuyet', n: 'Chân Long Huyết Tinh', tier: 5, d: 'Tinh huyết long tộc thuần huyết, tăng cường thể phách và rèn luyện long giáp.' },
+  batcongduc: { id: 'batcongduc', n: 'Bát Công Đức Thủy', tier: 5, d: 'Nước trong ao Bát Công Đức ở Linh Sơn, gột rửa nghiệp chướng, tinh luyện phật bảo.' },
+  xaloi: { id: 'xaloi', n: 'Kim Cang Xá Lợi', tier: 6, d: 'Xá lợi của cao tăng đắc đạo viên tịch, tỏa hào quang kim sắc bất hoại.' },
   cotuhuyet: { id: 'cotuhuyet', n: 'Tổ thú tinh huyết', tier: 6, d: 'Một giọt máu của dị thú chép trong Sơn Hải Kinh, đỏ như than hồng, nặng như chì.' },
   tuduehuyet: { id: 'tuduehuyet', n: 'Huyết mạch tinh huyết', tier: 4, d: 'Tinh huyết của hậu duệ dị thú thượng cổ, còn vương uy áp của tổ tiên.' },
   longthu: { id: 'longthu', n: 'Lông yêu thú', tier: 1, d: 'Lông mềm còn vương yêu khí.' },
@@ -735,7 +814,7 @@ export function registerSpecial(sp: Special) {
 }
 
 // ---------- Tâm pháp: kinh tu tâm, hiệu quả bị động, học xong là có ----------
-export interface TamPhap { id: string; n: string; tier: number; pq: number; d: string; race?: 'human' | 'yao' | 'all'; tam?: number; ngo?: number; cult?: number; brk?: number; calm?: number }
+export interface TamPhap { id: string; n: string; tier: number; pq: number; d: string; race?: 'human' | 'yao' | 'all'; tam?: number; ngo?: number; cult?: number; brk?: number; calm?: number; celestial?: CelestialId; celestialTier?: 'low' | 'mid' | 'high'; }
 export const TAMPHAP: Record<string, TamPhap> = {
   // ===== Tâm Pháp Yêu Tộc =====
   hungtinhngungtam: { id: 'hungtinhngungtam', n: 'Hung Tính Ngưng Tâm Quyết', tier: 1, pq: 0, race: 'yao', tam: 1, calm: 1, d: 'Tâm pháp sơ giai yêu tộc: Thu liễm dã tính hung bạo trong máu, giữ yêu tâm thanh tỉnh.' },
@@ -760,6 +839,27 @@ export const TAMPHAP: Record<string, TamPhap> = {
   hukhongtam: { id: 'hukhongtam', n: 'Hư Không Tâm Kinh', tier: 5, pq: 1, brk: 0.05, tam: 2, d: 'Tâm như hư không: chứa được tất cả, không vướng víu gì.' },
   honnguyentam: { id: 'honnguyentam', n: 'Hỗn Nguyên Tâm Kinh', tier: 5, pq: 2, cult: 12, ngo: 2, d: 'Thần thức và chân nguyên hợp làm một, tu một được hai.' },
   vouluongtam: { id: 'vouluongtam', n: 'Vô Lượng Tâm Kinh', tier: 6, pq: 3, cult: 18, brk: 0.06, tam: 3, ngo: 2, d: 'Tâm kinh không biết ai viết, không biết từ đâu tới. Đọc xong, cả đời không quên được.' },
+  // ===== Tâm Pháp Bốn Thần Giới =====
+  // --- Thiên Đình ---
+  tp_td_thanhtam: { id: 'tp_td_thanhtam', n: 'Tiên Quan Thanh Tâm Kinh', tier: 2, pq: 1, celestial: 'thiendinh', celestialTier: 'low', tam: 1, calm: 2, d: 'Giữ lòng thanh tịnh như mây trời bồng bềnh, tạp niệm tự tiêu.' },
+  tp_td_vovi: { id: 'tp_td_vovi', n: 'Thái Thượng Vô Vi Đạo Tâm', tier: 5, pq: 2, celestial: 'thiendinh', celestialTier: 'high', tam: 3, cult: 15, calm: 5, d: 'Đạo tâm hòa hợp thiên địa, vô vi nhi vô bất vi, tâm ma không chỗ nương náu.' },
+  tp_td_truongsinh: { id: 'tp_td_truongsinh', n: 'Cửu Thiên Trường Sinh Tâm Điển', tier: 6, pq: 3, celestial: 'thiendinh', celestialTier: 'high', cult: 20, brk: 0.08, tam: 4, d: 'Tâm pháp trường sinh của chư tiên Thiên Đình, thọ cùng nhật nguyệt.' },
+
+  // --- Địa Phủ ---
+  tp_dp_vonghuong: { id: 'tp_dp_vonghuong', n: 'Vọng Hương Vô Lệ Quyết', tier: 2, pq: 1, celestial: 'diaphu', celestialTier: 'low', calm: 3, tam: 1, d: 'Quên đi ân oán phàm trần, dứt bỏ chấp niệm, tâm ma tự diệt.' },
+  tp_dp_tamsinh: { id: 'tp_dp_tamsinh', n: 'Tam Sinh Thạch Ngộ Kiếp Kinh', tier: 4, pq: 2, celestial: 'diaphu', celestialTier: 'high', ngo: 2, brk: 0.05, tam: 2, d: 'Nhìn thấu ba kiếp nhân quả, ngộ tính tăng mạnh, bình cảnh tự thông.' },
+  tp_dp_bathu: { id: 'tp_dp_bathu', n: 'U Minh Bất Hủ Đạo Tâm', tier: 6, pq: 3, celestial: 'diaphu', celestialTier: 'high', tam: 4, cult: 18, calm: 6, d: 'Đạo tâm rèn luyện qua trăm kiếp luân hồi, ngàn vạn ma chướng không thể lay chuyển.' },
+
+  // --- Yêu Giới ---
+  tp_yg_cuongthu: { id: 'tp_yg_cuongthu', n: 'Bản Năng Cuồng Thú Quyết', tier: 2, pq: 1, race: 'yao', celestial: 'yeugioi', celestialTier: 'low', tam: 1, cult: 6, d: 'Đánh thức bản năng dã thú thượng cổ, tu vi tích lũy vững chắc.' },
+  tp_yg_cuuvi: { id: 'tp_yg_cuuvi', n: 'Cửu Vĩ Thiên Hồ Mị Tâm Điển', tier: 4, pq: 2, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', ngo: 2, tam: 2, calm: 3, d: 'Tâm thần hồ tộc biến ảo khôn lường, miễn nhiễm mọi ảo ảnh và mê hoặc lòng người.' },
+  tp_yg_batdiet: { id: 'tp_yg_batdiet', n: 'Thái Cổ Yêu Hoàng Bất Diệt Huyết', tier: 6, pq: 3, race: 'yao', celestial: 'yeugioi', celestialTier: 'high', cult: 18, brk: 0.07, tam: 3, d: 'Huyết mạch chân hoàng cuộn chảy, sức sống vô tận, phá cảnh như bẻ cành khô.' },
+
+  // --- Linh Sơn ---
+  tp_ls_minhtam: { id: 'tp_ls_minhtam', n: 'Minh Tâm Kiến Tính Kinh', tier: 2, pq: 1, celestial: 'linhson', celestialTier: 'low', calm: 3, tam: 1, d: 'Soi chiếu nội tâm, gạt bỏ sợ hãi vô minh, tâm an định như thái sơn.' },
+  tp_ls_bodhi: { id: 'tp_ls_bodhi', n: 'Bồ Đề Vô Thụ Chân Thiền', tier: 4, pq: 2, celestial: 'linhson', celestialTier: 'high', tam: 3, calm: 5, ngo: 2, d: 'Bồ Đề vốn không cây, gương sáng cũng chẳng đài, tâm cảnh tuyệt đối không vướng bụi trần.' },
+  tp_ls_nietban: { id: 'tp_ls_nietban', n: 'Đại Thừa Niết Bàn Tịch Diệt Tâm', tier: 6, pq: 3, celestial: 'linhson', celestialTier: 'high', tam: 5, brk: 0.08, cult: 18, d: 'Tâm pháp tối cao Phật môn, tâm như hư không tịch diệt, thoát khỏi sinh tử luân hồi.' },
+
 };
 export const tamGrade = (x: TamPhap) => artGradeLabel(x.tier, x.pq);
 export const tamPrice = (x: TamPhap) => Math.round(50 * Math.pow(4.2, x.tier - 1) * (1 + x.pq * 0.3));

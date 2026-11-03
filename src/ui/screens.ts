@@ -10,6 +10,7 @@ import { mkName } from '../engine/core';
 import { pick } from '../core/util';
 import { biography, aiBlockReason } from '../ai/ollama';
 import { avatarSvg, playerPortrait } from './hud';
+import { identifyYaoSpecies, ensurePlayerYaoSurname } from '../engine/yao-territory';
 
 const scr = $('#screen');
 let onStart: () => void = () => {};
@@ -78,7 +79,10 @@ export function creation() {
     perks = perks.filter((x) => perkAllowed(origin, x));
     fate.root = { ...baseRoot };
     fitRoot(fate, o);
-    if (isBeast() && !chosenBeast) chosenBeast = pick(leafNodes);
+    if (isBeast()) {
+      if (!chosenBeast) chosenBeast = pick(leafNodes);
+      name = ensurePlayerYaoSurname(name, chosenBeast?.n);
+    }
     draw();
   };
   let fate: Fate = rollFate(false, g, isBeast());
@@ -115,6 +119,30 @@ export function creation() {
       return f.join(' · ') || 'không có gì đặc biệt';
     };
     if (isBeast()) {
+      const yaoSpec = identifyYaoSpecies(chosenBeast?.n);
+      const SPECIAL_YAO_SPECIES: { n: string; el: El; sub: string }[] = [
+        { n: 'Tam Túc Kim Ô', el: 'hoa', sub: 'Thái Dương Thần Thú · Họ Ô' },
+        { n: 'Thái Âm Ngọc Thố', el: 'quang', sub: 'Cung Trăng Giã Dược · Họ Thố' },
+        { n: 'Linh Minh Thạch Hầu', el: 'kim', sub: 'Hỗn Thế Tứ Hầu · Họ Tôn' },
+        { n: 'Xích Khào Mã Hầu', el: 'thuy', sub: 'Hỗn Thế Tứ Hầu · Họ Mã' },
+        { n: 'Thông Tí Viên Hầu', el: 'moc', sub: 'Hỗn Thế Tứ Hầu · Họ Viên' },
+        { n: 'Lục Nhĩ Mĩ Hầu', el: 'am', sub: 'Hỗn Thế Tứ Hầu · Họ Hầu' },
+        { n: 'Hắc Hùng Tinh', el: 'tho', sub: 'Hắc Phong Ma Hùng · Họ Hùng' },
+        { n: 'Bạch Cốt Tinh', el: 'am', sub: 'Huyễn Cốt Thi Ma · Họ Bạch' },
+        { n: 'Kim Sí Đại Bằng Điêu', el: 'kim', sub: 'Sư Đà Lĩnh Thần Điêu · Họ Bằng' },
+        { n: 'Độc Giác Thanh Ngưu', el: 'kim', sub: 'Kim Đới Sơn Ma Ngưu · Họ Ngưu' },
+        { n: 'Cửu Linh Sư Tử', el: 'loi', sub: 'Chúa Tể Sơn Lâm · Họ Sư' },
+        { n: 'Lục Nha Bạch Tượng', el: 'tho', sub: 'Cự Tượng Sáu Ngà · Họ Tượng' },
+        { n: 'Bàn Ty Chu Yêu', el: 'am', sub: 'Thất Sắc Nhện Tinh · Họ Chu' },
+        { n: 'Bách Nhãn Ngô Công', el: 'quang', sub: 'Hoàng Hoa Quán Quái · Họ Ngô' },
+        { n: 'Tỳ Bà Độc Hạt', el: 'hoa', sub: 'Đảo Mã Độc Nữ Yêu · Họ Hạt' },
+        { n: 'Hoàng Phong Điêu Thử', el: 'phong', sub: 'Tam Muội Thần Phong · Họ Điêu' },
+        { n: 'Tịch Hàn Tam Đầu Tê', el: 'bang', sub: 'Thanh Tê Ngưu Tộc · Họ Tê' },
+        { n: 'Bích Ba Cửu Đầu Điểu', el: 'thuy', sub: 'Cửu Đầu Trùng Tộc · Họ Cửu' },
+        { n: 'Ngải Diệp Hoa Báo', el: 'phong', sub: 'Ẩn Vụ Báo Vương · Họ Báo' },
+        { n: 'Bích Khâu Bạch Lộc', el: 'moc', sub: 'Trường Thọ Tiên Thú · Họ Lộc' },
+      ];
+
       return h('div', { class: 'free-pick' },
         h('h4', {}, 'Bản thể Yêu Thú & Yêu Đan Bản Mệnh (Hậu duệ xa nhất)'),
         h('div', { class: 'card verdict' },
@@ -122,11 +150,32 @@ export function creation() {
           h('div', { class: 'v-name' }, chosenBeast ? chosenBeast.n : 'Yêu thú',
             chosenBeast ? h('span', { class: 'v-els' }, h('span', { class: 'el', style: { background: EL[chosenBeast.el].c } }, EL[chosenBeast.el].n)) : null
           ),
-          h('div', { class: 'small' }, `Yêu tộc không có linh căn nhân loại. Tu luyện bằng cách ngưng tụ Yêu Đan (${chosenBeast ? EL[chosenBeast.el].n : ''} hệ) và rèn luyện thể phách.`),
-          h('div', { class: 'small muted' }, 'Theo cảnh giới và thế giới, huyết mạch sẽ thức tỉnh và thoát biến tiến hóa lên các bậc cao hơn trong gia phả.'),
-          h('div', { style: { marginTop: '8px' } },
-            btn('🎲 Đổi loài ngẫu nhiên', () => { chosenBeast = pick(leafNodes); draw(); }, 'small'),
+          h('div', { class: 'small' }, `🐾 Huyết mạch: ${yaoSpec.name} · Họ tộc: 【${yaoSpec.surname}】 · Nơi sinh: 【${yaoSpec.homeLocName}】`),
+          h('div', { class: 'small muted' }, `Quy tắc Yêu tộc: Cùng 1 loài cùng mang họ 【${yaoSpec.surname}】 khác tên. Sinh ra trong khu vực loài của mình. Sang địa phận loài khác nảy sinh mâu thuẫn trừ khi kết minh hoặc đối phương yếu hơn nhiều.`),
+          h('div', { style: { marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+            btn('🎲 Đổi loài ngẫu nhiên', () => {
+              chosenBeast = pick(leafNodes);
+              name = ensurePlayerYaoSurname(name, chosenBeast?.n);
+              draw();
+            }, 'small'),
           ),
+        ),
+        h('h4', {}, 'Chọn Bản Thể Thần Thú & Yêu Ma Thần Thoại'),
+        h('div', { class: 'opts', style: { maxHeight: '200px', overflowY: 'auto' } },
+          ...SPECIAL_YAO_SPECIES.map((sp) => {
+            const isSel = chosenBeast?.n === sp.n;
+            return h('button', {
+              class: 'opt' + (isSel ? ' on' : ''),
+              onclick: () => {
+                chosenBeast = { n: sp.n, el: sp.el };
+                name = ensurePlayerYaoSurname(name, chosenBeast.n);
+                draw();
+              },
+            },
+            h('b', {}, sp.n),
+            h('small', {}, h('span', { class: 'el', style: { background: EL[sp.el].c, marginRight: '4px' } }, EL[sp.el].n), sp.sub)
+            );
+          })
         ),
         h('h4', {}, 'Thể chất Yêu Tộc'),
         h('div', { class: 'opts' }, ...BEAST_BODIES.map((b) => h('button', { class: 'opt' + (fate.body === b.id ? ' on' : ''), onclick: () => { fate.body = b.id; draw(); } },

@@ -15,6 +15,7 @@ import { root, age, rootLabel, powerScore, stageName, regrowGear } from './char'
 import { hooks } from './bus';
 import { mkBrideBio } from './bride';
 import { ch, pick, ri, shuffle, uid, wpick, clamp } from '../core/util';
+import { identifyYaoSpecies, ensurePlayerYaoSurname, mkYaoKinName, getYaoHomeLoc } from './yao-territory';
 
 export interface Fate {
   stats: Record<StatKey, number>;
@@ -227,9 +228,17 @@ export function newLife(o: NewLifeOpts) {
     }
   }
   const beast = beastSpecies?.n;
-  const beastRegion = beastSpecies?.reg?.length ? pick(beastSpecies.reg) : beastSpecies?.home ? LOCS[beastSpecies.home]?.reg : undefined;
-  const settlements = beastRegion ? LOC_LIST.filter((l) => l.reg === beastRegion && (l.type === 'town' || l.type === 'village')) : [];
-  const startLoc = org.beastOrigin && settlements.length ? pick(settlements) : LOCS[org.loc] || LOC_LIST[0];
+  const isYaoBeast = org.beastOrigin || org.race === 'Yêu tộc';
+  let startLoc: (typeof LOC_LIST)[number];
+
+  if (isYaoBeast) {
+    // Người chơi Yêu thú được sinh ra trong khu vực lãnh thổ loài của mình
+    const homeLocId = getYaoHomeLoc(beast);
+    startLoc = LOCS[homeLocId] || LOCS['thapvan'] || LOC_LIST[0];
+  } else {
+    startLoc = LOCS[org.loc] || LOC_LIST[0];
+  }
+
   if (!startLoc) throw new Error(`Unknown starting location "${org.loc}" for origin "${org.id}"`);
   const startAge = 1; // Tất cả xuất thân đều bắt đầu từ 1 tuổi
   const year = meta.worldYear + ri(1, 30);
@@ -303,6 +312,16 @@ export function newLife(o: NewLifeOpts) {
 
   if (org.clan && !s.name.startsWith(org.clan + ' ')) s.name = setSurname(s.name, org.clan);
   { const hs = holySur(org.sect, s.g); if (hs) s.name = setSurname(s.name, hs); } // xuất thân Thánh tử / Thánh nữ: mang họ cố định của thánh địa
+  if (isYaoBeast) {
+    const yaoSpec = identifyYaoSpecies(beast);
+    s.name = ensurePlayerYaoSurname(s.name, beast);
+    // Cùng 1 loài thì cùng họ khác tên: Sinh các đồng tộc thân hữu
+    const kin1 = mkNpc({ name: mkYaoKinName(yaoSpec, 'm'), r: 1, st: 1, rel: 45, how: `Đồng tộc huynh đệ loài ${yaoSpec.name}` });
+    const kin2 = mkNpc({ name: mkYaoKinName(yaoSpec, 'f'), r: 1, st: 0, rel: 40, how: `Đồng tộc muội muội loài ${yaoSpec.name}` });
+    const kin3 = mkNpc({ name: mkYaoKinName(yaoSpec, 'm'), r: 2, st: 2, rel: 60, how: `Trưởng bối đồng tộc loài ${yaoSpec.name}` });
+    s.npcs.push(kin1, kin2, kin3);
+    addLog(`Đầu thai làm ${beast || 'Yêu thú'} tại lãnh địa loài 【${startLoc.n}】! Mang họ 【${yaoSpec.surname}】 theo huyết mạch của loài.`, 'good');
+  }
   if (s.name.startsWith('Diệp ')) s.flags.diepBlood = true; // cơ chế ẩn: họ Diệp là huyết mạch Diệp thị Hoang Cổ
   if (org.startR) { s.r = org.startR; s.st = 0; }
   if (org.gearG !== undefined) { const gr = mkGear(Math.max(1, org.startR || 0), org.gearG, 0); gr.refined = true; s.gear[0] = gr; }
@@ -402,7 +421,7 @@ export function newLife(o: NewLifeOpts) {
     }
     if (clan.patron) s.bag.push({ id: 'x:kiemlenh', n: 1 });
     // công pháp gia truyền: phẩm Hoàng/Huyền hợp linh căn, ưu tiên hệ của tộc
-    const fit = worldDefinitions('cp').filter((x) => !x.blood && x.tier <= 2 && !x.evil && x.el.some((e) => s.root.els.includes(e)))
+    const fit = worldDefinitions('cp').filter((x) => !x.blood && !x.celestial && x.tier <= 2 && !x.evil && x.el.some((e) => s.root.els.includes(e)))
       .sort((a, b) => b.tier - a.tier || Number(b.el.some((e) => clan.el.includes(e))) - Number(a.el.some((e) => clan.el.includes(e))));
     if (fit.length) {
       s.tech = fit[0].id;

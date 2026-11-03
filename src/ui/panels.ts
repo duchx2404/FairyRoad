@@ -543,7 +543,7 @@ function charPanel(): HTMLElement[] {
       h('div', { class: 'cp-ic', html: linhIconSvg(d.ic, d.el, 36, 'cl_' + cl.id) }),
       h('div', { class: 'cp-rt' },
         h('b', {}, `${cl.name} [${stageStr}]`),
-        h('small', {}, `${realmStr} · ${EL[d.el].n} hệ · ${lifeStr} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}`),
+        h('small', {}, `${realmStr} · ${EL[d.el].n} hệ · ${lifeStr} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · ${d.mount ? `tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}` : 'linh sủng trợ chiến (không phải thú cưỡi)'}`),
       ),
       h('div', { class: 'acts', style: { display: 'flex', gap: '4px' } },
         btn('Nuôi dưỡng', openFeedModal, 'small prime', { title: 'Cho ăn linh thảo, yêu đan, tinh huyết để tăng tu vi và trưởng thành' }),
@@ -577,8 +577,8 @@ function mountSlot(act: (m: string) => void): HTMLElement {
   const d = cl ? CHANLINH[cl.id] : null;
   if (!cl || !d) return h('div', { class: 'slot' }, h('div', { class: 'ic', html: glyphSvg('paw', 18) }), h('div', { class: 'nm', style: { flex: '1' } }, h('span', { class: 'muted' }, 'Tọa kỵ: trống — thuần phục chân linh ở hoang dã để làm tọa kỵ')));
   return h('div', { class: 'slot' }, h('div', { class: 'ic ic-svg', html: linhIconSvg(d.ic, d.el, 30, 'cl_' + cl.id) }),
-    h('div', { class: 'nm', style: { flex: '1' } }, h('b', {}, `${cl.name}`), h('div', { class: 'small muted' }, `Tọa kỵ ${MOUNT_GRADE[d.mount]} · ${mountEffect(d)} · ${cl.ride ? 'chỉ để cưỡi' : 'đang xuất chiến'}`)),
-    btn(cl.ride ? 'Cho xuất chiến' : 'Chỉ cưỡi', () => act(toggleLinhRide(MAX_ACTIVE, activeCount())), 'small'));
+    h('div', { class: 'nm', style: { flex: '1' } }, h('b', {}, `${cl.name}`), h('div', { class: 'small muted' }, d.mount ? `Tọa kỵ ${MOUNT_GRADE[d.mount]} · ${mountEffect(d)} · ${cl.ride ? 'chỉ để cưỡi' : 'đang xuất chiến'}` : 'Linh sủng hộ pháp · xuất chiến cùng chủ nhân')),
+    d.mount ? btn(cl.ride ? 'Cho xuất chiến' : 'Chỉ cưỡi', () => act(toggleLinhRide(MAX_ACTIVE, activeCount())), 'small') : null);
 }
 function bagPanel(): HTMLElement[] {
   const out: HTMLElement[] = [tabsEl('bag', ['Trang bị', `Túi (${bagUsed()}/${bagCap()})`, 'Công pháp & Thuật'])];

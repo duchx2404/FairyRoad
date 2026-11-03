@@ -107,18 +107,18 @@ export function stock(): Ware[] {
   }
   // sách: chỉ phường thị
   if (l.type === 'market') {
-    const sks = worldDefinitions('sk').filter((k) => !k.peak && k.tier <= Math.min(hi - 1, Math.ceil((effRi() + 1) / 2)) && !skillOwners(k.id).length);
+    const sks = worldDefinitions('sk').filter((k) => !k.peak && !k.celestial && k.tier <= Math.min(hi - 1, Math.ceil((effRi() + 1) / 2)) && !skillOwners(k.id).length);
     for (let i = 0; i < 2 && sks.length; i++) {
       const k = pickR(sks);
       if (out.some((o) => o.id === 'sk:' + k.id)) continue;
       add({ id: 'sk:' + k.id, n: itemName('sk:' + k.id), price: Math.round(itemPrice('sk:' + k.id) * mul * 1.5), qty: 1 });
     }
-    const tcs = worldDefinitions('cp').filter((t) => !t.blood && t.tier <= Math.min(2 + (hi >= 4 ? 1 : 0), Math.ceil((effRi() + 1) / 2)) && !t.evil && !isExclusiveTech(t.id));
+    const tcs = worldDefinitions('cp').filter((t) => !t.blood && !t.celestial && t.tier <= Math.min(2 + (hi >= 4 ? 1 : 0), Math.ceil((effRi() + 1) / 2)) && !t.evil && !isExclusiveTech(t.id));
     if (tcs.length && rnd() < 0.7) {
       const t = pickR(tcs);
       add({ id: 'cp:' + t.id, n: itemName('cp:' + t.id), price: Math.round(itemPrice('cp:' + t.id) * mul * 1.6), qty: 1 });
     }
-    const pqs = worldDefinitions('fq').filter((x) => !x.exclusive && x.tier <= Math.min(2, Math.ceil((effRi() + 1) / 2)));
+    const pqs = worldDefinitions('fq').filter((x) => !x.exclusive && !x.celestial && x.tier <= Math.min(2, Math.ceil((effRi() + 1) / 2)));
     if (pqs.length && rnd() < 0.5) { const x = pickR(pqs); add({ id: 'fq:' + x.id, n: itemName('fq:' + x.id), price: Math.round(itemPrice('fq:' + x.id) * mul * 1.5), qty: 1 }); }
     // đan phương / phù phương
     const rec = [...worldDefinitions('p').filter((p) => p.tier <= Math.max(1, s.craft.alch + 1) && !s.recipes.includes(p.id)).map((p) => ({ id: p.id, n: `Đan phương: ${p.n}`, tier: p.tier })),
@@ -260,14 +260,14 @@ export function lots(): Lot[] {
     if (bigBeasts.length) {
       const bKey = pickR(bigBeasts);
       const b = CHANLINH[bKey];
-      pushLot('beast:' + bKey, `[Linh thú ấu niên] ${b.n}`, 650 + b.mount * 350);
+      pushLot('beast:' + bKey, `[Linh thú ấu niên] ${b.n}`, 650 + (b.mount ?? 1) * 350);
     }
   } else {
     const smallBeasts = ['hoaly', 'thanhxa', 'ngantho', 'tuyetlang'].filter((k) => CHANLINH[k]);
     if (smallBeasts.length) {
       const bKey = pickR(smallBeasts);
       const b = CHANLINH[bKey];
-      pushLot('beast:' + bKey, `[Linh thú ấu niên] ${b.n}`, 250 + b.mount * 150);
+      pushLot('beast:' + bKey, `[Linh thú ấu niên] ${b.n}`, 250 + (b.mount ?? 1) * 150);
     }
   }
 

@@ -381,7 +381,7 @@ const LEGACY_SCHOOL_DISCIPLES: Record<SchoolKey, LegacyDiscipleSeat[]> = {
     { canonName: 'Dương Tiễn', realSur: 'Dương', title: 'Hiển Thánh Chân Quân', seatTitle: 'Thủ tịch đại sư huynh · Thân truyền Ngọc Tuyền Sơn', g: 'm', el: 'loi', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Ngọc Đỉnh Chân Nhân, tu thành Bát Cửu Huyền Công, trán mở tam nhãn, dẫn Hao Thiên Khuyển vô địch thế hệ trẻ.' },
     { canonName: 'Lý Na Tra', realSur: 'Lý', title: 'Tam Đàn Hải Hội Đại Thần', seatTitle: 'Thân truyền Càn Nguyên Sơn', g: 'm', el: 'hoa', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thái Ất Chân Nhân, hóa thân hoa sen thanh tịnh, chân đạp Phong Hỏa Luân, vung Hỏa Tiêm Thương uy chấn tứ hải.' },
     { canonName: 'Hoàng Thiên Hóa', realSur: 'Hoàng', title: 'Bính Linh Công', seatTitle: 'Thân truyền Tử Dương Động', g: 'm', el: 'kim', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Thanh Hư Đạo Đức Chân Quân, cưỡi Ngọc Kỳ Lân, nắm giữ Mạc Tà Kiếm và Toản Tâm Đinh sát khí ngút trời.' },
-    { canonName: 'Lôi Chấn Tử', realSur: 'Cơ', title: 'Phong Lôi Thần Tướng', seatTitle: 'Thân truyền Chung Nam Sơn', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Vân Trung Tử, ăn tiên đào mọc cánh Phong Lôi, tay cầm Hoàng Kim Côn hộ vệ đạo thống Ngọc Hư.' },
+    { canonName: 'Cơ Lôi Chấn (Đạo hiệu: Lôi Chấn Tử)', realSur: 'Cơ', title: 'Phong Lôi Thần Tướng', seatTitle: 'Thân truyền Chung Nam Sơn', g: 'm', el: 'phong', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Vân Trung Tử, ăn tiên đào mọc cánh Phong Lôi, tay cầm Hoàng Kim Côn hộ vệ đạo thống Ngọc Hư.' },
     { canonName: 'Vi Hộ', realSur: 'Vi', title: 'Hàng Ma Chân Nhân', seatTitle: 'Thân truyền Kim Kê Sơn', g: 'm', el: 'tho', rankKey: 'thantruyen', rankName: 'Thân truyền đệ tử', d: 'Đệ tử chân truyền của Đạo Hạnh Thiên Tôn, nắm giữ Hàng Ma Xử ngàn cân bất hoại, thể phách kim cang kiên cố.' },
     // Nội môn (5)
     { canonName: 'Kim Tra', realSur: 'Lý', title: 'Độn Long Chân Nhân', seatTitle: 'Đệ tử nội môn · Chấp pháp đường', g: 'm', el: 'kim', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Văn Thù Quảng Pháp Thiên Tôn, nắm giữ Độn Long Thung chấp hành môn quy Côn Lôn.' },
@@ -390,7 +390,7 @@ const LEGACY_SCHOOL_DISCIPLES: Record<SchoolKey, LegacyDiscipleSeat[]> = {
     { canonName: 'Ân Hồng', realSur: 'Ân', title: 'Âm Dương Pháp Sĩ', seatTitle: 'Đệ tử nội môn · Tàng kinh các', g: 'm', el: 'hoa', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Đệ tử chân truyền của Xích Tinh Tử tại Thái Hoa Sơn, tinh thông Âm Dương Kính và điển tích Ngọc Hư.' },
     { canonName: 'Bạch Hạc Đồng Tử', title: 'Bạch Hạc Tiên Đồng', seatTitle: 'Đệ tử nội môn · Đan viện', g: 'm', el: 'quang', rankKey: 'noimon', rankName: 'Nội môn đệ tử', d: 'Thị giả tọa tiền của Nguyên Thủy Thiên Tôn, thanh tao thoát tục, hỗ trợ chăm nom lò luyện đan Ngọc Hư.' },
     // Ngoại môn (4)
-    { canonName: 'Thổ Hành Tôn', title: 'Địa Hành Chân Nhân', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Cụ Lưu Tôn tại Phi Vân Động, tinh thông Địa Hành Thuật ngày đi ngàn dặm dưới lòng đất, quản lý quặng mỏ Côn Lôn.' },
+    { canonName: 'Thổ Tôn (Đạo hiệu: Thổ Hành Tôn)', realSur: 'Thổ', title: 'Địa Hành Chân Nhân', seatTitle: 'Đệ tử ngoại môn · Khai khoáng', g: 'm', el: 'tho', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Cụ Lưu Tôn tại Phi Vân Động, tinh thông Địa Hành Thuật ngày đi ngàn dặm dưới lòng đất, quản lý quặng mỏ Côn Lôn.' },
     { canonName: 'Dương Nhậm', realSur: 'Dương', title: 'Giáp Ất Chân Quân', seatTitle: 'Đệ tử ngoại môn · Tuần sơn', g: 'm', el: 'hoa', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử của Thanh Hư Đạo Đức Chân Quân, trong hốc mắt mọc tay, lòng bàn tay có mắt thần nhìn thấu hư không, canh gác chân núi Côn Lôn.' },
     { canonName: 'Long Tu Hổ', title: 'Trấn Sơn Dị Thú', seatTitle: 'Đệ tử ngoại môn · Hộ sơn', g: 'm', el: 'thuy', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Dị thú đầu rồng mình cọp, đệ tử của Khương Tử Nha, ném đá hóa thành lôi hỏa trấn giữ sơn môn.' },
     { canonName: 'Vũ Cát', realSur: 'Vũ', title: 'Vị Thủy Tiên Sinh', seatTitle: 'Đệ tử ngoại môn · Dược viên', g: 'm', el: 'moc', rankKey: 'ngoaimon', rankName: 'Ngoại môn đệ tử', d: 'Đệ tử tiều phu bái Khương Tử Nha bên bờ sông Vị Thủy, chăm chỉ tưới tiêu dược điền Côn Lôn Sơn.' },
@@ -851,13 +851,13 @@ function roleGift(e: Elder): string {
   const cap = clamp(Math.ceil((effRi() + 1) / 1.5), 1, 6);
   const tier = sc().tier;
   const skill = (kinds: string[], elOnly: boolean) => {
-    const pool = worldDefinitions('sk').filter((k) => kinds.includes(k.k) && (elOnly ? k.el === e.el : k.el === e.el || k.el === null) && k.tier <= cap && !s.known.includes(k.id));
+    const pool = worldDefinitions('sk').filter((k) => !k.celestial && kinds.includes(k.k) && (elOnly ? k.el === e.el : k.el === e.el || k.el === null) && k.tier <= cap && !s.known.includes(k.id));
     if (!pool.length) { s.stats.ngo++; return ' Chiêu thức của sư phụ ngươi đã biết cả, sư phụ bèn giảng đạo lý — ngộ tính +1.'; }
     const k = pool.sort((x, y) => y.tier - x.tier)[0];
     return learnSkill(k.id) || ` Sư phụ truyền ${k.n}.`;
   };
   const weaponSkill = () => {
-    const pool = worldDefinitions('sk').filter((k) => k.w === e.w && k.el !== 'hondon' && k.tier <= cap && !s.known.includes(k.id));
+    const pool = worldDefinitions('sk').filter((k) => !k.celestial && k.w === e.w && k.el !== 'hondon' && k.tier <= cap && !s.known.includes(k.id));
     if (!pool.length) { s.stats.ngo++; return ` ${WEAPON_N[e.w!]} pháp của sư phụ ngươi đã học hết, sư phụ bèn giảng ${WEAPON_N[e.w!].toLowerCase()} ý — ngộ tính +1.`; }
     const k = pool.sort((x, y) => y.tier - x.tier)[0];
     return ` Sư phụ truyền ${WEAPON_N[e.w!].toLowerCase()} pháp ${k.n}.` + learnSkill(k.id).replace(/^ Lĩnh ngộ [^.]*\./, '');
@@ -894,7 +894,7 @@ function roleGift(e: Elder): string {
     case 'truyen': {
       s.stats.ngo++;
       const known = tamList();
-      const pool = worldDefinitions('tp').filter((x) => !known.includes(x.id) && x.tier <= cap);
+      const pool = worldDefinitions('tp').filter((x) => !x.celestial && !known.includes(x.id) && x.tier <= cap);
       if (!pool.length) return ' Sư phụ giảng kinh bảy ngày — ngộ tính +1.';
       const x = pool.sort((p, q) => q.tier - p.tier)[0];
       addItem('tp:' + x.id);
@@ -922,7 +922,7 @@ export function masterCatchUp(): string | null {
   s.flags.peakGift = e.key;
   if (worldDefinitions('sk').some((k) => k.w === e.w && k.el !== 'hondon' && s.known.includes(k.id))) return null;
   const cap = clamp(Math.ceil((effRi() + 1) / 1.5), 1, 6);
-  const k = worldDefinitions('sk').filter((x) => x.w === e.w && x.el !== 'hondon' && x.tier <= cap).sort((x, y) => y.tier - x.tier)[0];
+  const k = worldDefinitions('sk').filter((x) => !x.celestial && x.w === e.w && x.el !== 'hondon' && x.tier <= cap).sort((x, y) => y.tier - x.tier)[0];
   if (!k) return null;
   learnSkill(k.id);
   return `${e.name} gọi ngươi tới: "Đệ tử ${e.seat.replace(' phong chủ', '')} không thể không biết ${WEAPON_N[e.w].toLowerCase()} pháp." Truyền cho ngươi ${k.n}.`;

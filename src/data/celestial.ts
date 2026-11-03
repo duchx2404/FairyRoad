@@ -5,6 +5,7 @@
 import { REALMS, npcCap, DAO_HAO, DAO_HAO_F, MALE, FEM, WORLDS, LAST_WORLD, splitName } from './core';
 import { seeded, hashStr } from '../core/util';
 import { nameKey, uniquePersonalName } from '../core/names';
+import { s } from '../engine/state';
 
 export type CelestialId = 'thiendinh' | 'diaphu' | 'yeugioi' | 'linhson';
 export interface CPlace { id: string; n: string; x: number; y: number; d: string }
@@ -38,6 +39,7 @@ export const CELESTIAL: Record<CelestialId, CRealm> = {
       { title: 'Tam Đàn Hải Hội Đại Thần', holder: 'Na Tra', place: 'namthienmon', tier: 2, d: 'Ba đầu sáu tay, phong hỏa luân, hỗn thiên lăng. Tiên phong của thiên binh.' },
       { title: 'Thiên Bồng Nguyên Soái', holder: 'Trư Cương Liệp', place: 'thienha', tier: 2, d: 'Thống lĩnh tám vạn thủy binh Thiên Hà.' },
       { title: 'Thái Âm Tinh Quân', holder: 'Hằng Nga', place: 'quanghan', tier: 2, f: true, d: 'Chủ Quảng Hàn Cung, quản trăng và thủy triều.' },
+      { title: 'Nguyệt Cung Thủ Dược Thần Thú', holder: 'Thái Âm Ngọc Thố', place: 'quanghan', tier: 3, d: 'Sủng vật ngự tiền của Hằng Nga Tiên Tử, ngày đêm giã tiên dược trường sinh dưới gốc Nguyệt Quế.' },
       { title: 'Trì Quốc Thiên Vương', holder: 'Ma Lễ Hải', place: 'namthienmon', tier: 2, d: 'Một trong Tứ Đại Thiên Vương, ôm tỳ bà, gảy một tiếng gió lửa nổi lên.' },
       { title: 'Tăng Trưởng Thiên Vương', holder: 'Ma Lễ Thanh', place: 'namthienmon', tier: 2, d: 'Cầm Thanh Vân Kiếm, canh cửa nam.' },
       { title: 'Quảng Mục Thiên Vương', holder: 'Ma Lễ Hồng', place: 'namthienmon', tier: 2, d: 'Cầm Hỗn Nguyên Tán, mở ra là trời đất tối sầm.' },
@@ -164,8 +166,8 @@ const HONGHUANG_FIGURES = new Set([
   'Vân Tiêu', 'Quỳnh Tiêu', 'Bích Tiêu', 'Triệu Công Minh', 'Kim Linh Thánh Mẫu', 'Vô Đương Thánh Mẫu',
   'Quy Linh Thánh Mẫu', 'Đa Bảo Đạo Nhân', 'Thân Công Báo', 'Khương Tử Nha', 'Cơ Xương', 'Cơ Phát',
   'Văn Trọng', 'Hoàng Phi Hổ', 'Trụ Vương', 'Đát Kỷ', 'Phí Trọng', 'Vưu Hồn', 'Sùng Hầu Hổ',
-  'Ngạc Sùng Vũ', 'Khương Hoàn Sở', 'Lý Tĩnh', 'Ân Thị', 'Kim Tra', 'Mộc Tra', 'Lôi Chấn Tử', 'Hoàng Thiên Hóa', 'Dương Nhậm',
-  'Đặng Thiền Ngọc', 'Thổ Hành Tôn', 'Long Cát Công Chúa', 'Tỷ Can', 'Vân Trung Tử', 'Quảng Thành Tử',
+  'Ngạc Sùng Vũ', 'Khương Hoàn Sở', 'Lý Tĩnh', 'Ân Thị', 'Kim Tra', 'Mộc Tra', 'Cơ Lôi Chấn (Đạo hiệu: Lôi Chấn Tử)', 'Hoàng Thiên Hóa', 'Dương Nhậm',
+  'Đặng Thiền Ngọc', 'Thổ Tôn (Đạo hiệu: Thổ Hành Tôn)', 'Long Cát Công Chúa', 'Tỷ Can', 'Vân Trung Tử', 'Quảng Thành Tử',
   'Xích Tinh Tử', 'Thái Ất Chân Nhân', 'Ngọc Đỉnh Chân Nhân', 'Từ Hàng Đạo Nhân',
   'Văn Thù Quảng Pháp Thiên Tôn', 'Phổ Hiền Chân Nhân', 'Cụ Lưu Tôn', 'Hoàng Long Chân Nhân',
   'Đạo Hạnh Thiên Tôn', 'Thanh Hư Đạo Đức Chân Quân', 'Nam Cực Tiên Ông',
@@ -215,10 +217,81 @@ export const CELESTIAL_CRAFT: Record<string, ['alch' | 'forge' | 'talis', number
 export const celestialTop = (w: number) => npcCap(w);
 /** Cảnh giới của một chức vụ ở giới w: bậc 0 đứng ở trần, mỗi bậc thấp hơn một đại cảnh giới. */
 export const officeRealm = (tier: number, w: number) => Math.max(1, celestialTop(w) - tier);
-export interface COfficeView extends COffice { name: string; daoHao?: string; r: number; realm: string }
+export interface COfficeView extends COffice {
+  name: string;
+  daoHao?: string;
+  r: number;
+  realm: string;
+  isPlayer?: boolean;
+}
 /** Danh sách chức vụ kèm người đương nhiệm và cảnh giới cho giới w. */
 export function celestialOffices(id: CelestialId, w: number): COfficeView[] {
   if (!hasCelestialRealms(w)) return [];
-  return CELESTIAL[id].offices.map((o, i) => { const r = officeRealm(o.tier, w); return { ...o, name: holderName(id, o, w, i), daoHao: holderDaoHao(id, o, w, i), r, realm: REALMS[r].n }; });
+  return CELESTIAL[id].offices.map((o, i) => {
+    const isPlayer = s?.flags?.celestialUsurped?.[`${id}:${o.title}`] === true;
+    if (isPlayer) {
+      return {
+        ...o,
+        holder: s.name,
+        name: s.name,
+        daoHao: 'Bá Chủ',
+        r: s.r,
+        realm: REALMS[s.r].n,
+        isPlayer: true,
+      };
+    }
+    const r = officeRealm(o.tier, w);
+    return { ...o, name: holderName(id, o, w, i), daoHao: holderDaoHao(id, o, w, i), r, realm: REALMS[r].n, isPlayer: false };
+  });
 }
 export const celestialWorldName = (id: CelestialId, w: number) => `${CELESTIAL[id].n} ${WORLDS[w]}`;
+
+export const CELESTIAL_GATEWAY_SECTS: Record<string, CelestialId> = {
+  tutieu: 'thiendinh',
+  cuuu: 'diaphu',
+  vanyeudinh: 'yeugioi',
+  linhsontu: 'linhson',
+};
+
+export const CELESTIAL_PLACE_ARTS: Record<CelestialId, Record<string, string[]>> = {
+  thiendinh: {
+    namthienmon: ['cp:cp_td_ngungkhi', 'sk:sk_td_tienquang', 'fq:fq_td_nguphong'],
+    linhtieu: ['cp:cp_td_linhtieu', 'sk:sk_td_linhtieuchuong', 'tp:tp_td_truongsinh', 'fq:fq_td_sucdia'],
+    daotri: ['cp:cp_td_tuvi', 'tp:tp_td_thanhtam'],
+    dausuat: ['cp:cp_td_dausuat', 'sk:sk_td_batquaihoa', 'tp:tp_td_vovi', 'fq:fq_td_tophuc'],
+    quanghan: ['sk:sk_td_phongloi'],
+    thienha: ['cp:cp_td_thienha', 'sk:sk_td_thienhathuy'],
+    tuhai: [],
+  },
+  diaphu: {
+    quymon: ['cp:cp_dp_hoangtuyen', 'sk:sk_dp_cauhon', 'fq:fq_dp_vonganh'],
+    hoangtuyen: ['sk:sk_dp_bingan', 'tp:tp_dp_vonghuong'],
+    vonghuong: ['tp:tp_dp_tamsinh'],
+    tamsinh: ['cp:cp_dp_hanphach', 'fq:fq_dp_amduongnhan'],
+    naiha: ['sk:sk_dp_vongxuyen'],
+    manhba: [],
+    phongdo: ['cp:cp_dp_phongdo', 'sk:sk_dp_phanbut', 'tp:tp_dp_bathu'],
+    uongtu: ['cp:cp_dp_thapdien'],
+    luanhoi: ['cp:cp_dp_luanhoi', 'sk:sk_dp_luanhoian', 'fq:fq_dp_hoaanh'],
+  },
+  yeugioi: {
+    codmon: ['cp:cp_yg_yeukhi', 'sk:sk_yg_toicot', 'tp:tp_yg_cuongthu', 'fq:fq_yg_dondia'],
+    yeuhoang: ['cp:cp_yg_yeuhoang', 'tp:tp_yg_batdiet', 'fq:fq_yg_thonthien'],
+    hoaqua: ['cp:cp_yg_hoaqua', 'sk:sk_yg_hoaquagay', 'fq:fq_yg_candauvan'],
+    tichloi: ['cp:cp_yg_tichloi', 'sk:sk_yg_tichloibong'],
+    sudaa: ['sk:sk_yg_suda', 'tp:tp_yg_cuuvi'],
+    banty: ['sk:sk_yg_banty'],
+    hacphong: ['cp:cp_yg_hacphong'],
+    bachho: [],
+  },
+  linhson: {
+    sonmon: ['cp:cp_ls_toathien', 'sk:sk_ls_kimcuong', 'tp:tp_ls_minhtam'],
+    loiam: ['cp:cp_ls_nhulai', 'sk:sk_ls_nhulaichuong', 'tp:tp_ls_nietban'],
+    lacgia: ['cp:cp_ls_lacgia', 'sk:sk_ls_camlo', 'fq:fq_ls_lienhoa'],
+    ngudai: ['cp:cp_ls_vanthu', 'sk:sk_ls_hanglong', 'fq:fq_ls_kimthan'],
+    ngami: ['sk:sk_ls_batnha', 'tp:tp_ls_bodhi'],
+    cuuhoa: ['cp:cp_ls_cuuhoa'],
+    tangkinh: ['fq:fq_ls_thantuc'],
+  },
+};
+

@@ -499,6 +499,11 @@
                 </Thâm Hải Ngư>
             </Cự Côn>
         </Bắc Minh Cự Côn>
+        <Bích Ba Cửu Đầu Điểu el="thuy" myth="1">
+            <Cửu Đầu Trùng el="thuy">
+                <Côn Ngư el="none"></Côn Ngư>
+            </Cửu Đầu Trùng>
+        </Bích Ba Cửu Đầu Điểu>
         <Kim Sí Đại Bằng el="phong" myth="1">
             <Đại Bằng Điểu el="phong">
                 <Thanh Vũ Điêu el="phong">
@@ -581,6 +586,11 @@
     </Bạch Hổ>
 
     <Bạch Trạch el="quang" myth="1">
+        <Bích Khâu Bạch Lộc el="moc" myth="1">
+            <Trường Thọ Tiên Lộc el="moc">
+                <Linh Lộc el="none"></Linh Lộc>
+            </Trường Thọ Tiên Lộc>
+        </Bích Khâu Bạch Lộc>
         <Bạch Trạch Thánh Thú el="quang" myth="1">
             <Bạch Trạch Linh Thú el="quang" myth="1">
                 <Bạch Trạch Dị Thú el="quang">
@@ -628,6 +638,26 @@
     </Thiên Cẩu>
 
     <Chu Yếm el="kim" myth="1">
+        <Linh Minh Thạch Hầu el="kim" myth="1">
+            <Thạch Hầu Viễn Cổ el="kim">
+                <Hoa Quả Sơn Linh Hầu el="none"></Hoa Quả Sơn Linh Hầu>
+            </Thạch Hầu Viễn Cổ>
+        </Linh Minh Thạch Hầu>
+        <Xích Khào Mã Hầu el="thuy" myth="1">
+            <Đô Thao Thủy Hầu el="thuy">
+                <Sông Hoài Linh Hầu el="none"></Sông Hoài Linh Hầu>
+            </Đô Thao Thủy Hầu>
+        </Xích Khào Mã Hầu>
+        <Thông Tí Viên Hầu el="moc" myth="1">
+            <Mai Sơn Thần Viên el="moc">
+                <Thông Thiên Linh Hầu el="none"></Thông Thiên Linh Hầu>
+            </Mai Sơn Thần Viên>
+        </Thông Tí Viên Hầu>
+        <Lục Nhĩ Mĩ Hầu el="am" myth="1">
+            <Lục Thính U Hầu el="am">
+                <Huyễn Âm Linh Hầu el="none"></Huyễn Âm Linh Hầu>
+            </Lục Thính U Hầu>
+        </Lục Nhĩ Mĩ Hầu>
         <Thông Thiên Viên el="moc">
             <Tinh Tinh el="moc">
                 <Linh Hầu el="none"></Linh Hầu>
@@ -646,6 +676,11 @@
     </Chu Yếm>
 
     <Ảnh Báo el="am">
+        <Ngải Diệp Hoa Báo el="phong" myth="1">
+            <Ẩn Vụ Báo el="phong">
+                <Linh Báo el="none"></Linh Báo>
+            </Ẩn Vụ Báo>
+        </Ngải Diệp Hoa Báo>
         <Dạ Ảnh Báo el="am">
             <Dạ Xoa Ảnh Báo el="am">
                 <Linh Báo el="none"></Linh Báo>
@@ -664,6 +699,11 @@
     </Ảnh Báo>
 
     <Băng Hùng el="bang">
+        <Hắc Hùng Tinh el="tho" myth="1">
+            <Hắc Phong Ma Hùng el="tho">
+                <Linh Hùng el="none"></Linh Hùng>
+            </Hắc Phong Ma Hùng>
+        </Hắc Hùng Tinh>
         <Huyền Băng Hùng el="bang">
             <Băng Phách Hùng el="bang">
                 <Linh Hùng el="none"></Linh Hùng>
@@ -677,6 +717,11 @@
     </Băng Hùng>
 
     <Sa Hạt el="tho">
+        <Tỳ Bà Độc Hạt el="hoa" myth="1">
+            <Đảo Mã Độc Hạt el="hoa">
+                <Linh Hạt el="none"></Linh Hạt>
+            </Đảo Mã Độc Hạt>
+        </Tỳ Bà Độc Hạt>
         <Sa Hạt Vương el="tho">
             <Thổ Hoàng Hạt el="tho">
                 <Linh Hạt el="none"></Linh Hạt>
@@ -708,6 +753,11 @@
     </Sư Tử>
 
     <Tê Ngưu el="tho">
+        <Tịch Hàn Tam Đầu Tê el="bang" myth="1">
+            <Huyền Anh Ma Tê el="bang">
+                <Linh Tê el="none"></Linh Tê>
+            </Huyền Anh Ma Tê>
+        </Tịch Hàn Tam Đầu Tê>
         <Thủy Tê el="thuy">
             <Bích Lân Tê el="thuy">
                 <Độc Giác Thủy Tê el="thuy">
@@ -723,6 +773,11 @@
     </Tê Ngưu>
 
     <Thôn Kim Thử el="kim">
+        <Hoàng Phong Điêu Thử el="phong" myth="1">
+            <Tam Muội Phong Thử el="phong">
+                <Linh Thử el="none"></Linh Thử>
+            </Tam Muội Phong Thử>
+        </Hoàng Phong Điêu Thử>
         <Phệ Kim Thử el="kim">
             <Phệ Kim Thú el="kim">
                 <Linh Thử el="none"></Linh Thử>
@@ -739,6 +794,16 @@
     </Thụ Yêu>
 
     <Thượng Cổ Trùng el="moc">
+        <Bách Nhãn Ngô Công el="quang" myth="1">
+            <Đa Mục Ngô Công el="quang">
+                <Ấu Trùng el="none"></Ấu Trùng>
+            </Đa Mục Ngô Công>
+        </Bách Nhãn Ngô Công>
+        <Bàn Ty Chu Yêu el="am" myth="1">
+            <Thất Sắc Tru Ty Chu el="am">
+                <Ấu Trùng el="none"></Ấu Trùng>
+            </Thất Sắc Tru Ty Chu>
+        </Bàn Ty Chu Yêu>
         <Kim Giáp Ngô Công el="kim">
             <Ấu Trùng el="none"></Ấu Trùng>
         </Kim Giáp Ngô Công>
@@ -750,6 +815,11 @@
     </Thượng Cổ Trùng>
 
     <Thi Quỷ el="am">
+        <Bạch Cốt Tinh el="am" myth="1">
+            <Khô Lâu Yêu Ma el="am">
+                <Âm Thi el="none"></Âm Thi>
+            </Khô Lâu Yêu Ma>
+        </Bạch Cốt Tinh>
         <Âm Trạch Thi Quỷ el="am">
             <Âm Thi el="none"></Âm Thi>
         </Âm Trạch Thi Quỷ>
@@ -810,6 +880,11 @@
     </Lục Ngô>
 
     <Quỳ el="loi" myth="1">
+        <Độc Giác Thanh Ngưu el="kim" myth="1">
+            <Kim Đới Ma Ngưu el="kim">
+                <Thanh Thân Độc Túc Lôi Ngưu el="none"></Thanh Thân Độc Túc Lôi Ngưu>
+            </Kim Đới Ma Ngưu>
+        </Độc Giác Thanh Ngưu>
         <Phong Vũ Chấn Hải Quỳ el="loi" myth="1">
             <Thanh Thân Độc Túc Lôi Ngưu el="none"></Thanh Thân Độc Túc Lôi Ngưu>
         </Phong Vũ Chấn Hải Quỳ>
@@ -962,5 +1037,21 @@
             <Hổ Vĩ Thực Nhân Trệ el="none"></Hổ Vĩ Thực Nhân Trệ>
         </Ngưu Vĩ Khiếu Hổ>
     </Trệ>
+
+    <Cổ Cự Tượng el="tho" myth="1">
+        <Lục Nha Bạch Tượng el="tho" myth="1">
+            <Thông Thiên Bạch Tượng el="tho">
+                <Linh Tượng el="none"></Linh Tượng>
+            </Thông Thiên Bạch Tượng>
+        </Lục Nha Bạch Tượng>
+    </Cổ Cự Tượng>
+
+    <Thái Âm Thần Thố el="quang" myth="1">
+        <Thái Âm Ngọc Thố el="quang" myth="1">
+            <Ngân Nguyệt Tiên Thố el="quang">
+                <Linh Thố el="none"></Linh Thố>
+            </Ngân Nguyệt Tiên Thố>
+        </Thái Âm Ngọc Thố>
+    </Thái Âm Thần Thố>
 
 </BeastLineage>

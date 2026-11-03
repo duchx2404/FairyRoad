@@ -762,7 +762,7 @@ const HONGHOANG: Theme = {
     ['Càn Nguyên Sơn', 'trung', 0.4, 'Càn Nguyên Sơn Kim Quang Động của Thái Ất Chân Nhân, sư phụ Na Tra; Na Tra qua lại giữa đây và Trần Đường Quan.'],
     ['Cửu Tiên Sơn', 'trung', 0.45, 'Cửu Tiên Sơn Đào Nguyên Động của Quảng Thành Tử, đại đệ tử Xiển Giáo.'],
     ['Kim Đình Sơn', 'trung', 0.4, 'Kim Đình Sơn Ngọc Ốc Động của Đạo Hạnh Thiên Tôn, môn hạ Xiển Giáo.'],
-    ['Giáp Long Sơn', 'trung', 0.4, 'Giáp Long Sơn Phi Vân Động của Cụ Lưu Tôn, sư phụ Thổ Hành Tôn.'],
+    ['Giáp Long Sơn', 'trung', 0.4, 'Giáp Long Sơn Phi Vân Động của Cụ Lưu Tôn, sư phụ Thổ Tôn (Đạo hiệu: Thổ Hành Tôn).'],
     ['Động Đình Sơn', 'trung', 0.35, 'Núi ở rìa nam Trung Thổ giữa các dòng Giang, Tương; hai con gái của Thiên Đế ở đây.'],
     ['Long Môn', 'trung', 0.5, 'Cửa đá trên sông Hà; cá chép vượt được thì hóa rồng.'],
     // Đông Thắng Thần Châu

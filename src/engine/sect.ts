@@ -1,3 +1,4 @@
+import { CELESTIAL_GATEWAY_SECTS } from '../data/celestial';
 import { worldDefinitions } from '../data/local-items';
 import { itemName, count, removeItem, itemPrice } from './char';
 import { localItemId, limitGear } from '../data/local-items';
@@ -241,7 +242,8 @@ export function sectWares(): SectWare[] {
       !t.evil === !sc.evil &&
       (sRace === 'all' || t.el.length === 0 || t.el.some((e) => sc.el.includes(e)) || sc.el.length === 0)
     )) &&
-    sectCanTeachTech(t.id, sc.id)
+    sectCanTeachTech(t.id, sc.id) &&
+    (!t.celestial || (CELESTIAL_GATEWAY_SECTS[sc.id] === t.celestial && t.celestialTier !== 'high'))
   );
   for (const t of techs) out.push({ id: 'cp:' + t.id, n: t.n, cost: 40 * Math.pow(4, t.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU, RK.CHU][t.tier] });
 
@@ -253,20 +255,23 @@ export function sectWares(): SectWare[] {
       (k.tier <= sc.tier + 1 && (sRace === 'all' || !k.el || sc.el.includes(k.el) || sc.el.length === 0)) ||
       skillOwners(k.id).includes(sc.id)
     ) &&
-    sectCanTeachSkill(k.id, sc.id)
+    sectCanTeachSkill(k.id, sc.id) &&
+    (!k.celestial || (CELESTIAL_GATEWAY_SECTS[sc.id] === k.celestial && k.celestialTier !== 'high'))
   );
   for (const k of sks) out.push({ id: 'sk:' + k.id, n: k.n, cost: 25 * Math.pow(3.5, k.tier - 1), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][Math.min(6, k.tier)] });
 
   // Tâm pháp: Lọc theo chủng tộc
   for (const x of worldDefinitions('tp')) {
-    if (x.tier <= Math.min(6, sc.tier + 2) && sectAllowsArt(sRace, 'tp:' + x.id)) {
+    if (x.tier <= Math.min(6, sc.tier + 2) && sectAllowsArt(sRace, 'tp:' + x.id) &&
+        (!x.celestial || (CELESTIAL_GATEWAY_SECTS[sc.id] === x.celestial && x.celestialTier !== 'high'))) {
       out.push({ id: 'tp:' + x.id, n: x.n, cost: Math.round(30 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
     }
   }
 
   // Pháp quyết: Lọc theo chủng tộc
   for (const x of worldDefinitions('fq')) {
-    if (!x.exclusive && x.tier <= Math.min(6, sc.tier + 2) && sectAllowsArt(sRace, 'fq:' + x.id)) {
+    if (!x.exclusive && x.tier <= Math.min(6, sc.tier + 2) && sectAllowsArt(sRace, 'fq:' + x.id) &&
+        (!x.celestial || (CELESTIAL_GATEWAY_SECTS[sc.id] === x.celestial && x.celestialTier !== 'high'))) {
       out.push({ id: 'fq:' + x.id, n: x.n, cost: Math.round(35 * Math.pow(4, x.tier - 1) * (1 + x.pq * 0.3)), minRank: [0, RK.NGOAI, RK.NOI, RK.KYDANH, RK.THANTRUYEN, RK.THUTICH, RK.THANHTU][x.tier] });
     }
   }
@@ -370,7 +375,7 @@ export function sectWares(): SectWare[] {
     out.push({
       id: 'x:trung_' + beastKey,
       n: `[Linh thú ấu niên] ${beastDef.n} (Phong ấn bảo khố)`,
-      cost: Math.round((650 + beastDef.mount * 350) / 2),
+      cost: Math.round((650 + (beastDef.mount ?? 1) * 350) / 2),
       minRank: RK.NOI,
       source: 'Đấu giá hội',
       uid: beastLotKey,
@@ -430,7 +435,7 @@ export function winSectWar(foeId: string): string {
     });
     added.push(`Công pháp trấn tông 《${foeTech.n}》`);
   }
-  const skPool = worldDefinitions('sk').filter((k) => (foe.el.includes(k.el as any) || skillOwners(k.id).includes(foe.id)) && !sp.books.some((b) => b.id === 'sk:' + k.id));
+  const skPool = worldDefinitions('sk').filter((k) => !k.celestial && (foe.el.includes(k.el as any) || skillOwners(k.id).includes(foe.id)) && !sp.books.some((b) => b.id === 'sk:' + k.id));
   if (skPool.length) {
     const sk = skPool[Math.floor(Math.random() * skPool.length)];
     sp.books.push({
@@ -442,7 +447,7 @@ export function winSectWar(foeId: string): string {
     });
     added.push(`Võ công 《${sk.n}》`);
   }
-  const tpPool = worldDefinitions('tp').filter((x) => x.tier >= 2 && x.tier <= Math.min(6, sc.tier + 2) && !sp.books.some((b) => b.id === 'tp:' + x.id));
+  const tpPool = worldDefinitions('tp').filter((x) => !x.celestial && x.tier >= 2 && x.tier <= Math.min(6, sc.tier + 2) && !sp.books.some((b) => b.id === 'tp:' + x.id));
   if (tpPool.length) {
     const tp = tpPool[Math.floor(Math.random() * tpPool.length)];
     sp.books.push({
