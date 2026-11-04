@@ -277,7 +277,7 @@ export function openAuthModal(onSuccess?: () => void) {
             h('summary', { style: { cursor: 'pointer', color: 'var(--accent)' } }, 'Hoặc dùng Popup Google chính thức (Google GIS)'),
             h('div', { class: 'small muted', style: { margin: '8px 0', lineHeight: '1.4' } },
               'Lưu ý: Lỗi \"Client missing a project id (Lỗi 401)\" xảy ra khi Google Client ID chưa được đăng ký trong Google Cloud Console. ' +
-              'ID chuẩn phải có đuôi: ' + h('code', {}, '.apps.googleusercontent.com')
+              'ID chuẩn phải có đuôi: .apps.googleusercontent.com'
             )
           );
 
