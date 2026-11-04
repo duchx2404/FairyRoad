@@ -157,6 +157,7 @@ export interface Meta {
     aiProvider?: 'ollama' | 'gemini';
     geminiKey?: string;
     geminiModel?: string;
+    googleClientId?: string;
     serverUrl?: string;
     url: string;
     model: string;
