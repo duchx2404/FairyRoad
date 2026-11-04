@@ -255,8 +255,21 @@ export function openAuthModal(onSuccess?: () => void) {
           const fastNameInput = h('input', {
             type: 'text',
             placeholder: 'Tên hiển thị đạo hiệu (tùy chọn)...',
-            style: { width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' },
+            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
           });
+
+          const fastGeminiKeyInput = h('input', {
+            type: 'password',
+            placeholder: 'Gemini API Key của bạn (Tùy chọn, lưu vĩnh viễn vào tài khoản)...',
+            value: meta.settings.geminiKey || '',
+            style: { width: '100%', padding: '8px', marginBottom: '6px', boxSizing: 'border-box' },
+          });
+
+          const fastKeyGuide = h('div', { class: 'small muted', style: { fontSize: '11px', marginBottom: '10px' } },
+            '🔑 Key của ai người nấy dùng riêng để không lo hết token. Chưa có key? Bấm ',
+            h('a', { href: 'https://aistudio.google.com/app/apikey', target: '_blank', style: { color: 'var(--prime)', textDecoration: 'underline' } }, 'Lấy mã miễn phí tại Google AI Studio'),
+            '.'
+          );
 
           const fastStatus = h('div', { class: 'small', style: { color: 'var(--seal)', marginBottom: '6px' } });
 
@@ -272,9 +285,10 @@ export function openAuthModal(onSuccess?: () => void) {
 
             const name = fastNameInput.value.trim() || email.split('@')[0];
             const googleId = 'g_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-            const res = await loginWithGoogle({ googleId, email, name });
+            const geminiKey = fastGeminiKeyInput.value.trim() || undefined;
+            const res = await loginWithGoogle({ googleId, email, name, geminiKey });
             if (res.ok) {
-              notice(`Đăng nhập thành công với tài khoản Google: ${email}! Đã tự động kích hoạt Gemini AI.`);
+              notice(`Đăng nhập thành công với tài khoản: ${email}! Đã tự động kết nối tài khoản.`);
               render();
               onSuccess?.();
             } else {
@@ -284,7 +298,7 @@ export function openAuthModal(onSuccess?: () => void) {
           }, 'prime');
           fastLoginBtn.style.width = '100%';
 
-          fastBox.append(fastEmailInput, fastNameInput, fastStatus, fastLoginBtn);
+          fastBox.append(fastEmailInput, fastNameInput, fastGeminiKeyInput, fastKeyGuide, fastStatus, fastLoginBtn);
           tabBody.append(fastBox);
 
           // LỰA CHỌN 2: POPUP GOOGLE CHÍNH THỨC (NẾU CÓ GOOGLE CLIENT ID)
@@ -389,6 +403,13 @@ export function openAuthModal(onSuccess?: () => void) {
           const nameInput = h('input', {
             type: 'text',
             placeholder: 'Đạo hiệu / Biệt danh (tùy chọn)...',
+            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
+          });
+
+          const localGeminiKeyInput = h('input', {
+            type: 'password',
+            placeholder: 'Gemini API Key riêng của bạn (tùy chọn, lưu vĩnh viễn)...',
+            value: meta.settings.geminiKey || '',
             style: { width: '100%', padding: '8px', marginBottom: '12px', boxSizing: 'border-box' },
           });
 
@@ -398,13 +419,14 @@ export function openAuthModal(onSuccess?: () => void) {
             const u = userInput.value.trim();
             const p = passInput.value.trim();
             const d = nameInput.value.trim();
+            const k = localGeminiKeyInput.value.trim() || undefined;
             if (!u || !p) {
               localStatus.textContent = 'Vui lòng nhập đầy đủ tên tài khoản và mật khẩu!';
               return;
             }
             submitBtn.textContent = 'Đang xử lý...';
             localStatus.textContent = '';
-            const res = await loginOrRegister(u, p, d);
+            const res = await loginOrRegister(u, p, d, k);
             if (res.ok) {
               notice(res.action === 'register' ? 'Đăng ký tài khoản mới thành công!' : 'Đăng nhập thành công!');
               render();
@@ -416,7 +438,7 @@ export function openAuthModal(onSuccess?: () => void) {
           }, 'prime');
           submitBtn.style.width = '100%';
 
-          tabBody.append(userInput, passInput, nameInput, localStatus, submitBtn);
+          tabBody.append(userInput, passInput, nameInput, localGeminiKeyInput, localStatus, submitBtn);
         }
       }
 

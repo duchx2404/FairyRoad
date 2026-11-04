@@ -53,13 +53,13 @@ export function logout() {
 }
 
 /** Đăng nhập hoặc Tự động đăng ký nhanh với Username & Password */
-export async function loginOrRegister(username: string, password: string, displayName?: string): Promise<{ ok: boolean; error?: string; user?: AuthUser; action?: string }> {
+export async function loginOrRegister(username: string, password: string, displayName?: string, geminiKey?: string): Promise<{ ok: boolean; error?: string; user?: AuthUser; action?: string }> {
   try {
     const url = `${getServerUrl()}/api/auth/login-or-register`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, displayName }),
+      body: JSON.stringify({ username, password, displayName, geminiKey }),
     });
     const data = await res.json();
     if (!res.ok || !data.ok) {
@@ -77,7 +77,7 @@ export async function loginOrRegister(username: string, password: string, displa
 }
 
 /** Đăng nhập thông qua Google */
-export async function loginWithGoogle(googleData: { googleId: string; email?: string; name?: string; picture?: string }): Promise<{ ok: boolean; error?: string; user?: AuthUser }> {
+export async function loginWithGoogle(googleData: { googleId: string; email?: string; name?: string; picture?: string; geminiKey?: string }): Promise<{ ok: boolean; error?: string; user?: AuthUser }> {
   try {
     const url = `${getServerUrl()}/api/auth/google`;
     const res = await fetch(url, {

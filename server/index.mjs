@@ -131,7 +131,7 @@ app.get('/api/health', (req, res) => {
 // 2. Đăng ký & Đăng nhập nhanh bằng Username + Password (không cần xác minh)
 app.post('/api/auth/login-or-register', (req, res) => {
   try {
-    const { username, password, displayName } = req.body;
+    const { username, password, displayName, geminiKey } = req.body;
     if (!username || !password) {
       return res.status(400).json({ ok: false, error: 'Vui lòng nhập tên tài khoản và mật khẩu.' });
     }
@@ -145,8 +145,13 @@ app.post('/api/auth/login-or-register', (req, res) => {
         return res.status(401).json({ ok: false, error: 'Mật khẩu không chính xác cho tài khoản này!' });
       }
 
-      // Đăng nhập thành công
-      db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(Date.now(), existing.id);
+      // Đăng nhập thành công: cập nhật geminiKey nếu người dùng có nhập
+      if (geminiKey) {
+        db.prepare('UPDATE users SET last_login = ?, gemini_key = ? WHERE id = ?').run(Date.now(), geminiKey, existing.id);
+        existing.gemini_key = geminiKey;
+      } else {
+        db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(Date.now(), existing.id);
+      }
       const token = createSession(existing.id);
 
       return res.json({
@@ -170,9 +175,9 @@ app.post('/api/auth/login-or-register', (req, res) => {
       const now = Date.now();
 
       db.prepare(`
-        INSERT INTO users (id, username, password_hash, password_salt, display_name, auth_provider, created_at, last_login)
-        VALUES (?, ?, ?, ?, ?, 'local', ?, ?)
-      `).run(userId, cleanUsername, hash, salt, name, now, now);
+        INSERT INTO users (id, username, password_hash, password_salt, display_name, auth_provider, gemini_key, created_at, last_login)
+        VALUES (?, ?, ?, ?, ?, 'local', ?, ?, ?)
+      `).run(userId, cleanUsername, hash, salt, name, geminiKey || null, now, now);
 
       const token = createSession(userId);
 
@@ -186,7 +191,7 @@ app.post('/api/auth/login-or-register', (req, res) => {
           displayName: name,
           avatar: null,
           authProvider: 'local',
-          geminiKey: null,
+          geminiKey: geminiKey || null,
         },
       });
     }
@@ -199,7 +204,7 @@ app.post('/api/auth/login-or-register', (req, res) => {
 // 3. Đăng nhập bằng Google
 app.post('/api/auth/google', (req, res) => {
   try {
-    const { googleId, email, name, picture } = req.body;
+    const { googleId, email, name, picture, geminiKey } = req.body;
     if (!googleId) {
       return res.status(400).json({ ok: false, error: 'Thiếu thông tin Google ID.' });
     }
@@ -208,12 +213,23 @@ app.post('/api/auth/google', (req, res) => {
 
     if (user) {
       // Đã từng đăng nhập Google
-      db.prepare('UPDATE users SET last_login = ?, display_name = ?, avatar = ? WHERE id = ?').run(
-        Date.now(),
-        name || user.display_name,
-        picture || user.avatar,
-        user.id
-      );
+      if (geminiKey) {
+        db.prepare('UPDATE users SET last_login = ?, display_name = ?, avatar = ?, gemini_key = ? WHERE id = ?').run(
+          Date.now(),
+          name || user.display_name,
+          picture || user.avatar,
+          geminiKey,
+          user.id
+        );
+        user.gemini_key = geminiKey;
+      } else {
+        db.prepare('UPDATE users SET last_login = ?, display_name = ?, avatar = ? WHERE id = ?').run(
+          Date.now(),
+          name || user.display_name,
+          picture || user.avatar,
+          user.id
+        );
+      }
     } else {
       // Người dùng Google lần đầu vào game
       const userId = 'usr_g_' + crypto.randomUUID();
@@ -221,9 +237,9 @@ app.post('/api/auth/google', (req, res) => {
       const fallbackUser = 'g_' + googleId.slice(-8);
 
       db.prepare(`
-        INSERT INTO users (id, username, google_id, google_email, display_name, avatar, auth_provider, created_at, last_login)
-        VALUES (?, ?, ?, ?, ?, ?, 'google', ?, ?)
-      `).run(userId, fallbackUser, googleId, email || null, name || fallbackUser, picture || null, now, now);
+        INSERT INTO users (id, username, google_id, google_email, display_name, avatar, auth_provider, gemini_key, created_at, last_login)
+        VALUES (?, ?, ?, ?, ?, ?, 'google', ?, ?, ?)
+      `).run(userId, fallbackUser, googleId, email || null, name || fallbackUser, picture || null, geminiKey || null, now, now);
 
       user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     }
