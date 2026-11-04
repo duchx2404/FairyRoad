@@ -22,7 +22,7 @@ import { isMythicBeast } from '../data/beast-lineage';
 import { save } from '../engine/state';
 import { addLog, mark } from '../engine/core';
 import { h, $, btn, bar } from './dom';
-import { s, meta } from '../engine/state';
+import { s, meta, saveMeta } from '../engine/state';
 import { daoluTitle, isPrimaryDaolu } from '../engine/relationships';
 import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO, ORIGINS, originName, CLANS, BODIES, ROOTS, ALL_EL, VARIANT_EL, khacOf, hiddenRootKind } from '../data/core';
 import { CHAU, whereOf, ownerTxt, LOC_TYPE, EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, VUC, LOCS, LOC_LIST, SECTS, BEASTS, beastRoot, REGIONS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, rankLabel } from '../data/world';
@@ -1709,6 +1709,50 @@ function setPanel(): HTMLElement[] {
       h('div', { style: { color: '#2e7d32', fontWeight: 'bold', marginBottom: '6px' } }, '✨ Đang Dùng: Google Gemini 2.5 Flash'),
       h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Model Gemini 2.5 Flash trên đám mây để viết sự kiện & đàm đạo.')
     );
+
+    const hasToken = !!meta.settings.geminiToken;
+    const isGoogle = getCurrentUser()?.authProvider === 'google';
+
+    if (hasToken) {
+      gemBox.append(
+        h('div', { class: 'badge green small', style: { margin: '4px 0 8px 0', display: 'inline-block' } }, '✓ Đang dùng Token Google OAuth tự động (Không cần Key)')
+      );
+    } else if (isGoogle) {
+      const oauthQuickBtn = btn('⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)', () => {
+        oauthQuickBtn.textContent = 'Đang mở Google...';
+        const clientId = meta.settings.googleClientId || '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com';
+        if (!window.google?.accounts?.oauth2) {
+          notice('Đang tải thư viện Google, vui lòng thử lại sau 2 giây.');
+          oauthQuickBtn.textContent = '⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)';
+          return;
+        }
+        try {
+          const client = window.google.accounts.oauth2.initTokenClient({
+            client_id: clientId,
+            scope: 'openid email profile https://www.googleapis.com/auth/generative-language',
+            callback: async (tokenResp: any) => {
+              if (tokenResp.error) {
+                oauthQuickBtn.textContent = '⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)';
+                notice('Google OAuth: ' + tokenResp.error);
+                return;
+              }
+              meta.settings.geminiToken = tokenResp.access_token;
+              meta.settings.aiProvider = 'gemini';
+              saveMeta();
+              notice('✓ Đã cấp quyền Google Gemini OAuth thành công! Không cần API Key.');
+              renderPanels();
+            },
+          });
+          client.requestAccessToken();
+        } catch (e: any) {
+          oauthQuickBtn.textContent = '⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)';
+          notice('Lỗi: ' + e.message);
+        }
+      }, 'sm prime');
+      oauthQuickBtn.style.marginBottom = '8px';
+      oauthQuickBtn.style.display = 'block';
+      gemBox.append(oauthQuickBtn);
+    }
 
     const currentKey = meta.settings.geminiKey || '';
     const keyInput = h('input', {

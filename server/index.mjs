@@ -49,6 +49,7 @@ db.exec(`
     avatar TEXT,
     auth_provider TEXT DEFAULT 'local',
     gemini_key TEXT,
+    gemini_token TEXT,
     save_data TEXT,
     character_preview TEXT,
     created_at INTEGER,
@@ -71,6 +72,8 @@ db.exec(`
     created_at INTEGER
   );
 `);
+
+try { db.exec('ALTER TABLE users ADD COLUMN gemini_token TEXT'); } catch {}
 
 const app = express();
 app.use(cors());
@@ -204,7 +207,7 @@ app.post('/api/auth/login-or-register', (req, res) => {
 // 3. Đăng nhập bằng Google
 app.post('/api/auth/google', (req, res) => {
   try {
-    const { googleId, email, name, picture, geminiKey } = req.body;
+    const { googleId, email, name, picture, geminiKey, geminiToken } = req.body;
     if (!googleId) {
       return res.status(400).json({ ok: false, error: 'Thiếu thông tin Google ID.' });
     }
@@ -213,23 +216,14 @@ app.post('/api/auth/google', (req, res) => {
 
     if (user) {
       // Đã từng đăng nhập Google
-      if (geminiKey) {
-        db.prepare('UPDATE users SET last_login = ?, display_name = ?, avatar = ?, gemini_key = ? WHERE id = ?').run(
-          Date.now(),
-          name || user.display_name,
-          picture || user.avatar,
-          geminiKey,
-          user.id
-        );
-        user.gemini_key = geminiKey;
-      } else {
-        db.prepare('UPDATE users SET last_login = ?, display_name = ?, avatar = ? WHERE id = ?').run(
-          Date.now(),
-          name || user.display_name,
-          picture || user.avatar,
-          user.id
-        );
-      }
+      db.prepare(`
+        UPDATE users 
+        SET last_login = ?, display_name = ?, avatar = ?, 
+            gemini_key = COALESCE(?, gemini_key), 
+            gemini_token = COALESCE(?, gemini_token) 
+        WHERE id = ?
+      `).run(Date.now(), name || user.display_name, picture || user.avatar, geminiKey || null, geminiToken || null, user.id);
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
     } else {
       // Người dùng Google lần đầu vào game
       const userId = 'usr_g_' + crypto.randomUUID();
@@ -237,9 +231,9 @@ app.post('/api/auth/google', (req, res) => {
       const fallbackUser = 'g_' + googleId.slice(-8);
 
       db.prepare(`
-        INSERT INTO users (id, username, google_id, google_email, display_name, avatar, auth_provider, gemini_key, created_at, last_login)
-        VALUES (?, ?, ?, ?, ?, ?, 'google', ?, ?, ?)
-      `).run(userId, fallbackUser, googleId, email || null, name || fallbackUser, picture || null, geminiKey || null, now, now);
+        INSERT INTO users (id, username, google_id, google_email, display_name, avatar, auth_provider, gemini_key, gemini_token, created_at, last_login)
+        VALUES (?, ?, ?, ?, ?, ?, 'google', ?, ?, ?, ?)
+      `).run(userId, fallbackUser, googleId, email || null, name || fallbackUser, picture || null, geminiKey || null, geminiToken || null, now, now);
 
       user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
     }
@@ -257,6 +251,7 @@ app.post('/api/auth/google', (req, res) => {
         avatar: user.avatar,
         authProvider: 'google',
         geminiKey: user.gemini_key,
+        geminiToken: user.gemini_token,
       },
     });
   } catch (err) {

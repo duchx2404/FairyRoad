@@ -10,6 +10,7 @@ export interface AuthUser {
   authProvider: 'local' | 'google';
   googleEmail?: string | null;
   geminiKey?: string | null;
+  geminiToken?: string | null;
   token: string;
 }
 
@@ -36,8 +37,12 @@ export function isLoggedIn(): boolean {
 
 export function saveSession(user: AuthUser) {
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  // Nếu user có Gemini Key, tự động cập nhật vào meta.settings
-  if (user.geminiKey) {
+  // Nếu user có Gemini Token hoặc Key, tự động cập nhật vào meta.settings
+  if (user.geminiToken) {
+    meta.settings.geminiToken = user.geminiToken;
+    meta.settings.aiProvider = 'gemini';
+    saveMeta();
+  } else if (user.geminiKey) {
     meta.settings.geminiKey = user.geminiKey;
     meta.settings.aiProvider = 'gemini';
     saveMeta();
@@ -77,7 +82,7 @@ export async function loginOrRegister(username: string, password: string, displa
 }
 
 /** Đăng nhập thông qua Google */
-export async function loginWithGoogle(googleData: { googleId: string; email?: string; name?: string; picture?: string; geminiKey?: string }): Promise<{ ok: boolean; error?: string; user?: AuthUser }> {
+export async function loginWithGoogle(googleData: { googleId: string; email?: string; name?: string; picture?: string; geminiKey?: string; geminiToken?: string }): Promise<{ ok: boolean; error?: string; user?: AuthUser }> {
   try {
     const url = `${getServerUrl()}/api/auth/google`;
     const res = await fetch(url, {
