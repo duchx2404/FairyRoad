@@ -158,6 +158,7 @@ export interface Meta {
     geminiKey?: string;
     geminiModel?: string;
     googleClientId?: string;
+    lastGoogleEmail?: string;
     serverUrl?: string;
     url: string;
     model: string;

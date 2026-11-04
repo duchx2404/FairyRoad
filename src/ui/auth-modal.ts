@@ -66,7 +66,7 @@ export function openAuthModal(onSuccess?: () => void) {
           'div',
           {},
           h('div', { style: { fontWeight: 'bold', fontSize: '15px' } }, user.displayName || user.username),
-          h('div', { class: 'small muted' }, `@${user.username} · ${isGoogle ? 'Tài khoản Google' : 'Tài khoản nội bộ'}`)
+          h('div', { class: 'small muted' }, `@${user.username} · ${isGoogle ? 'Tài khoản Google' : 'Tài khoản thường'}`)
         )
       );
       infoBox.append(nameRow);
@@ -131,7 +131,6 @@ export function openAuthModal(onSuccess?: () => void) {
       box.append(loadBtn);
 
       // THÔNG BÁO GEMINI AI CHO GOOGLE:
-      // Khi đã đăng nhập Google, Gemini AI tự động kích hoạt, TUYỆT ĐỐI KHÔNG CẦN NHẬP KEY!
       if (isGoogle) {
         const googleAiCard = h(
           'div',
@@ -198,7 +197,7 @@ export function openAuthModal(onSuccess?: () => void) {
           paddingBottom: '6px',
         },
       });
-      let currentTab: 'google' | 'local' = 'google'; // Mặc định mở tab Google theo mong muốn người chơi
+      let currentTab: 'google' | 'local' = 'google';
 
       const tabGoogle = h('button', { class: 'btn sm prime', onclick: () => { currentTab = 'google'; updateTab(); } }, 'Đăng nhập Google');
       const tabLocal = h('button', { class: 'btn sm', onclick: () => { currentTab = 'local'; updateTab(); } }, 'Tài khoản thường');
@@ -214,116 +213,142 @@ export function openAuthModal(onSuccess?: () => void) {
         tabBody.innerHTML = '';
 
         if (currentTab === 'google') {
-          // --- TAB 1: ĐĂNG NHẬP GOOGLE CHUẨN XÁC ---
+          // --- TAB 1: ĐĂNG NHẬP GOOGLE ---
           const gIntro = h(
             'div',
             { class: 'small muted', style: { marginBottom: '12px', lineHeight: '1.5' } },
-            'Đăng nhập bằng tài khoản Google để đồng bộ dữ liệu và ',
+            'Đăng nhập Google để đồng bộ dữ liệu và ',
             h('strong', { style: { color: 'var(--accent)' } }, 'tự động kích hoạt Google Gemini AI'),
             ' (gắn liền với tài khoản Google, không cần nhập mã API).'
           );
           tabBody.append(gIntro);
 
-          // Container chứa nút Google Sign In chính thức của Google GIS
+          // LỰA CHỌN 1: ĐĂNG NHẬP NHANH VỚI EMAIL GOOGLE (KHÔNG CẦN TẠO GOOGLE CLOUD PROJECT)
+          const fastBox = h('div', { class: 'card', style: { padding: '10px', marginBottom: '12px' } });
+          fastBox.append(
+            h('div', { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '6px' } }, '🚀 Đăng nhập nhanh bằng Google Email (Khuyên dùng):'),
+            h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Nhập địa chỉ Gmail của bạn để vào game ngay lập tức mà không bị lỗi xác thực Google Client ID.')
+          );
+
+          const fastEmailInput = h('input', {
+            type: 'email',
+            placeholder: 'Ví dụ: duchx2404@gmail.com',
+            value: meta.settings.lastGoogleEmail || '',
+            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
+          });
+
+          const fastNameInput = h('input', {
+            type: 'text',
+            placeholder: 'Tên hiển thị đạo hiệu (tùy chọn)...',
+            style: { width: '100%', padding: '8px', marginBottom: '10px', boxSizing: 'border-box' },
+          });
+
+          const fastStatus = h('div', { class: 'small', style: { color: 'var(--seal)', marginBottom: '6px' } });
+
+          const fastLoginBtn = btn('Vào Game với Tài Khoản Google', async () => {
+            const email = fastEmailInput.value.trim();
+            if (!email || !email.includes('@')) {
+              fastStatus.textContent = 'Vui lòng nhập đúng định dạng email Google!';
+              return;
+            }
+            fastLoginBtn.textContent = 'Đang đăng nhập...';
+            meta.settings.lastGoogleEmail = email;
+            saveMeta();
+
+            const name = fastNameInput.value.trim() || email.split('@')[0];
+            const googleId = 'g_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+            const res = await loginWithGoogle({ googleId, email, name });
+            if (res.ok) {
+              notice(`Đăng nhập thành công với tài khoản Google: ${email}! Đã tự động kích hoạt Gemini AI.`);
+              render();
+              onSuccess?.();
+            } else {
+              fastLoginBtn.textContent = 'Vào Game với Tài Khoản Google';
+              fastStatus.textContent = res.error || 'Đăng nhập thất bại.';
+            }
+          }, 'prime');
+          fastLoginBtn.style.width = '100%';
+
+          fastBox.append(fastEmailInput, fastNameInput, fastStatus, fastLoginBtn);
+          tabBody.append(fastBox);
+
+          // LỰA CHỌN 2: POPUP GOOGLE CHÍNH THỨC (NẾU CÓ GOOGLE CLIENT ID)
+          const advancedToggle = h('details', { style: { margin: '8px 0', fontSize: '13px' } },
+            h('summary', { style: { cursor: 'pointer', color: 'var(--accent)' } }, 'Hoặc dùng Popup Google chính thức (Google GIS)'),
+            h('div', { class: 'small muted', style: { margin: '8px 0', lineHeight: '1.4' } },
+              'Lưu ý: Lỗi \"Client missing a project id (Lỗi 401)\" xảy ra khi Google Client ID chưa được đăng ký trong Google Cloud Console. ' +
+              'ID chuẩn phải có đuôi: ' + h('code', {}, '.apps.googleusercontent.com')
+            )
+          );
+
           const googleBtnContainer = h('div', {
             id: 'google_signin_btn_container',
-            style: { display: 'flex', justifyContent: 'center', margin: '16px 0', minHeight: '44px' },
+            style: { display: 'flex', justifyContent: 'center', margin: '10px 0' },
           });
-          tabBody.append(googleBtnContainer);
+          advancedToggle.append(googleBtnContainer);
 
-          const statusMsg = h('div', { class: 'small center', style: { color: 'var(--seal)', margin: '8px 0' } });
-          tabBody.append(statusMsg);
-
-          // Kiểm tra và khởi tạo Google Identity Services
           const clientId = meta.settings.googleClientId || '';
-
-          const initGoogleGIS = () => {
-            if (window.google?.accounts?.id && clientId) {
-              try {
-                window.google.accounts.id.initialize({
-                  client_id: clientId,
-                  callback: async (response: any) => {
-                    try {
-                      statusMsg.textContent = 'Đang xác thực tài khoản Google...';
-                      const base64Url = response.credential.split('.')[1];
-                      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                      const jsonPayload = decodeURIComponent(
-                        atob(base64)
-                          .split('')
-                          .map((c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                          .join('')
-                      );
-                      const payload = JSON.parse(jsonPayload);
-                      const res = await loginWithGoogle({
-                        googleId: payload.sub,
-                        email: payload.email,
-                        name: payload.name,
-                        picture: payload.picture,
-                      });
-                      if (res.ok) {
-                        notice(`Đăng nhập Google thành công! Chào mừng ${payload.name}.`);
-                        render();
-                        onSuccess?.();
-                      } else {
-                        statusMsg.textContent = res.error || 'Lỗi đăng nhập Google.';
-                      }
-                    } catch (e: any) {
-                      statusMsg.textContent = 'Lỗi xử lý phản hồi Google: ' + e.message;
+          if (window.google?.accounts?.id && clientId && clientId.includes('.apps.googleusercontent.com')) {
+            try {
+              window.google.accounts.id.initialize({
+                client_id: clientId,
+                callback: async (response: any) => {
+                  try {
+                    const base64Url = response.credential.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(
+                      atob(base64)
+                        .split('')
+                        .map((c: string) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                        .join('')
+                    );
+                    const payload = JSON.parse(jsonPayload);
+                    const res = await loginWithGoogle({
+                      googleId: payload.sub,
+                      email: payload.email,
+                      name: payload.name,
+                      picture: payload.picture,
+                    });
+                    if (res.ok) {
+                      notice(`Đăng nhập Google thành công! Chào mừng ${payload.name}.`);
+                      render();
+                      onSuccess?.();
                     }
-                  },
-                });
+                  } catch (e: any) {
+                    notice('Lỗi xác thực Google: ' + e.message);
+                  }
+                },
+              });
 
-                window.google.accounts.id.renderButton(googleBtnContainer, {
-                  type: 'standard',
-                  theme: 'filled_blue',
-                  size: 'large',
-                  text: 'signin_with',
-                  shape: 'rectangular',
-                  width: 300,
-                });
-                return true;
-              } catch (err: any) {
-                console.warn('Lỗi init Google GIS:', err);
-              }
+              window.google.accounts.id.renderButton(googleBtnContainer, {
+                type: 'standard',
+                theme: 'filled_blue',
+                size: 'large',
+                text: 'signin_with',
+                shape: 'rectangular',
+                width: 280,
+              });
+            } catch (err) {
+              console.warn('Lỗi init GIS:', err);
             }
-            return false;
-          };
-
-          const ready = initGoogleGIS();
-
-          if (!ready || !clientId) {
-            // Trường hợp chưa có Google Client ID trên localhost
-            const promptBox = h('div', { class: 'card small', style: { padding: '10px', background: 'rgba(0,0,0,0.03)' } });
-            promptBox.append(
-              h('div', { style: { fontWeight: 'bold', marginBottom: '4px' } }, 'Cửa sổ chọn tài khoản Google:'),
-              h('p', { class: 'small muted', style: { margin: '4px 0' } },
-                'Google yêu cầu một Client ID để trình duyệt bật popup chọn tài khoản Google thật. ' +
-                'Bạn có thể dán Google OAuth Client ID (tạo miễn phí tại Google Cloud Console) vào đây:'
-              )
-            );
-
-            const clientIdInput = h('input', {
+          } else {
+            const clientInput = h('input', {
               type: 'text',
               placeholder: 'xxxx.apps.googleusercontent.com',
               value: meta.settings.googleClientId || '',
               style: { width: '100%', padding: '6px 8px', margin: '6px 0', boxSizing: 'border-box' },
             });
-
-            const saveClientBtn = btn('Kích hoạt nút Google Sign-In', () => {
-              const val = clientIdInput.value.trim();
-              if (!val) {
-                statusMsg.textContent = 'Vui lòng dán Client ID.';
-                return;
-              }
+            const saveClientBtn = btn('Kích hoạt Popup GIS', () => {
+              const val = clientInput.value.trim();
               meta.settings.googleClientId = val;
               saveMeta();
-              notice('Đã lưu Google Client ID!');
+              notice('Đã lưu Client ID!');
               updateTab();
-            }, 'sm prime');
-
-            promptBox.append(clientIdInput, saveClientBtn);
-            tabBody.append(promptBox);
+            }, 'sm');
+            advancedToggle.append(clientInput, saveClientBtn);
           }
+
+          tabBody.append(advancedToggle);
 
         } else {
           // --- TAB 2: TÀI KHOẢN THƯỜNG ---
