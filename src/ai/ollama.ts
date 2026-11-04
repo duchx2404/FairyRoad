@@ -76,7 +76,11 @@ async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
   if (isGeminiActive()) {
     try {
       return await callGemini(SYSTEM, user, maxTok, temp);
-    } catch (e) {
+    } catch (e: any) {
+      // Nếu người chơi đang chọn Gemini AI, hiển thị rõ ràng lỗi của Gemini chứ không fallback sang Ollama
+      if (meta.settings.aiProvider === 'gemini') {
+        throw new Error(`Lỗi Gemini AI: ${e.message || 'Không thể gọi Gemini.'}`);
+      }
       console.warn('Gemini AI không thành công, thử sang Ollama:', e);
     }
   }
