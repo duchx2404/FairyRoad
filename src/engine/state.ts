@@ -152,7 +152,18 @@ export interface Meta {
   up: Record<string, number>; // nâng cấp luân hồi đã mua
   codex: { loc: string[]; beast: string[]; item: string[]; tech: string[]; sect: string[] };
   ach: string[];
-  settings: { ai: boolean; url: string; model: string; aiBio: boolean; anim: boolean; free: boolean };
+  settings: {
+    ai: boolean;
+    aiProvider?: 'ollama' | 'gemini';
+    geminiKey?: string;
+    geminiModel?: string;
+    serverUrl?: string;
+    url: string;
+    model: string;
+    aiBio: boolean;
+    anim: boolean;
+    free: boolean;
+  };
   worldYear: number; // năm thế giới tiếp tục qua các kiếp
   seenIntro: boolean;
 }
@@ -189,7 +200,17 @@ function loadMeta(): Meta {
     up: {},
     codex: { loc: [], beast: [], item: [], tech: [], sect: [] },
     ach: [],
-    settings: { ai: true, url: 'http://127.0.0.1:11434', model: 'huihui_ai/qwen3-abliterated:14b', aiBio: true, anim: true, free: true },
+    settings: {
+      ai: true,
+      aiProvider: 'gemini',
+      geminiModel: 'gemini-2.5-flash',
+      serverUrl: 'http://localhost:3001',
+      url: 'http://127.0.0.1:11434',
+      model: 'huihui_ai/qwen3-abliterated:14b',
+      aiBio: true,
+      anim: true,
+      free: true,
+    },
     worldYear: 3120,
     seenIntro: false,
   };

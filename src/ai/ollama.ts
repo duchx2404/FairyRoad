@@ -1,14 +1,15 @@
 import { serviceAvailable, serviceBlockReason } from './service-access';
-// AI kể chuyện chạy local qua Ollama (tùy chọn). Không có AI thì game vẫn chạy với văn bản soạn sẵn.
+// AI kể chuyện chạy qua Google Gemini hoặc Ollama (tùy chọn). Không có AI thì game vẫn chạy với văn bản soạn sẵn.
+import { isGeminiActive, callGemini } from './gemini';
 import { meta, saveMeta, s } from '../engine/state';
 import type { LifeRec } from '../engine/state';
 
 // Giữ num_ctx cố định: Ollama nạp lại model mỗi khi num_ctx đổi giữa các lần gọi.
 const NUM_CTX = 8192;
 
-export const aiOn = () => meta.settings.ai && serviceAvailable(meta.settings.url);
+export const aiOn = () => meta.settings.ai && (isGeminiActive() || serviceAvailable(meta.settings.url));
 /** Người chơi đã bật AI nhưng game không gọi được: trả lý do để hiển thị. AI tắt hoặc dùng được → null. */
-export const aiBlockReason = () => (meta.settings.ai ? serviceBlockReason(meta.settings.url) : null);
+export const aiBlockReason = () => { if (!meta.settings.ai) return null; if (isGeminiActive()) return null; return serviceBlockReason(meta.settings.url); };
 
 export async function listModels(): Promise<string[]> {
   const r = await fetch(`${meta.settings.url}/api/tags`, { signal: AbortSignal.timeout(4000) });
@@ -72,6 +73,13 @@ function clean(t: string): string {
 const hasCJK = (t: string) => /[\u3400-\u9fff]/.test(t);
 
 async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
+  if (isGeminiActive()) {
+    try {
+      return await callGemini(SYSTEM, user, maxTok, temp);
+    } catch (e) {
+      console.warn('Gemini AI không thành công, thử sang Ollama:', e);
+    }
+  }
   let r: Response;
   try {
     r = await fetch(`${meta.settings.url}/api/chat`, {

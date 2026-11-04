@@ -1,3 +1,7 @@
+import { openAuthModal } from './auth-modal';
+import { getCurrentUser, isLoggedIn, fetchRoster, fetchWorldChat, sendWorldChatMessage, syncSaveToCloud, loadSaveFromCloud } from '../engine/auth';
+import { isGeminiActive, DEFAULT_GEMINI_MODEL } from '../ai/gemini';
+import { fight, fightSummary, type FoeSpec } from '../engine/combat';
 import { worldDefinitions } from '../data/local-items';
 // Cửa sổ trang kéo thả được.
 import { skEff, skGradeOf } from '../engine/char';
@@ -64,6 +68,7 @@ export const NAV: [string, string][] = [
   ['party', 'Đồng hành'],
   ['rel', 'Nhân mạch'],
   ['tienco', 'Thiên Cơ Lâu'],
+  ['multi', 'Vạn Giới'],
   ['log', 'Nhật ký'],
   // Đồ giám đã sáp nhập vào Thiên Cơ Lâu
   ['hist', 'Sử ký'],
@@ -72,7 +77,7 @@ export const NAV: [string, string][] = [
   ['help', 'Cách chơi'],
 ];
 const NAV_GLYPH: Record<string, string> = {
-  char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower',
+  char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower', multi: 'navParty',
   log: 'navLog', hist: 'navHist', ach: 'navAch', set: 'navSet', help: 'navHelp',
 };
 export const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : (n.id === s.flags.heroineId || (n as any).heroine ? 'Nữ chính' : TAG_N[n.tag]);
@@ -172,6 +177,7 @@ function build(id: string): HTMLElement[] {
     case 'log': return logPanel();
     case 'hist': return histPanel();
     case 'ach': return achPanel();
+    case 'multi': return multiPanel();
     case 'set': return setPanel();
     case 'help': return helpPanel();
   }
@@ -1232,6 +1238,188 @@ function achPanel(): HTMLElement[] {
 }
 
 // ---------- Cài đặt ----------
+
+// ---------- Vạn Giới Liên Minh (Multi-player & Bảng Thiên Kiêu & Lôi Đài) ----------
+function multiPanel(): HTMLElement[] {
+  const user = getCurrentUser();
+  const root = h('div', { class: 'multi-panel' });
+
+  // 1. Header trạng thái tài khoản & đồng bộ Cloud
+  const topBar = h('div', { class: 'card', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '10px 14px' } });
+  if (user && isLoggedIn()) {
+    topBar.append(
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+        h('span', { class: 'badge gold', style: { fontSize: '16px' } }, '仙'),
+        h('div', {},
+          h('div', { style: { fontWeight: 'bold' } }, user.displayName || user.username),
+          h('div', { class: 'small muted' }, `@${user.username} · ${user.authProvider === 'google' ? 'Google · Gemini AI' : 'Tài khoản thường'}`)
+        )
+      ),
+      h('div', { style: { display: 'flex', gap: '6px' } },
+        btn('☁️ Lưu Cloud', async () => {
+          const ok = await syncSaveToCloud();
+          notice(ok ? '✓ Đã đồng bộ Save lên Đám Mây thành công!' : '✕ Lỗi đồng bộ. Hãy kiểm tra máy chủ.');
+        }, 'sm prime'),
+        btn('Tài khoản', () => openAuthModal(() => renderNav()), 'sm')
+      )
+    );
+  } else {
+    topBar.append(
+      h('div', {},
+        h('div', { style: { fontWeight: 'bold' } }, 'Chưa đăng nhập tài khoản'),
+        h('div', { class: 'small muted' }, 'Đăng ký nhanh không cần xác minh để lưu cloud và tranh tài Thiên Bảng')
+      ),
+      btn('Đăng nhập / Đăng ký', () => openAuthModal(() => renderNav()), 'sm prime')
+    );
+  }
+  root.append(topBar);
+
+  // 2. Tab con: [Thiên Kiêu Bảng] [Lôi Đài Huyễn Ảnh] [Truyền Âm Vạn Giới]
+  const tabHeader = h('div', { style: { display: 'flex', gap: '6px', margin: '8px 0 12px 0', borderBottom: '1px solid var(--border)', paddingBottom: '6px' } });
+  let subTab: 'board' | 'pvp' | 'chat' = 'board';
+
+  const btnBoard = h('button', { class: 'btn sm prime', onclick: () => { subTab = 'board'; switchSub(); } }, '🏆 Thiên Kiêu Bảng');
+  const btnPvp = h('button', { class: 'btn sm', onclick: () => { subTab = 'pvp'; switchSub(); } }, '⚔️ Lôi Đài Huyễn Ảnh');
+  const btnChat = h('button', { class: 'btn sm', onclick: () => { subTab = 'chat'; switchSub(); } }, '💬 Truyền Âm Vạn Giới');
+  tabHeader.append(btnBoard, btnPvp, btnChat);
+  root.append(tabHeader);
+
+  const subBody = h('div', {});
+  root.append(subBody);
+
+  async function switchSub() {
+    btnBoard.className = subTab === 'board' ? 'btn sm prime' : 'btn sm';
+    btnPvp.className = subTab === 'pvp' ? 'btn sm prime' : 'btn sm';
+    btnChat.className = subTab === 'chat' ? 'btn sm prime' : 'btn sm';
+    subBody.innerHTML = '<div class="small muted">Đang tải dữ liệu từ máy chủ Vạn Giới...</div>';
+
+    if (subTab === 'board') {
+      // TAB 1: BẢNG THIÊN KIÊU
+      const roster = await fetchRoster();
+      subBody.innerHTML = '';
+      if (!roster.length) {
+        subBody.append(h('div', { class: 'card', style: { padding: '16px', textAlign: 'center' } },
+          h('p', {}, 'Chưa có dữ liệu tu sĩ nào trên Thiên Kiêu Bảng.'),
+          h('p', { class: 'small muted' }, 'Hãy đăng nhập và bấm "Lưu Cloud" để đưa tên mình lên bảng vàng!')
+        ));
+        return;
+      }
+
+      const table = h('div', { class: 'list' });
+      roster.forEach((p, idx) => {
+        const row = h('div', { class: 'card', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '6px 0', padding: '10px' } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+            h('span', { class: 'badge ' + (idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : ''), style: { fontWeight: 'bold' } }, `#${idx + 1}`),
+            h('div', {},
+              h('div', { style: { fontWeight: 'bold' } }, p.displayName),
+              h('div', { class: 'small muted' }, `${p.realm} · Tuổi: ${Math.floor(p.life)} · Linh thạch: ${p.score || 0}`)
+            )
+          ),
+          h('span', { class: 'badge purple small' }, p.realm)
+        );
+        table.append(row);
+      });
+      subBody.append(table);
+
+    } else if (subTab === 'pvp') {
+      // TAB 2: LÔI ĐÀI HUYỄN ẢNH (PVP)
+      const roster = await fetchRoster();
+      subBody.innerHTML = '';
+      const intro = h('div', { class: 'small muted', style: { marginBottom: '10px' } },
+        'Nơi các đạo hữu lưu lại huyễn ảnh chiến hồn để luận đạo so tài. Đánh bại chiến hồn nhận 500 linh thạch và 25 điểm danh vọng!'
+      );
+      subBody.append(intro);
+
+      if (!roster.length) {
+        subBody.append(h('div', { class: 'card', style: { padding: '16px', textAlign: 'center' } }, 'Chưa có đối thủ nào lưu lại huyễn ảnh trên lôi đài.'));
+        return;
+      }
+
+      const list = h('div', { class: 'list' });
+      roster.forEach((p) => {
+        const item = h('div', { class: 'card', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '6px 0', padding: '10px' } },
+          h('div', {},
+            h('div', { style: { fontWeight: 'bold' } }, p.displayName),
+            h('div', { class: 'small muted' }, `Cảnh giới: ${p.realm} · Chiến lực ngũ hành`)
+          ),
+          btn('⚔️ Khiêu chiến', () => {
+            if (!s) { notice('Cần vào một kiếp nhân vật mới có thể bước lên lôi đài!'); return; }
+            const foe: FoeSpec = {
+              name: p.displayName + ' (Huyễn Ảnh)',
+              r: Math.max(0, p.realmIdx || 0),
+              mult: 1.15,
+              kind: 'cultivator',
+              el: p.spec?.el || null,
+            };
+            const r = fight(foe);
+            const sum = fightSummary(r);
+            if (r.win) {
+              s.money = (s.money || 0) + 500;
+              s.fame = (s.fame || 0) + 25;
+              save();
+              notice(sum + '\n\n🎉 Ngươi xuất sắc đánh bại huyễn ảnh của ' + p.displayName + ' trên lôi đài, vang danh thiên hạ, nhận thưởng 500 linh thạch!');
+            } else {
+              notice(sum + '\n\nĐối thủ xuất chiêu quá biến ảo, ngươi bại trận lui xuống lôi đài đúc rút kinh nghiệm.');
+            }
+          }, 'sm prime')
+        );
+        list.append(item);
+      });
+      subBody.append(list);
+
+    } else {
+      // TAB 3: TRUYỀN ÂM VẠN GIỚI (CHAT)
+      subBody.innerHTML = '';
+      const chatBox = h('div', { class: 'chat-container', style: { maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', marginBottom: '8px', background: 'rgba(0,0,0,0.02)' } });
+      subBody.append(chatBox);
+
+      async function loadChat() {
+        const msgs = await fetchWorldChat();
+        chatBox.innerHTML = '';
+        if (!msgs.length) {
+          chatBox.innerHTML = '<div class="small muted center" style="padding: 16px;">Chưa có lời truyền âm nào. Hãy là người đầu tiên lên tiếng!</div>';
+          return;
+        }
+        msgs.forEach((m) => {
+          const row = h('div', { style: { margin: '4px 0', fontSize: '13px' } },
+            h('span', { class: 'badge small purple', style: { marginRight: '6px', fontSize: '11px' } }, m.realm || 'Tu sĩ'),
+            h('strong', {}, (m.display_name || 'Đạo Hữu') + ': '),
+            h('span', {}, m.message)
+          );
+          chatBox.append(row);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      loadChat();
+
+      const inputRow = h('div', { style: { display: 'flex', gap: '6px' } });
+      const msgInput = h('input', { type: 'text', placeholder: 'Nhập lời truyền âm khắp thiên hạ...', style: { flex: 1, padding: '6px 8px' } });
+      const sendBtn = btn('Gửi', async () => {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        if (!isLoggedIn()) { notice('Cần đăng nhập tài khoản để truyền âm!'); openAuthModal(); return; }
+        sendBtn.textContent = '...';
+        const userRealm = s ? REALMS[s.r]?.n : 'Phàm nhân';
+        const ok = await sendWorldChatMessage(text, userRealm);
+        sendBtn.textContent = 'Gửi';
+        if (ok) {
+          msgInput.value = '';
+          loadChat();
+        } else {
+          notice('Không thể gửi tin nhắn. Kiểm tra kết nối máy chủ.');
+        }
+      }, 'prime');
+
+      inputRow.append(msgInput, sendBtn);
+      subBody.append(inputRow);
+    }
+  }
+
+  switchSub();
+  return [root];
+}
+
 function setPanel(): HTMLElement[] {
   const st = meta.settings;
   const status = h('div', { class: 'small muted' });
