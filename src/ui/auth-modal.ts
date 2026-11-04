@@ -232,92 +232,24 @@ export function openAuthModal(onSuccess?: () => void) {
           const gIntro = h(
             'div',
             { class: 'small muted', style: { marginBottom: '12px', lineHeight: '1.5' } },
-            'Đăng nhập Google để đồng bộ dữ liệu và ',
-            h('strong', { style: { color: 'var(--accent)' } }, 'tự động kích hoạt Google Gemini AI'),
-            ' (gắn liền với tài khoản Google, không cần nhập mã API).'
+            'Đăng nhập tài khoản Google để đồng bộ dữ liệu và sử dụng Gemini AI.'
           );
           tabBody.append(gIntro);
 
-          // LỰA CHỌN 1: ĐĂNG NHẬP NHANH VỚI EMAIL GOOGLE (KHÔNG CẦN TẠO GOOGLE CLOUD PROJECT)
-          const fastBox = h('div', { class: 'card', style: { padding: '10px', marginBottom: '12px' } });
-          fastBox.append(
-            h('div', { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '6px' } }, '🚀 Đăng nhập nhanh bằng Google Email (Khuyên dùng):'),
-            h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Nhập địa chỉ Gmail của bạn để vào game ngay lập tức mà không bị lỗi xác thực Google Client ID.')
-          );
-
-          const fastEmailInput = h('input', {
-            type: 'email',
-            placeholder: 'Ví dụ: duchx2404@gmail.com',
-            value: meta.settings.lastGoogleEmail || '',
-            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
-          });
-
-          const fastNameInput = h('input', {
-            type: 'text',
-            placeholder: 'Tên hiển thị đạo hiệu (tùy chọn)...',
-            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
-          });
-
-          const fastGeminiKeyInput = h('input', {
-            type: 'password',
-            placeholder: 'Gemini API Key của bạn (Tùy chọn, lưu vĩnh viễn vào tài khoản)...',
-            value: meta.settings.geminiKey || '',
-            style: { width: '100%', padding: '8px', marginBottom: '6px', boxSizing: 'border-box' },
-          });
-
-          const fastKeyGuide = h('div', { class: 'small muted', style: { fontSize: '11px', marginBottom: '10px' } },
-            '🔑 Key của ai người nấy dùng riêng để không lo hết token. Chưa có key? Bấm ',
-            h('a', { href: 'https://aistudio.google.com/app/apikey', target: '_blank', style: { color: 'var(--prime)', textDecoration: 'underline' } }, 'Lấy mã miễn phí tại Google AI Studio'),
-            '.'
-          );
-
-          const fastStatus = h('div', { class: 'small', style: { color: 'var(--seal)', marginBottom: '6px' } });
-
-          const fastLoginBtn = btn('Vào Game với Tài Khoản Google', async () => {
-            const email = fastEmailInput.value.trim();
-            if (!email || !email.includes('@')) {
-              fastStatus.textContent = 'Vui lòng nhập đúng định dạng email Google!';
-              return;
-            }
-            fastLoginBtn.textContent = 'Đang đăng nhập...';
-            meta.settings.lastGoogleEmail = email;
-            saveMeta();
-
-            const name = fastNameInput.value.trim() || email.split('@')[0];
-            const googleId = 'g_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
-            const geminiKey = fastGeminiKeyInput.value.trim() || undefined;
-            const res = await loginWithGoogle({ googleId, email, name, geminiKey });
-            if (res.ok) {
-              notice(`Đăng nhập thành công với tài khoản: ${email}! Đã tự động kết nối tài khoản.`);
-              render();
-              onSuccess?.();
-            } else {
-              fastLoginBtn.textContent = 'Vào Game với Tài Khoản Google';
-              fastStatus.textContent = res.error || 'Đăng nhập thất bại.';
-            }
-          }, 'prime');
-          fastLoginBtn.style.width = '100%';
-
-          fastBox.append(fastEmailInput, fastNameInput, fastGeminiKeyInput, fastKeyGuide, fastStatus, fastLoginBtn);
-          tabBody.append(fastBox);
-
-          // LỰA CHỌN 2: POPUP GOOGLE CHÍNH THỨC (NẾU CÓ GOOGLE CLIENT ID)
-          const advancedToggle = h('details', { style: { margin: '8px 0', fontSize: '13px' } },
-            h('summary', { style: { cursor: 'pointer', color: 'var(--accent)' } }, 'Hoặc dùng Popup Google chính thức (Google GIS)'),
-            h('div', { class: 'small muted', style: { margin: '8px 0', lineHeight: '1.4' } },
-              'Lưu ý: Lỗi \"Client missing a project id (Lỗi 401)\" xảy ra khi Google Client ID chưa được đăng ký trong Google Cloud Console. ' +
-              'ID chuẩn phải có đuôi: .apps.googleusercontent.com'
-            )
+          // NÚT ĐĂNG NHẬP GOOGLE CHÍNH THỨC (GOOGLE GIS POPUP)
+          const officialBox = h('div', { class: 'card', style: { padding: '12px', textAlign: 'center', marginBottom: '12px', border: '1px solid var(--border)' } });
+          officialBox.append(
+            h('div', { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '8px' } }, 'Bấm nút để chọn tài khoản Google:'),
           );
 
           const googleBtnContainer = h('div', {
             id: 'google_signin_btn_container',
-            style: { display: 'flex', justifyContent: 'center', margin: '10px 0' },
+            style: { display: 'flex', justifyContent: 'center', margin: '8px 0' },
           });
-          advancedToggle.append(googleBtnContainer);
+          officialBox.append(googleBtnContainer);
 
-          const clientId = meta.settings.googleClientId || '';
-          if (window.google?.accounts?.id && clientId && clientId.includes('.apps.googleusercontent.com')) {
+          const clientId = meta.settings.googleClientId || '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com';
+          if (window.google?.accounts?.id) {
             try {
               window.google.accounts.id.initialize({
                 client_id: clientId,
@@ -360,24 +292,73 @@ export function openAuthModal(onSuccess?: () => void) {
             } catch (err) {
               console.warn('Lỗi init GIS:', err);
             }
-          } else {
-            const clientInput = h('input', {
-              type: 'text',
-              placeholder: 'xxxx.apps.googleusercontent.com',
-              value: meta.settings.googleClientId || '',
-              style: { width: '100%', padding: '6px 8px', margin: '6px 0', boxSizing: 'border-box' },
-            });
-            const saveClientBtn = btn('Kích hoạt Popup GIS', () => {
-              const val = clientInput.value.trim();
-              meta.settings.googleClientId = val;
-              saveMeta();
-              notice('Đã lưu Client ID!');
-              updateTab();
-            }, 'sm');
-            advancedToggle.append(clientInput, saveClientBtn);
           }
+          tabBody.append(officialBox);
 
-          tabBody.append(advancedToggle);
+          // LỰA CHỌN PHỤ: ĐĂNG NHẬP NHANH VỚI EMAIL GOOGLE
+          const fastToggle = h('details', { style: { margin: '8px 0', fontSize: '13px' } },
+            h('summary', { style: { cursor: 'pointer', color: 'var(--accent)' } }, 'Hoặc nhập nhanh bằng Google Email'),
+            h('div', { class: 'small muted', style: { margin: '6px 0' } }, 'Nhập trực tiếp email để vào game:')
+          );
+
+          const fastBox = h('div', { class: 'card', style: { padding: '10px', margin: '8px 0' } });
+
+          const fastEmailInput = h('input', {
+            type: 'email',
+            placeholder: 'Ví dụ: duchx2404@gmail.com',
+            value: meta.settings.lastGoogleEmail || '',
+            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
+          });
+
+          const fastNameInput = h('input', {
+            type: 'text',
+            placeholder: 'Tên hiển thị đạo hiệu (tùy chọn)...',
+            style: { width: '100%', padding: '8px', marginBottom: '8px', boxSizing: 'border-box' },
+          });
+
+          const fastGeminiKeyInput = h('input', {
+            type: 'password',
+            placeholder: 'Gemini API Key của bạn (Tùy chọn, lưu vĩnh viễn vào tài khoản)...',
+            value: meta.settings.geminiKey || '',
+            style: { width: '100%', padding: '8px', marginBottom: '6px', boxSizing: 'border-box' },
+          });
+
+          const fastKeyGuide = h('div', { class: 'small muted', style: { fontSize: '11px', marginBottom: '10px' } },
+            '🔑 Key của ai người nấy dùng riêng để không lo hết token. Lấy mã miễn phí tại ',
+            h('a', { href: 'https://aistudio.google.com/app/apikey', target: '_blank', style: { color: 'var(--prime)', textDecoration: 'underline' } }, 'Google AI Studio'),
+            '.'
+          );
+
+          const fastStatus = h('div', { class: 'small', style: { color: 'var(--seal)', marginBottom: '6px' } });
+
+          const fastLoginBtn = btn('Vào Game với Tài Khoản Google', async () => {
+            const email = fastEmailInput.value.trim();
+            if (!email || !email.includes('@')) {
+              fastStatus.textContent = 'Vui lòng nhập đúng định dạng email Google!';
+              return;
+            }
+            fastLoginBtn.textContent = 'Đang đăng nhập...';
+            meta.settings.lastGoogleEmail = email;
+            saveMeta();
+
+            const name = fastNameInput.value.trim() || email.split('@')[0];
+            const googleId = 'g_' + btoa(email).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16);
+            const geminiKey = fastGeminiKeyInput.value.trim() || undefined;
+            const res = await loginWithGoogle({ googleId, email, name, geminiKey });
+            if (res.ok) {
+              notice(`Đăng nhập thành công với tài khoản: ${email}! Đã tự động kết nối tài khoản.`);
+              render();
+              onSuccess?.();
+            } else {
+              fastLoginBtn.textContent = 'Vào Game với Tài Khoản Google';
+              fastStatus.textContent = res.error || 'Đăng nhập thất bại.';
+            }
+          }, 'prime');
+          fastLoginBtn.style.width = '100%';
+
+          fastBox.append(fastEmailInput, fastNameInput, fastGeminiKeyInput, fastKeyGuide, fastStatus, fastLoginBtn);
+          fastToggle.append(fastBox);
+          tabBody.append(fastToggle);
 
         } else {
           // --- TAB 2: TÀI KHOẢN THƯỜNG ---

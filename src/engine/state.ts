@@ -206,6 +206,7 @@ function loadMeta(): Meta {
       ai: true,
       aiProvider: 'gemini',
       geminiModel: 'gemini-2.5-flash',
+      googleClientId: '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com',
       serverUrl: 'http://localhost:3001',
       url: 'http://127.0.0.1:11434',
       model: 'huihui_ai/qwen3-abliterated:14b',
@@ -222,7 +223,11 @@ function loadMeta(): Meta {
     const m = JSON.parse(raw);
     const karma = Math.max(m.karma ?? 0, 9999999);
     const karmaTotal = Math.max(m.karmaTotal ?? 0, 9999999);
-    return { ...base, ...m, karma, karmaTotal, codex: { ...base.codex, ...(m.codex || {}) }, settings: { ...base.settings, ...(m.settings || {}) } };
+    const settings = { ...base.settings, ...(m.settings || {}) };
+    if (!settings.googleClientId || !settings.googleClientId.includes('.apps.googleusercontent.com')) {
+      settings.googleClientId = base.settings.googleClientId;
+    }
+    return { ...base, ...m, karma, karmaTotal, codex: { ...base.codex, ...(m.codex || {}) }, settings };
   } catch {
     return base;
   }
