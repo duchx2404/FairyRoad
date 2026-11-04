@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title FairyRoad Dev - Tien Lo Man Man (Vite Dev Server)
+title FairyRoad Dev - Tien Lo Man Man (localhost:5180)
 cd /d "%~dp0"
 
 where node >nul 2>nul
@@ -23,11 +23,11 @@ if not exist "node_modules" (
 echo.
 echo ========================================================
 echo   FAIRYROAD CLIENT (VITE DEV)
-echo   Dang khoi dong giao dien game...
+echo   Dang khoi dong game tai http://localhost:5180 ...
 echo   Dong cua so nay de tat Dev Server.
 echo ========================================================
 echo.
 
-start "" cmd /c "timeout /t 3 >nul & start http://localhost:5173"
-call npm run dev
+start "" cmd /c "timeout /t 3 >nul & start http://localhost:5180"
+call npx vite --port 5180 --strictPort
 pause
