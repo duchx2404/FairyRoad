@@ -1,6 +1,6 @@
 import { worldDefinitions } from '../data/local-items';
 // Chức năng mở rộng của đệ tử tông môn: Nhiệm Vụ Đường, Bái sư, Tỉ thí, Đại bỉ, Bế quan linh mạch.
-import { REALMS, EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, type El, splitName, RMAX } from '../data/core';
+import { REALMS, EL, SURN, MALE, FEM, DAO_HAO, DAO_HAO_F, type El, splitName, RMAX, npcCap, WORLD } from '../data/core';
 import { SKILLS, TAMPHAP, HERBS, MATS, TECHS, WEAPON_N, type Weapon } from '../data/items';
 import { isSameSect } from '../data/declining-schools';
 import { effRi, thapHidden, tamList, addItem } from './char';
@@ -33,7 +33,7 @@ export const jobDone = (j: SectJob) => s.year + 1e-6 >= (j.end || 0);
 const craftXp = (k: CraftK) => Math.max(4, Math.round(xpNeed(s.craft[k]) * 0.2));
 export function jobBoard(): SectJob[] {
   const key = `${s.sect!.id}:${Math.floor(s.year)}`;
-  const rnd = seeded(hashStr(key + s.id + 'job'));
+  const rnd = seeded(hashStr(key + s?.id + 'job'));
   const taken = new Set(myJobs().map((j) => j.key));
   const out: SectJob[] = [];
   // việc tay nghề cố định: đang làm thì ẩn, giao nộp xong lại hiện
@@ -260,8 +260,11 @@ const LEGACY_SCHOOL_ROSTER: Record<SchoolKey, LegacySeat[]> = {
   ],
 };
 
-function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: number, rnd: () => number, rp: <T>(a: readonly T[]) => T, chu: number): Elder[] {
-  const w = s.world ?? 0;
+function legacySchoolRoster(sk: SchoolKey, sct: (typeof SECTS)[string], era: number, rnd: () => number, rp: <T,>(a: readonly T[]) => T, chu: number): Elder[] {
+  const w = s?.world ?? WORLD.lv ?? 0;
+  const capR = npcCap(w);
+  const topLaoTo = clamp(SECT_TOP[sct.tier] ?? (chu + 2), 1, capR);
+  const topElder = clamp(Math.max(chu, topLaoTo - 1), 1, capR);
   const seats = LEGACY_SCHOOL_ROSTER[sk];
   const usedNames = new Set<string>();
   const usedGivens = new Set<string>();
@@ -271,7 +274,7 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
     usedNames.add(nameKey(item.title));
     usedGivens.add(nameKey(splitName(item.canonName).given));
   }
-  const people: { alive?: boolean; world?: number; legacyRole?: string; name?: string }[] = s.flags.tienco?.people ?? [];
+  const people: { alive?: boolean; world?: number; legacyRole?: string; name?: string }[] = s?.flags?.tienco?.people ?? [];
   for (const item of seats) {
     if (item.legacyRole) {
       const holder = people.find((p) => p.alive && p.world === w && p.legacyRole === item.legacyRole);
@@ -283,13 +286,18 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
   }
   const curMaster = master();
   return seats.map((item, i) => {
-    const r = w === 4
-      ? (item.role === 'chu' ? 8 : item.role === 'thaithuong' ? 7 : item.inner ? 6 : 5)
-      : clamp(item.role === 'chu' || item.role === 'thaithuong' ? chu : item.inner ? chu - 1 : chu - 2, 1, 8);
-    const st = item.role === 'chu' ? 3 : item.role === 'thaithuong' ? (w === 4 ? 3 : 2) : Math.floor(rnd() * 3) + 1;
+    const rawR = item.role === 'chu'
+      ? topLaoTo
+      : item.role === 'thaithuong'
+      ? topElder
+      : item.inner
+      ? chu - 1
+      : chu - 2;
+    const r = clamp(rawR, 1, capR);
+    const st = item.role === 'chu' || item.role === 'thaithuong' ? 3 : Math.floor(rnd() * 3) + 1;
     let name: string;
-    const sur = item.realSur || NOBLE_SURS[Math.abs(hashStr(`${s.id}:${sct.id}:${i}:${item.title}`)) % NOBLE_SURS.length];
-    if (w === 4) {
+    const sur = item.realSur || NOBLE_SURS[Math.abs(hashStr(`${s?.id}:${sct.id}:${i}:${item.title}`)) % NOBLE_SURS.length];
+    if (w >= 4) {
       name = item.canonName;
     } else {
       const isMasterSeat = curMaster && isSameSect(curMaster.sect, sct.id) && (
@@ -306,14 +314,14 @@ function legacySchoolRoster(sk: SchoolKey, sct: ReturnType<typeof sc>, era: numb
       } else if (holder?.name) {
         name = holder.name;
       } else {
-        name = uniquePersonalName(item.g, sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
+        name = uniquePersonalName(item.g, sur, usedNames, `${s?.id}:${sct.id}:${w}:${era}:${i}:${item.title}`, usedGivens);
       }
       usedNames.add(nameKey(name));
       usedGivens.add(nameKey(splitName(name).given));
     }
     const shortTitle = item.title.split(' – ')[0];
     let d: string;
-    if (w === 4) {
+    if (w >= 4) {
       d = item.d;
     } else if (item.realSur) {
       d = `Hậu nhân họ ${item.realSur} kế thừa truyền thừa của ${item.canonName} (${shortTitle}). ${item.d}`;
@@ -435,8 +443,9 @@ const LEGACY_SCHOOL_DISCIPLES: Record<SchoolKey, LegacyDiscipleSeat[]> = {
   ],
 };
 
-function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: number, rnd: () => number, rp: <T>(a: readonly T[]) => T, chu: number): SectDisciple[] {
-  const w = s.world ?? 0;
+function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: number, rnd: () => number, rp: <T,>(a: readonly T[]) => T, chu: number): SectDisciple[] {
+  const w = s.world ?? WORLD.lv ?? 0;
+  const capR = npcCap(w);
   const seats = LEGACY_SCHOOL_DISCIPLES[sk];
   const usedNames = new Set<string>();
   const usedGivens = new Set<string>();
@@ -445,24 +454,24 @@ function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: 
     usedNames.add(nameKey(e.name));
     usedGivens.add(nameKey(splitName(e.name).given));
   }
-  if (s.name) usedNames.add(nameKey(s.name));
-  for (const n of s.npcs) if (n.name) usedNames.add(nameKey(n.name));
+  if (s?.name) usedNames.add(nameKey(s.name));
+  for (const n of s?.npcs || []) if (n.name) usedNames.add(nameKey(n.name));
 
   const BEAST_POOL = ['Lôi Giao', 'Hỏa Hồ', 'Bạch Viên', 'Thanh Xà', 'Kim Điêu', 'Bạch Hổ', 'Hắc Báo'];
 
   return seats.map((item, i) => {
     let name: string;
-    const sur = item.realSur || NOBLE_SURS[Math.abs(hashStr(`${s.id}:${sct.id}:disc:${i}:${item.title}`)) % NOBLE_SURS.length];
-    if (w === 4) {
+    const sur = item.realSur || NOBLE_SURS[Math.abs(hashStr(`${s?.id}:${sct.id}:disc:${i}:${item.title}`)) % NOBLE_SURS.length];
+    if (w >= 4) {
       name = item.canonName;
     } else {
-      name = uniquePersonalName(item.g, sur, usedNames, `${s.id}:${sct.id}:${w}:${era}:disc:${i}:${item.title}`, usedGivens);
+      name = uniquePersonalName(item.g, sur, usedNames, `${s?.id}:${sct.id}:${w}:${era}:disc:${i}:${item.title}`, usedGivens);
       usedNames.add(nameKey(name));
       usedGivens.add(nameKey(splitName(name).given));
     }
     const shortTitle = item.title.split(' – ')[0];
     let d: string;
-    if (w === 4) {
+    if (w >= 4) {
       d = item.d;
     } else if (item.realSur) {
       d = `Hậu nhân họ ${item.realSur} kế thừa truyền thừa của ${item.canonName} (${shortTitle}). ${item.d}`;
@@ -497,7 +506,7 @@ function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: 
       key: `${sct.id}:${era}:legacy_disc:${i}`,
       name,
       g: item.g,
-      r: clamp(r, 0, 8),
+      r: clamp(r, 0, capR),
       st: clamp(st, 0, 3),
       el: item.el,
       rankKey: item.rankKey,
@@ -514,9 +523,11 @@ function legacySchoolDisciples(sk: SchoolKey, sct: (typeof SECTS)[string], era: 
 
 /** Toàn bộ trưởng lão nhận đồ đệ của tông (đổi mỗi 30 năm). */
 export function elderRoster(targetSect?: (typeof SECTS)[string]): Elder[] {
-  const sct = targetSect ?? (s.sect ? sc() : null);
+  const sct = targetSect ?? (s?.sect ? sc() : null);
   if (!sct) return [];
-  const era = Math.floor(s.year / 30);
+  const w = s.world ?? WORLD.lv ?? 0;
+  const capR = npcCap(w);
+  const era = s ? Math.floor(s.year / 30) : 0;
   const rnd = seeded(hashStr(`${sct.id}:elders:${era}`));
   const rp = <T,>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)];
   const chu = SECT_TIER_INFO[sct.tier]?.chu ?? 3;
@@ -525,7 +536,7 @@ export function elderRoster(targetSect?: (typeof SECTS)[string]): Elder[] {
   const used = new Set<string>();
   const out: Elder[] = [];
   const add = (inner: boolean, seat: string, role: Role, el: El, r: number, d: string, gFix?: 'm' | 'f', w?: Weapon, top?: boolean) => {
-    r = clamp(r, 1, 8);
+    r = clamp(r, 1, capR);
     const g: 'm' | 'f' = gFix ?? (sct.fem ? 'f' : rnd() < 0.5 ? 'm' : 'f');
     let name = '';
     let tok = '';
@@ -546,10 +557,11 @@ export function elderRoster(targetSect?: (typeof SECTS)[string]): Elder[] {
   };
   const lv = (pLow: number) => chu - 1 - (rnd() < pLow ? 1 : 0); // pLow = xác suất thấp hơn một bậc
   // ----- chưởng giáo & thái thượng trưởng lão -----
-  const topRealm = Math.max(chu, SECT_TOP[sct.tier] - 1);
+  const topLaoTo = clamp(SECT_TOP[sct.tier] ?? (chu + 2), 1, capR);
+  const topElder = clamp(Math.max(chu, topLaoTo - 1), 1, capR);
   add(true, headTitle(sct), 'chu', rp(sct.el), chu, `Chưởng quản toàn tông ${sct.n}, nắm giữ trấn phái công pháp. Hiếm khi thu nhận đồ đệ, một khi nhận là lập làm chân truyền.`, undefined, undefined, true);
-  add(true, 'Thái thượng đại trưởng lão', 'thaithuong', rp(sct.el), topRealm, 'Bậc lão tổ bế quan ở hậu sơn, tu vi thâm sâu khó lường, chỉ khi tông môn có đại sự mới xuất quan.', undefined, undefined, true);
-  add(true, 'Thái thượng trưởng lão', 'thaithuong', rp(sct.el), topRealm, 'Bậc tiền bối thoái ẩn hậu sơn, một lòng tham ngộ đại đạo, cực kỳ kén chọn truyền nhân.', undefined, undefined, true);
+  add(true, 'Thái thượng đại trưởng lão', 'thaithuong', rp(sct.el), topLaoTo, 'Bậc lão tổ bế quan ở hậu sơn, tu vi thâm sâu khó lường, chỉ khi tông môn có đại sự mới xuất quan.', undefined, undefined, true);
+  add(true, 'Thái thượng trưởng lão', 'thaithuong', rp(sct.el), topElder, 'Bậc tiền bối thoái ẩn hậu sơn, một lòng tham ngộ đại đạo, cực kỳ kén chọn truyền nhân.', undefined, undefined, true);
   // ----- nội môn -----
   add(true, 'Chấp pháp trưởng lão', 'chap', rp(sct.el), chu - 1, 'Giữ môn quy, xử phạt đệ tử phạm lỗi. Nhận đồ đệ rất khắt khe.');
   add(true, 'Truyền công trưởng lão', 'truyen', rp(sct.el), chu - 1, 'Giảng đạo ở Truyền Công Điện, giữ chìa khóa Tàng Kinh Các.');
@@ -594,7 +606,9 @@ export function getOrCreateElderNpc(e: Elder, sectId: string): import('./state')
     if (m && isSameSect(m.sect, sectId)) return m;
   }
   let n = s.npcs.find((x) => x.alive && isSameSect(x.sect, sectId) && (x.name === e.name || (e.legacyRole && x.how?.includes(e.legacyRole))));
-  if (!n) {
+  if (n) {
+    if (n.r < e.r) { n.r = e.r; n.st = e.st; }
+  } else {
     const isMine = s.sect?.id === sectId;
     const fullTitle = e.title ? (e.seat && !e.title.includes(e.seat) ? `${e.title} · ${e.seat}` : e.title) : e.seat;
     n = mkNpc({
@@ -637,7 +651,9 @@ export interface SectDisciple {
 export function discipleRoster(targetSect?: (typeof SECTS)[string]): SectDisciple[] {
   const sct = targetSect ?? (s.sect ? sc() : null);
   if (!sct) return [];
-  const era = Math.floor(s.year / 10);
+  const w = s.world ?? WORLD.lv ?? 0;
+  const capR = npcCap(w);
+  const era = s ? Math.floor(s.year / 10) : 0;
   const rnd = seeded(hashStr(`${sct.id}:disciples:${era}`));
   const rp = <T,>(a: readonly T[]): T => a[Math.floor(rnd() * a.length)];
   const chu = SECT_TIER_INFO[sct.tier]?.chu ?? 3;
@@ -658,7 +674,7 @@ export function discipleRoster(targetSect?: (typeof SECTS)[string]): SectDiscipl
 
   const genName = (g: 'm' | 'f', surPref?: string) => {
     const sur = surPref || rp(SURN);
-    return uniquePersonalName(g, sur, usedNames, `${s.id}:${sct.id}:disc:${era}:${out.length}`, usedGivens);
+    return uniquePersonalName(g, sur, usedNames, `${s?.id}:${sct.id}:disc:${era}:${out.length}`, usedGivens);
   };
 
   const add = (
@@ -691,7 +707,7 @@ export function discipleRoster(targetSect?: (typeof SECTS)[string]): SectDiscipl
       key: `${sct.id}:${era}:disc:${out.length}`,
       name,
       g,
-      r: clamp(r, 0, 8),
+      r: clamp(r, 0, capR),
       st: clamp(st, 0, 3),
       el: rp(sct.el),
       rankKey,

@@ -199,27 +199,37 @@ export function tribulationScene(): Scene {
       ? `${s.body === 'thiendo' && s.r === 1 ? `Luyện Khí tầng ${s.flags.tang ?? 1} — sức mạnh đã ngang ${REALMS[RMAX()].n} viên mãn` : `${REALMS[RMAX()].n} viên mãn`}. Trên ${worldName(s.world ?? 0)} không còn giới nào nữa. Vượt qua kiếp cuối cùng, ngươi sẽ hợp nhất với Đại Đạo — vĩnh hằng bất diệt. Thất bại là tro bay khói tan.`
       : `${s.body === 'thiendo' && s.r === 1 ? `Luyện Khí tầng ${s.flags.tang ?? 1} — sức mạnh đã ngang ${REALMS[RMAX()].n} viên mãn` : `${REALMS[RMAX()].n} viên mãn`}. ${worldName(s.world ?? 0)} chỉ chứa nổi tới ${REALMS[RMAX()].n}. Vượt qua cửu trùng thiên kiếp là phi thăng ${worldName((s.world ?? 0) + 1)} — giới có tầng thứ sinh mệnh cao hơn, mở tới ${REALMS[RMAX((s.world ?? 0) + 1)].n}, nơi ngươi ${s.body === 'thiendo' && s.r === 1 ? 'tiếp tục luyện khí' : 'phải tu lại từ Luyện Khí'}. Thân thể sẽ bị ép về hình hài một tuổi, tâm trí giữ nguyên, thọ nguyên tính lại từ đầu — và ngươi tu luyện được ngay (đặc quyền phi thăng). Thất bại là tro bay khói tan.`,
     choices: [
-      { t: 'Dẫn thiên kiếp', cls: 'danger', fn: () => tribulation(1) },
+      { t: 'Dẫn thiên kiếp', cls: 'danger', fn: () => tribulation() },
       { t: 'Chưa sẵn sàng', fn: () => 'Mây kiếp tan đi. Còn thời gian chuẩn bị — nhưng thọ nguyên không đợi ai.' },
     ],
   };
 }
-function tribulation(wave: number): ReturnType<Choice['fn']> {
-  const names = ['', 'Thanh Lôi', 'Tử Lôi', 'Hỏa Lôi', 'Phong Kiếp', 'Tâm Ma Kiếp', 'Huyết Lôi', 'Hắc Lôi', 'Ngũ Hành Thần Lôi', 'Cửu Thiên Diệt Thế Lôi'];
-  const r = fight({ dao: true, name: `Đạo kiếp thứ ${wave}: ${names[wave]}`, r: RMAX(), st: 3, el: wave === 4 ? 'phong' : wave === 3 ? 'hoa' : 'loi', kind: 'boss', mult: 0.45 + wave * 0.08, skills: ['loiquang', 'tutieuloi'] }, { noFlee: true });
+function tribulation(): ReturnType<Choice['fn']> {
+  const tribFoes: FoeSpec[] = [
+    { dao: true, name: 'Đạo kiếp 1: Thanh Lôi', r: RMAX(), st: 3, el: 'loi', kind: 'boss', mult: 0.22, skills: ['loichi', 'loiquang'] },
+    { dao: true, name: 'Đạo kiếp 2: Tử Lôi', r: RMAX(), st: 3, el: 'loi', kind: 'boss', mult: 0.25, skills: ['loiquang'] },
+    { dao: true, name: 'Đạo kiếp 3: Hỏa Lôi', r: RMAX(), st: 3, el: 'hoa', kind: 'boss', mult: 0.28, skills: ['yeu_hoatuc', 'yeu_lietdiem'] },
+    { dao: true, name: 'Đạo kiếp 4: Phong Kiếp', r: RMAX(), st: 3, el: 'phong', kind: 'boss', mult: 0.30, skills: ['tieuphong', 'yeu_phongtrao'] },
+    { dao: true, name: 'Đạo kiếp 5: Tâm Ma Kiếp', r: RMAX(), st: 3, el: 'am', kind: 'boss', mult: 0.32, skills: ['uanhthich', 'phehon'] },
+    { dao: true, name: 'Đạo kiếp 6: Huyết Lôi', r: RMAX(), st: 3, el: 'hoa', kind: 'boss', mult: 0.36, skills: ['yeu_mahoa', 'loiquang'] },
+    { dao: true, name: 'Đạo kiếp 7: Hắc Lôi', r: RMAX(), st: 3, el: 'am', kind: 'boss', mult: 0.40, skills: ['vanmaphe', 'loiquang'] },
+    { dao: true, name: 'Đạo kiếp 8: Ngũ Hành Thần Lôi', r: RMAX(), st: 3, el: 'quang', kind: 'boss', mult: 0.48, skills: ['tutieuloi', 'loiquang'] },
+    { dao: true, name: 'Đạo kiếp 9: Cửu Thiên Diệt Thế Lôi', r: RMAX(), st: 3, el: 'loi', kind: 'boss', mult: 0.60, skills: ['tutieuloi', 'sk_td_phongloi', 'loiquang'] },
+  ];
+  // Cửu Thiên Diệt Thế Lôi là chủ trận nhãn, 8 đạo lôi kiếp còn lại cùng vây hãm đồng thời trong 1 trận đại chiến duy nhất!
+  const leadFoe = tribFoes[8];
+  const groupFoes = tribFoes.slice(0, 8);
+  const r = fight(leadFoe, { group: groupFoes, noFlee: true, lethal: true });
   if (r.died || !r.win) {
-    return `${fightSummary(r)} Đạo lôi thứ ${wave} đánh tan nhục thân ngươi.`;
+    return `${fightSummary(r)} Cửu trùng lôi kiếp đồng thời giáng thế oanh tạc, vạn trượng lôi hải cuồng bạo xé rách không gian, nhục thân ngươi không chịu nổi vạn đạo lôi đình, tan thành tro bụi.`;
   }
-  s.hurt = Math.max(0, s.hurt - 15);
-  if (wave >= 9) {
-    if ((s.world ?? 0) >= LAST_WORLD) { transcend(); return 'Đạo kiếp cuối cùng tan thành ánh sáng. Ngươi không còn là người tu đạo — ngươi là một phần của Đại Đạo. Trời đất có ngày tàn, ngươi thì không.'; }
-    const to = ascend();
-    return `Đạo lôi cuối cùng tan biến. Mây kiếp rẽ ra, một cột sáng vàng rót xuống. Ngươi bước lên cột sáng, không quay đầu lại.\n\nKhi mở mắt, ngươi đã ở ${to}. Linh khí đặc như nước, kẻ quét rác bên đường cũng có khí tức khiến ngươi rùng mình. ${s.body === 'thiendo' && s.r === 1 ? `Thiên Đố Chi Thể vẫn vậy: ngươi tiếp tục luyện khí từ tầng ${s.flags.tang ?? 1}.` : 'Tu vi bị pháp tắc giới này ép về Luyện Khí — phải tu lại từ đầu, nhưng mỗi bước ở đây đều nặng hơn cả một cảnh giới ở hạ giới.'} Ngươi cúi nhìn: hai bàn tay bé xíu của một đứa trẻ một tuổi. Thân thể về điểm khởi đầu, nhưng trong đầu vẫn là ${Math.floor(s.year - (s.flags.soulBorn ?? s.born))} năm ký ức — và linh khí đã chảy được vào kinh mạch ngay lúc này.`;
+  s.hurt = 0;
+  if ((s.world ?? 0) >= LAST_WORLD) {
+    transcend();
+    return `${fightSummary(r)}\n\nCửu trùng lôi kiếp đồng thời nổ tung rồi tan thành ánh sáng vô tận! Ngươi ngạo nghễ đạp nát lôi hải, đánh tan toàn bộ chín đạo lôi kiếp trong một trận đại chiến kinh thiên động địa. Ngươi không còn là người tu đạo bình thường — ngươi đã hợp nhất với Đại Đạo, siêu thoát luân hồi, vĩnh hằng bất diệt!`;
   }
-  return {
-    text: `${fightSummary(r)} Đạo kiếp thứ ${wave} qua đi. Mây kiếp còn dày hơn — ${names[wave + 1]} đang tụ lại.`,
-    choices: [{ t: `Đón đạo kiếp thứ ${wave + 1}`, cls: 'danger', fn: () => tribulation(wave + 1) }],
-  };
+  const to = ascend();
+  return `${fightSummary(r)}\n\nToàn bộ cửu trùng lôi kiếp đồng thời giáng thế đã bị ngươi đánh tan trong một trận chiến kinh thiên động địa! Mây kiếp rẽ ra, thiên môn rộng mở, một cột kim quang chí tôn vạn trượng rót xuống tiếp dẫn.\n\nKhi mở mắt ra, ngươi đã đặt chân lên ${to}. Linh khí ở đây ngưng tụ như nước, đại đạo pháp tắc hoàn chỉnh vô cùng. ${s.body === 'thiendo' && s.r === 1 ? `Thiên Đố Chi Thể vẫn vậy: ngươi tiếp tục luyện khí từ tầng ${s.flags.tang ?? 1}.` : 'Tu vi bị pháp tắc thượng giới áp chế về Luyện Khí — phải rèn luyện lại từ đầu, nhưng mỗi bước ở đây đều nặng hơn cả một cảnh giới ở hạ giới.'} Ngươi cúi nhìn: hai bàn tay bé xíu của một đứa trẻ một tuổi. Thân thể về điểm khởi đầu, nhưng trong đầu vẫn là ${Math.floor(s.year - (s.flags.soulBorn ?? s.born))} năm ký ức — và linh khí đã chảy róc rách vào kinh mạch ngay lúc này.`;
 }
 
 export const sectRecruitmentUsed = (id: string, year = Math.floor(s.year)) =>

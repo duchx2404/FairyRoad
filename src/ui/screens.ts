@@ -4,7 +4,8 @@ import { getCurrentUser, isLoggedIn } from '../engine/auth';
 import { askConfirm, notice } from './dialog';
 import { glyphSvg } from './glyph';
 import { h, $, btn } from './dom';
-import { s, meta, saveMeta, load } from '../engine/state';
+import { s, meta, saveMeta, load, getActiveSlot, setActiveSlot, getAllSlotsInfo, MAX_SAVE_SLOTS } from '../engine/state';
+import { openSaveSlotsModal } from './save-slots-modal';
 import { setSurname, ORIGINS, originName, originDesc, RACE_GROUPS, RACE_INFO, originRace, PERKS, BEAST_PERKS, ROOTS, BODIES, BEAST_BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, hiddenRootKind, rootKindOf, type El, type StatKey } from '../data/core';
 import { LOCS, beastLeafNodes, getBeastFamilies, rollWeightedBeastFamilies, type BeastFamilyInfo } from '../data/world';
 import { rollFate, rollRoot, fitRoot, newLife, rerolls, freeMode, UPGRADES, upLv, buyUpgrade, originUnlocked, unlockOrigin, scoreParts, lastLife, perkAllowed, getOriginTier, rollWeightedRaceOrigins, getHumanOriginTier, rollWeightedHumanOrigins, type Fate } from '../engine/life';
@@ -18,6 +19,7 @@ import { identifyYaoSpecies, ensurePlayerYaoSurname } from '../engine/yao-territ
 const scr = $('#screen');
 let onStart: () => void = () => {};
 export const setOnStart = (f: () => void) => (onStart = f);
+export const runOnStart = () => onStart();
 
 function showScreen(...kids: (HTMLElement | null)[]) {
   const keep = scr.dataset.keep === '1' ? scr.scrollTop : 0;
@@ -31,17 +33,33 @@ export const hideScreen = () => (scr.hidden = true);
 
 // ---------- Mở đầu ----------
 export function titleScreen() {
-  const hasSave = load();
+  const activeSlot = getActiveSlot();
+  const hasSave = load(activeSlot);
+  const allSlots = getAllSlotsInfo();
+  const usedCount = allSlots.filter((x) => x.hasSave).length;
+
   showScreen(
     h('div', { class: 'title-big', html: glyphSvg('title', 96, 1.3) }),
     h('div', { class: 'title-vn' }, 'TIÊN LỘ MẠN MẠN'),
     h('p', { class: 'center', style: { maxWidth: '560px', margin: '0 auto 22px', fontStyle: 'italic' } },
       'Thương Lan Giới, linh khí suy vi. Trăm vạn người cầu tiên, mấy ai thành đạo? Một kiếp người ngắn ngủi — ngươi sẽ đi được bao xa trên con đường dài dằng dặc ấy?'),
     h('div', { class: 'center', style: { display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' } },
-      hasSave ? btn(`Tiếp tục: ${s.name}`, () => { hideScreen(); onStart(); }, 'prime') : null,
+      hasSave ? btn(`Tiếp tục: ${s.name} (Bản lưu ${activeSlot})`, () => { hideScreen(); onStart(); }, 'prime') : null,
+      btn(`📂 Chọn bản lưu (${usedCount}/${MAX_SAVE_SLOTS})`, () => openSaveSlotsModal(() => titleScreen()), 'prime'),
       btn(hasSave ? 'Bỏ kiếp này, đầu thai mới' : 'Đầu thai', () => (hasSave ? askConfirm('Kiếp hiện tại sẽ bị bỏ và không được tính điểm luân hồi. Chắc chứ?', creation, { title: 'Đầu thai mới', ok: 'Bỏ kiếp này', danger: true }) : creation()), hasSave ? '' : 'prime'),
       meta.lives.length ? btn('Điện Luân Hồi', karmaHall) : null,
       btn(isLoggedIn() ? '☁️ ' + (getCurrentUser()?.displayName || 'Tài khoản') : '👤 Đăng nhập / Đăng ký', () => openAuthModal(() => titleScreen()), 'sm'),
+    ),
+    h('div', { class: 'slot-bar center', style: { display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px', flexWrap: 'wrap' } },
+      ...allSlots.map((info) => {
+        const isCurrent = info.slot === activeSlot;
+        const label = info.hasSave ? `Slot ${info.slot}: ${info.name}` : `Slot ${info.slot}: [Trống]`;
+        const cls = isCurrent ? 'btn small prime' : info.hasSave ? 'btn small' : 'btn small ghost';
+        return btn(isCurrent ? `★ ${label}` : label, () => {
+          setActiveSlot(info.slot);
+          titleScreen();
+        }, cls, { title: info.hasSave ? `${info.name} · ${info.stageName} · ${info.worldName}` : `Bản lưu ${info.slot} còn trống` });
+      })
     ),
     meta.lives.length ? h('p', { class: 'center small muted', style: { marginTop: '18px' } }, `${meta.lives.length} kiếp đã qua · điểm luân hồi ${meta.karma} · năm thế giới ${meta.worldYear}`) : null,
   );

@@ -166,7 +166,8 @@ export function openAuthModal(onSuccess?: () => void) {
           const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu ngắn gọn phong cách tiên hiệp.', 60, 0.7);
           notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
         } catch (err: any) {
-          notice('✕ ' + (err.message || 'Kiểm tra kết nối.'));
+          const { formatGeminiError } = await import('../ai/gemini');
+          notice('✕ ' + formatGeminiError(err.message || 'Kiểm tra kết nối.'));
         } finally {
           testBtn.textContent = 'Kiểm tra Gemini';
         }

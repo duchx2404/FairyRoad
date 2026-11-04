@@ -3,8 +3,8 @@ import { CELESTIAL, type CelestialId } from './celestial';
 import type { El } from './core';
 import { RMAX } from './core';
 
-export const MAP_W = 11000;
-export const MAP_H = 8400;
+export const MAP_W = 16000;
+export const MAP_H = 12000;
 /** Lục địa cũ (thiết kế ở khung 2400×1600) được phóng ×2 rồi dời vào giữa bản đồ lớn. */
 const K = 2, OX = 300, OY = 450;
 const T = (x: number, y: number): [number, number] => [x * K + OX, y * K + OY];
@@ -475,15 +475,15 @@ export const courtReq = (rank: number, tier: number) => Math.max(1, EMPIRE_GUARD
 const CX = MAP_W / 2, CY = MAP_H / 2;
 /** Mỗi vực là một lục địa riêng, cách nhau bởi biển. */
 export const LANDMASS: Record<Vuc, { x: number; y: number; rx: number; ry: number }> = {
-  trung: { x: CX, y: CY, rx: 1500, ry: 1060 },
-  dong: { x: CX + 3000, y: CY, rx: 1000, ry: 1780 },
-  tay: { x: CX - 3000, y: CY, rx: 1000, ry: 1780 },
-  nam: { x: CX, y: CY + 2300, rx: 2250, ry: 880 },
-  bac: { x: CX, y: CY - 2300, rx: 2250, ry: 880 },
+  trung: { x: CX, y: CY, rx: 1800, ry: 1300 },
+  dong: { x: CX + 3600, y: CY, rx: 1300, ry: 2200 },
+  tay: { x: CX - 3600, y: CY, rx: 1300, ry: 2200 },
+  nam: { x: CX, y: CY + 2900, rx: 2800, ry: 1150 },
+  bac: { x: CX, y: CY - 2900, rx: 2800, ry: 1150 },
 };
 export const TRUNG_R = { rx: LANDMASS.trung.rx, ry: LANDMASS.trung.ry };
-export const OUTER_R = { rx: 3000, ry: 2150 };
-const hrand = (s: string, k = 0) => {
+export const OUTER_R = { rx: 3600, ry: 2600 };
+export const hrand = (s: string, k = 0) => {
   let h = 2166136261 ^ k;
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return ((h >>> 0) % 100000) / 100000;
@@ -553,19 +553,19 @@ export function makeFormationLocations(
     const centerId = `${prefix}formation_trung_${outer}`;
     const outerId = `${prefix}formation_${outer}_trung`;
     const centerXY: [number, number] = side === 'east'
-      ? [center.x + center.rx * 0.9, center.y]
+      ? [center.x + center.rx * 0.75, center.y]
       : side === 'west'
-      ? [center.x - center.rx * 0.9, center.y]
+      ? [center.x - center.rx * 0.75, center.y]
       : side === 'south'
-      ? [center.x, center.y + center.ry * 0.9]
-      : [center.x, center.y - center.ry * 0.9];
+      ? [center.x, center.y + center.ry * 0.75]
+      : [center.x, center.y - center.ry * 0.75];
     const outerXY: [number, number] = side === 'east'
-      ? [edge.x - edge.rx * 0.98, edge.y]
+      ? [edge.x + edge.rx * 0.60, edge.y]
       : side === 'west'
-      ? [edge.x + edge.rx * 0.98, edge.y]
+      ? [edge.x - edge.rx * 0.60, edge.y]
       : side === 'south'
-      ? [edge.x, edge.y - edge.ry * 0.98]
-      : [edge.x, edge.y + edge.ry * 0.98];
+      ? [edge.x, edge.y + edge.ry * 0.60]
+      : [edge.x, edge.y - edge.ry * 0.60];
     return [
       {
         id: centerId, n: `Trận Trung - ${name}`, type: 'formation',
@@ -622,22 +622,39 @@ function layout() {
     if (l.island) {
       // Đông Hải: ngoài khơi phía đông; Nam Hải: vùng biển đông nam
       // quần đảo tự nhiên: mỗi hải vực vài cụm, đảo rải lệch quanh tâm cụm
+      // Phân bố đảo ngẫu nhiên 2D tự nhiên khắp các hải vực, vịnh biển và eo biển (không xếp thành hàng dọc)
       const CLUSTERS: Record<string, [number, number][]> = {
-        donghai: [[CX + 4250, CY - 1450], [CX + 4550, CY + 150], [CX + 4200, CY + 1650]],
-        tayhai: [[CX - 4300, CY - 1100], [CX - 4500, CY + 900]],
-        bachai: [[CX - 1700, CY - 3650], [CX + 1500, CY - 3550]],
-        namhai: [[CX - 1900, CY + 3600], [CX + 250, CY + 3750], [CX + 2350, CY + 3550]],
+        donghai: [
+          [CX + 3800, CY - 3600], [CX + 5400, CY - 2400], [CX + 6200, CY - 600],
+          [CX + 4600, CY + 800],  [CX + 5800, CY + 2400], [CX + 4000, CY + 3800],
+          [CX + 5200, CY + 400],  [CX + 6400, CY - 1800], [CX + 3400, CY - 1600],
+        ],
+        tayhai: [
+          [CX - 3800, CY - 3600], [CX - 5400, CY - 2400], [CX - 6200, CY + 400],
+          [CX - 4600, CY + 1600], [CX - 5800, CY + 2800], [CX - 3800, CY + 3800],
+          [CX - 5200, CY - 600],  [CX - 6400, CY - 1600], [CX - 3400, CY + 1400],
+        ],
+        bachai: [
+          [CX - 4000, CY - 4600], [CX - 2000, CY - 5000], [CX - 200, CY - 4800],
+          [CX + 1800, CY - 5000], [CX + 3600, CY - 4600], [CX + 4800, CY - 4200],
+        ],
+        namhai: [
+          [CX - 4000, CY + 4600], [CX - 2200, CY + 5000], [CX + 200, CY + 4800],
+          [CX + 2000, CY + 5000], [CX + 3800, CY + 4600], [CX - 4800, CY + 4200],
+        ],
       };
       if (l.reg === 'noihai') {
-        const k = ['thiennhan', 'cuuuyen', 'loithanh', 'phongthan'].indexOf(l.id);
-        const sx = k % 2 ? 1 : -1, sy = k < 2 ? -1 : 1;
-        l.x = CX + sx * 2280; l.y = CY + sy * 1820;
+        const a = (hrand(l.id, 1) * 360) * DEG;
+        const r = 1600 + hrand(l.id, 2) * 1100;
+        l.x = CX + Math.cos(a) * r * 1.1;
+        l.y = CY + Math.sin(a) * r * 0.85;
       } else {
-        const cs = CLUSTERS[l.reg] || CLUSTERS[({ dong: 'donghai', tay: 'tayhai', bac: 'bachai', nam: 'namhai', trung: 'namhai' } as Record<Vuc, string>)[vucOf(l)]];
+        const cs = CLUSTERS[l.reg] || CLUSTERS[({ dong: 'donghai', tay: 'tayhai', bac: 'bachai', nam: 'namhai', trung: 'donghai' } as Record<Vuc, string>)[vucOf(l)]];
         const [cx0, cy0] = cs[Math.floor(hrand(l.id, 1) * cs.length)];
-        const ang = hrand(l.id, 2) * Math.PI * 2, rad = 120 + hrand(l.id, 3) * 520;
-        l.x = cx0 + Math.cos(ang) * rad;
-        l.y = cy0 + Math.sin(ang) * rad * 0.75;
+        const ang = hrand(l.id, 2) * Math.PI * 2;
+        const rad = 140 + hrand(l.id, 3) * 680;
+        l.x = cx0 + Math.cos(ang) * rad * 1.15;
+        l.y = cy0 + Math.sin(ang) * rad * 0.85;
       }
       continue;
     }
@@ -855,7 +872,7 @@ const SHJ_LOC: [string, string, ShjK, string, string][] = [
   ['shj_bachdan', 'Bạch Dân Quốc', 'hai', 'tayhai', 'Nước của người tóc trắng ngoài Tây Hải. Có Thừa Hoàng — cưỡi được thì thọ hai nghìn năm.'],
 ];
 const SHJ_XY: Record<string, [number, number]> = {
-  shj_luuba: [MAP_W - 420, CY - 300], shj_hungle: [MAP_W - 600, 560], shj_chuongvi: [560, 520], shj_bachaichu: [CX + 300, 300], shj_bachdan: [380, CY + 900],
+  shj_luuba: [MAP_W - 650, CY - 300], shj_hungle: [MAP_W - 850, 750], shj_chuongvi: [750, 720], shj_bachaichu: [CX + 300, 650], shj_bachdan: [650, CY + 900],
 };
 {
   const cnt: Record<string, number> = {}, idx: Record<string, number> = {};
@@ -1106,7 +1123,13 @@ export function mkGates(o: { prefix: string; hosts: Partial<Record<CelestialId, 
     const host = o.hosts[id];
     if (!host) continue;
     const R = CELESTIAL[id];
-    out.push({ id: `${o.prefix}gate_${id}`, n: R.gateN, type: 'realm', reg: host.reg, x: 0, y: 0, qi: 1.6, lv: 5, minRealm: 3, gate: id, gateHost: host.id, d: R.gateD });
+    const realmNames: Record<CelestialId, string> = {
+      thiendinh: '✦ [THIÊN ĐÌNH] Nam Thiên Môn',
+      diaphu: '✦ [ĐỊA PHỦ] Quỷ Môn Quan',
+      yeugioi: '✦ [YÊU GIỚI] Vạn Yêu Môn',
+      linhson: '✦ [LINH SƠN] Đại Hùng Môn',
+    };
+    out.push({ id: `${o.prefix}gate_${id}`, n: realmNames[id] || `✦ Cổng ${R.n} · ${R.gateN}`, type: 'realm', reg: host.reg, x: 0, y: 0, qi: 2.2, lv: 5, minRealm: 3, gate: id, gateHost: host.id, d: R.gateD });
   }
   return out;
 }
@@ -1175,8 +1198,8 @@ function placeSpecial() {
       // chiều cao ngọn đặt cổng sẽ được nâng thành cao thứ nhì của dãy → tính khoảng cách theo đỉnh sau khi nâng
       const hAdj = (p: Peak) => { const rest = Math.max(0, ...range.filter((q) => q !== root && q !== p).map((q) => q.h)); return rest + (root.h - rest) * 0.3; }; // cao nhì: trên mọi ngọn còn lại, dưới núi gốc rõ rệt
       const dAdj = (p: Peak) => Math.hypot(p.x - host.x, p.y - hAdj(p) - host.y);
-      const clearAdj = (p: Peak) => othersAll.every((o) => Math.hypot(o.x - p.x, o.y - (p.y - hAdj(p))) >= 150);
-      const far = range.filter((p) => p !== root && dAdj(p) >= 75).sort((a, b) => dAdj(a) - dAdj(b));
+      const clearAdj = (p: Peak) => othersAll.every((o) => Math.hypot(o.x - p.x, o.y - (p.y - hAdj(p))) >= 180);
+      const far = range.filter((p) => p !== root && dAdj(p) >= 130).sort((a, b) => dAdj(a) - dAdj(b));
       const gp = far.find(clearAdj) || far[0] || range.filter((p) => p !== root).sort((a, b) => dAdj(b) - dAdj(a))[0];
       if (gp) {
         // ngọn đặt cổng là ngọn cao thứ nhì của dãy: chỉ thấp hơn núi gốc, cao hơn mọi ngọn còn lại
@@ -1187,14 +1210,14 @@ function placeSpecial() {
         continue;
       }
     }
-    settleNear(l, host, [75, 90, 110], pool, 200, VERT); // bí cảnh sát thế lực trấn giữ, lệch dọc để chữ không đè, cách nơi khác ≥ 200
+    settleNear(l, host, [160, 190, 220], pool, 340, VERT); // bí cảnh đặt cách thế lực 160-220px, lệch dọc để chữ không đè, cách nơi khác ≥ 340
   }
-  // địa điểm đi kèm (vd. Hoàng Tuyền Trấn dưới chân Hoàng Tuyền Quỷ Môn): đặt sát mục tiêu, cách các nơi khác ≥ 240
+  // địa điểm đi kèm (vd. Hoàng Tuyền Trấn dưới chân Hoàng Tuyền Quỷ Môn): đặt sát mục tiêu, cách các nơi khác ≥ 320
   for (const l of L) {
     if (!l.near) continue;
     const tgt = L.find((x) => x.id === l.near);
     if (!tgt) continue;
-    settleNear(l, tgt, [260, 320, 400], L);
+    settleNear(l, tgt, [280, 340, 420], L, 340);
   }
 }
 {
@@ -1218,13 +1241,83 @@ for (const l of L) if (l.type === 'town') l.port = true;
 for (const id of ['bencat', 'haikhau', 'ngoctrai']) if (LOCS[id]) LOCS[id].port = true;
 
 /** Hạt giống địa hình của giới hiện tại (giới 0 = '' để giữ nguyên bản đồ Thương Lan). */
+let curWorld = 0;
 let GEO = '';
+function contourFactors(w: number, v: Vuc, a: number): { xf: number; yf: number; r: number } {
+  if (w === 0) return { xf: Math.cos(a), yf: Math.sin(a), r: 1 };
+  if (w === 1) { // LINH GIỚI: Lục địa uốn lượn hình hồ lô / cánh bướm tiên gia, vịnh sâu & bán đảo ngọc
+    if (v === 'trung') {
+      const r = 1 + 0.18 * Math.cos(2 * a) - 0.08 * Math.cos(4 * a) + 0.05 * Math.sin(3 * a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'dong') {
+      const r = 1 + 0.22 * Math.cos(a - 0.5) + 0.12 * Math.sin(2 * a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'tay') {
+      const r = 1 + 0.16 * Math.cos(3 * a) - 0.1 * Math.sin(a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'nam') {
+      const r = 1 + 0.18 * Math.sin(2 * a) - 0.12 * Math.cos(a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'bac') {
+      const r = 1 - 0.18 * Math.cos(2 * a) + 0.08 * Math.cos(a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+  }
+  if (w === 2) { // TIÊN GIỚI: Cửu Thiên Bát Quái đài sen phù không
+    if (v === 'trung') {
+      const r = 1 + 0.15 * Math.cos(8 * a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    const r = 1 + 0.18 * Math.cos(4 * a);
+    return { xf: Math.cos(a), yf: Math.sin(a), r };
+  }
+  if (w === 3) { // THẦN GIỚI: Thái Cổ Tinh Hoàn xoắn ốc tinh vân
+    const r = 1 + 0.26 * Math.sin(2 * a + 1.2) + 0.1 * Math.cos(3 * a);
+    return { xf: Math.cos(a), yf: Math.sin(a), r };
+  }
+  if (w === 4) { // HỒNG HOANG: Thiên Viên Địa Phương & Tứ Đại Bộ Châu
+    if (v === 'trung') {
+      // Đất vuông vức bo tròn (Trời tròn Đất vuông - Cửu Châu)
+      const p = 3.4;
+      const cosA = Math.cos(a), sinA = Math.sin(a);
+      const sx = Math.sign(cosA) * Math.pow(Math.abs(cosA), 2 / p);
+      const sy = Math.sign(sinA) * Math.pow(Math.abs(sinA), 2 / p);
+      const r = 1 + 0.03 * Math.sin(4 * a);
+      return { xf: sx, yf: sy, r };
+    }
+    if (v === 'dong') { // Đông Thắng Thần Châu: nửa vầng trăng (bán nguyệt)
+      const r = 1 + 0.38 * Math.cos(a - Math.PI / 2) - 0.12 * Math.cos(2 * a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'tay') { // Tây Ngưu Hạ Châu: vầng trăng tròn đầy
+      const r = 1 + 0.05 * Math.cos(4 * a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'nam') { // Nam Thiệm Bộ Châu: hình tam giác / cỗ xe mở về hướng nam
+      const r = 1 + 0.28 * Math.sin(a) - 0.14 * Math.cos(2 * a);
+      return { xf: Math.cos(a), yf: Math.sin(a), r };
+    }
+    if (v === 'bac') { // Bắc Câu Lô Châu: hình chữ nhật / vuông vức băng nguyên
+      const p = 4.2;
+      const cosA = Math.cos(a), sinA = Math.sin(a);
+      const sx = Math.sign(cosA) * Math.pow(Math.abs(cosA), 2 / p);
+      const sy = Math.sign(sinA) * Math.pow(Math.abs(sinA), 2 / p);
+      return { xf: sx, yf: sy, r: 1 };
+    }
+  }
+  return { xf: Math.cos(a), yf: Math.sin(a), r: 1 };
+}
 const blob = (v: Vuc, n: number, jitter: number): [number, number][] => {
   const m = LANDMASS[v];
   return Array.from({ length: n }, (_, i) => {
     const a = (i / n) * Math.PI * 2;
     const k = 1 + (hrand(GEO + 'coast' + v, i) - 0.5) * jitter;
-    return [m.x + Math.cos(a) * m.rx * 1.08 * k, m.y + Math.sin(a) * m.ry * 1.08 * k] as [number, number];
+    const f = contourFactors(curWorld, v, a);
+    return [m.x + f.xf * m.rx * f.r * 1.08 * k, m.y + f.yf * m.ry * f.r * 1.08 * k] as [number, number];
   });
 };
 const fill = <T,>(arr: T[], v: T[]) => { arr.length = 0; arr.push(...v); };
@@ -1320,7 +1413,77 @@ export const PEAKS: Peak[] = [];
 function buildGeo() {
   fill(MAINLAND, blob('trung', 60, 0.1));
   fill(LANDS, (['dong', 'tay', 'nam', 'bac'] as const).map((v) => blob(v, 48, 0.14)));
-  fill(ISLANDS, L.filter((l) => l.island && !l.sea).map((l) => [l.x, l.y, 95 + hrand(l.id, 11) * 110, 70 + hrand(l.id, 12) * 75] as [number, number, number, number]));
+  // Sinh mạng lưới quần đảo tự nhiên phong phú (80 - 120 đảo) rải rác hữu cơ khắp Tứ Hải và Vịnh Nội Thủy
+  {
+    const islList: [number, number, number, number][] = [];
+    // 1. Đảo có địa điểm chính thức
+    for (const l of L.filter((x) => x.island && !x.sea)) {
+      const rx = Math.round(85 + hrand(l.id, 11) * 110);
+      const ry = Math.round(65 + hrand(l.id, 12) * 80);
+      islList.push([l.x, l.y, rx, ry]);
+    }
+
+    // 2. Quần đảo tự nhiên bổ sung: đảo lớn, đảo vừa, rạn san hô, tiên đảo hải ngoại
+    const targetCount = curWorld === 1 ? 95 : curWorld === 4 ? 120 : curWorld === 5 ? 110 : 85;
+    const isFarFromLand = (x: number, y: number, r: number) => {
+      for (const v of Object.keys(LANDMASS) as Vuc[]) {
+        const m = LANDMASS[v];
+        const nx = (x - m.x) / (m.rx * 1.08 + r);
+        const ny = (y - m.y) / (m.ry * 1.08 + r);
+        if (nx * nx + ny * ny < 1) return false;
+      }
+      return true;
+    };
+    const isFarFromIslands = (x: number, y: number, minD: number) => {
+      for (const [ix, iy] of islList) {
+        if (Math.hypot(x - ix, y - iy) < minD) return false;
+      }
+      return true;
+    };
+
+    for (let i = 0; i < targetCount * 9 && islList.length < targetCount; i++) {
+      const seed = GEO + 'isl' + i;
+      let x = 0, y = 0;
+
+      if (curWorld === 1 && hrand(seed, 1) < 0.28) {
+        // Linh Giới: Quần đảo bồng bềnh trong Vịnh Nội Thủy (trung tâm)
+        const a = hrand(seed, 2) * Math.PI * 2;
+        const d = 280 + hrand(seed, 3) * 1350;
+        x = CX + 650 + Math.cos(a) * d * 1.2;
+        y = CY + Math.sin(a) * d * 0.85;
+      } else {
+        // Phân bố đều 360 độ quanh bờ biển đại lục, ôm tự nhiên theo đường bờ biển
+        const a = (i / (targetCount * 1.2)) * Math.PI * 2 + (hrand(seed, 2) - 0.5) * 0.45;
+        const ca = Math.cos(a), sa = Math.sin(a);
+        let edgeR = 1200;
+        for (const v of Object.keys(LANDMASS) as Vuc[]) {
+          const m = LANDMASS[v];
+          const dx = m.x - CX, dy = m.y - CY;
+          const proj = dx * ca + dy * sa;
+          const ex = ca * m.rx * 1.08, ey = sa * m.ry * 1.08;
+          const rMass = proj + Math.hypot(ex, ey);
+          if (rMass > edgeR) edgeR = rMass;
+        }
+        // Đặt đảo ở cự ly 160 - 420px bên ngoài bờ biển
+        const dist = edgeR + 160 + hrand(seed, 3) * 260;
+        x = CX + ca * dist + (hrand(seed, 7) - 0.5) * 120;
+        y = CY + sa * dist * 0.88 + (hrand(seed, 8) - 0.5) * 100;
+      }
+
+      // Kích cỡ đa dạng: Đảo ngọc, hòn non bộ, đảo lớn
+      const sizeRoll = hrand(seed, 4);
+      const rx = sizeRoll < 0.2 ? 70 + hrand(seed, 5) * 65 : sizeRoll < 0.65 ? 38 + hrand(seed, 5) * 35 : 20 + hrand(seed, 5) * 24;
+      const ry = rx * (0.6 + hrand(seed, 6) * 0.4);
+
+      // Đảo phải nằm an toàn trong canvas (cách viền tối thiểu 360px), ngoài biển và không dính vào nhau
+      if (x >= 380 && x <= MAP_W - 380 && y >= 350 && y <= MAP_H - 350) {
+        if (isFarFromLand(x, y, Math.max(rx, ry) + 85) && isFarFromIslands(x, y, rx + 115)) {
+          islList.push([Math.round(x), Math.round(y), Math.round(rx), Math.round(ry)]);
+        }
+      }
+    }
+    fill(ISLANDS, islList);
+  }
   const sd = GEO.length * 13;
   // sông: sông lớn (trục) uốn mềm từ nội địa ra biển; sông nhỏ là chi lưu bắt nguồn lưng chừng và đổ vào trục theo dạng cành cây
   {
@@ -1399,24 +1562,62 @@ function buildGeo() {
     fill(RIVER_MAJOR, major);
   }
   fill(MOUNTAINS, [
-    ...L.filter((l) => (l.type === 'wild' || l.type === 'realm') && !l.island).map((l) => [l.x + 70, l.y - 30, 1 + hrand(l.id, 2) * 0.6] as [number, number, number]),
-    ...L.filter((l) => l.reg === 'tienchau' && l.id !== 'tutieu').map((l) => [l.x - 60, l.y - 40, 1.6] as [number, number, number]),
-    // thánh địa trên núi: Bất Chu là ngọn núi lớn nhất, Tử Tiêu giữa quần sơn
-    ...L.filter((l) => l.type === 'sect' && !l.island && SECTS[l.sect!] && (SECTS[l.sect!].tier === 4 || /Sơn/.test(l.n))).flatMap((l) => {
-      const big = l.id === 'batchu' ? 2.8 : l.id === 'tutieu' ? 2.2 : SECTS[l.sect!].tier === 4 ? 1.9 : 1.4;
-      const [bx, by] = l.base ?? [l.x, l.y]; // dãy núi neo theo vị trí gốc để dựng lại nhiều lần vẫn ra cùng dãy
-      return [[bx, by + 30, big, '*' + l.id], [bx - 150, by + 50, big * 0.6, l.id], [bx + 150, by + 50, big * 0.6, l.id]] as [number, number, number, string?][];
+    // 1. Chỉ các địa danh hoang dã / bí cảnh có đặc trưng núi đá, đỉnh đèo, hang động nằm sâu trong nội địa mới sinh núi;
+    // tuyệt đối không sinh núi tại đầm lầy, bình nguyên, hồ nước, vực thẳm hay sát bờ biển
+    ...L.filter((l) => {
+      if (l.island || l.sea) return false;
+      if (l.type !== 'wild' && l.type !== 'realm') return false;
+      const m = LANDMASS[vucOf(l)];
+      const dNorm = Math.hypot((l.x - m.x) / m.rx, (l.y - m.y) / m.ry);
+      if (dNorm >= 0.58) return false; // Chỉ vùng núi sâu nội địa, duyên hải giữ thoáng đãng tự nhiên
+      const nLower = l.n.toLowerCase();
+      if (/(nguyên|trạch|đầm|hồ|sa mạc|bãi|hải|uyên|vực|điện|cung|trấn|thành|thôn)/.test(nLower)) return false;
+      return /(sơn|phong|đỉnh|lĩnh)/.test(nLower);
+    }).map((l) => {
+      const ang = hrand(l.id, 5) * Math.PI * 2;
+      const dist = 14 + hrand(l.id, 6) * 20;
+      const mx = l.x + Math.cos(ang) * dist;
+      const my = l.y + Math.sin(ang) * dist;
+      return [mx, my, 0.75 + hrand(l.id, 2) * 0.35] as [number, number, number];
     }),
-    // đảo: một dãy núi nhỏ (3 ngọn) ở đảo có hiểm địa / bí cảnh, không rải nhiều dãy
-    ...L.filter((l) => l.island && !l.sea && (l.type === 'wild' || l.type === 'realm')).map((l) => [l.x + 10, l.y - 20, 0.7] as [number, number, number]),
-    ...(Object.keys(LANDMASS) as Vuc[]).flatMap((v) => Array.from({ length: 6 }, (_, i) => {
+    ...L.filter((l) => l.reg === 'tienchau' && l.id !== 'tutieu').map((l) => [l.x - 60, l.y - 40, 1.5] as [number, number, number]),
+    // 2. Thánh địa trên núi: Bất Chu là ngọn núi lớn nhất, Tử Tiêu giữa quần sơn Hư Linh
+    ...L.filter((l) => l.type === 'sect' && !l.island && SECTS[l.sect!] && (SECTS[l.sect!].tier === 4 || /Sơn/.test(l.n))).flatMap((l) => {
+      const big = l.id === 'batchu' ? 2.6 : l.id === 'tutieu' ? 2.1 : SECTS[l.sect!].tier === 4 ? 1.8 : 1.35;
+      const [bx, by] = l.base ?? [l.x, l.y];
+      return [[bx, by + 28, big, '*' + l.id], [bx - 130, by + 46, big * 0.62, l.id], [bx + 130, by + 46, big * 0.62, l.id]] as [number, number, number, string?][];
+    }),
+    // 3. Đảo lớn: chỉ 1-2 ngọn núi cô đơn thanh tú ngay tâm đảo, không bao giờ dàn hàng
+    ...ISLANDS.filter(([,, rx]) => rx >= 65).map(([x, y, rx, ry], i) => {
+      const ox = (hrand(GEO + 'islm' + i, 1) - 0.5) * rx * 0.15;
+      const oy = -ry * 0.12;
+      return [x + ox, y + oy, 0.42, 'isle'] as [number, number, number, string?];
+    }),
+    // 4. Đại Sơn Mạch (Long Mạch liên hoàn tự nhiên uốn lượn qua nội địa từng vực)
+    ...(Object.keys(LANDMASS) as Vuc[]).flatMap((v) => {
       const m = LANDMASS[v];
-      const a = hrand(GEO + 'mt' + v, i) * Math.PI * 2, f = 0.3 + hrand(GEO + 'mf' + v, i) * 0.5;
-      return [m.x + Math.cos(a) * m.rx * f, m.y + Math.sin(a) * m.ry * f, 1.2 + hrand(GEO + 'ms' + v, i) * 0.5] as [number, number, number];
-    })),
+      const ranges: [number, number, number][] = [];
+      const nRanges = v === 'trung' ? 3 : 2;
+      for (let rIdx = 0; rIdx < nRanges; rIdx++) {
+        // Cung sống núi uốn lượn trong nội địa (khoảng cách 25% đến 60% bán kính lục địa)
+        const baseAng = (rIdx * (Math.PI * 2 / nRanges) + 0.4 + hrand(GEO + 'rga' + v, rIdx) * 0.8) % (Math.PI * 2);
+        const spanAng = 0.55 + hrand(GEO + 'rgsp' + v, rIdx) * 0.45;
+        const nNodes = 5 + Math.floor(hrand(GEO + 'rgn' + v, rIdx) * 3);
+        for (let j = 0; j < nNodes; j++) {
+          const t = nNodes > 1 ? j / (nNodes - 1) : 0.5;
+          const curAng = baseAng + (t - 0.5) * spanAng;
+          const midWeight = Math.sin(t * Math.PI);
+          const f = 0.28 + 0.26 * (1 - 0.2 * midWeight) + (hrand(GEO + 'rgf' + v, rIdx * 10 + j) - 0.5) * 0.08;
+          const nx = m.x + Math.cos(curAng) * m.rx * f;
+          const ny = m.y + Math.sin(curAng) * m.ry * f;
+          const scale = 0.78 + midWeight * 0.5 + hrand(GEO + 'rgs' + v, rIdx * 10 + j) * 0.25;
+          ranges.push([nx, ny, scale]);
+        }
+      }
+      return ranges;
+    }),
   ]);
-  // từng ngọn núi: mỗi dãy 3–5 ngọn. Dãy của tông môn: ngọn giữa của entry chính là "núi gốc", được nâng thành ngọn cao nhất cả dãy
-  // và dời cả dãy sao cho đỉnh núi gốc nằm đúng dưới ký hiệu thế lực (vị trí thế lực giữ nguyên). Cổng bí cảnh sẽ lên ngọn gần nhất.
+  // Từng ngọn núi: uốn lượn mềm mại theo sườn tự nhiên, tuyệt đối không lấn bờ biển
   {
     const peaks: Peak[] = [];
     const rangeBase = new Map<string, [number, number]>(); // id tông môn → vị trí gốc (bx, by)
@@ -1424,25 +1625,43 @@ function buildGeo() {
       const r = (k: number) => hrand(GEO + 'pk' + mi, k);
       const isRoot = !!id && id.startsWith('*');
       const sid = id ? id.replace(/^\*/, '') : undefined;
-      if (isRoot) rangeBase.set(sid!, [x, y - 30]);
-      const n = sc < 0.8 ? 3 : 3 + Math.floor(r(0) * 3);
+      if (isRoot) rangeBase.set(sid!, [x, y - 28]);
+      const isIsle = id === 'isle';
+      const n = isIsle ? (sc > 0.4 ? 2 : 1) : sc < 0.8 ? 1 + Math.floor(r(0) * 2) : 2 + Math.floor(r(0) * 2);
+      const ridgeAng = (r(7) - 0.5) * 1.1; // góc sống núi tự nhiên
+      const cosA = Math.cos(ridgeAng), sinA = Math.sin(ridgeAng);
       for (let i = 0; i < n; i++) {
         const mid = i === Math.floor(n / 2);
-        const px = isRoot && mid ? x : x + (i - (n - 1) / 2) * 36 * sc + (r(1 + i * 4) - 0.5) * (sc < 0.8 ? 8 : 22);
-        const h = (40 + r(2 + i * 4) * 34) * sc * (mid ? 1.3 : 1);
-        const w = (36 + r(3 + i * 4) * 14) * sc;
-        const py = isRoot && mid ? y : y + (r(4 + i * 4) - 0.5) * 24;
+        const off = (i - (n - 1) / 2) * (isIsle ? 18 : 36) * sc;
+        const px = isRoot && mid ? x : x + off * cosA + (r(1 + i * 4) - 0.5) * (sc < 0.8 ? 8 : 16);
+        const py = isRoot && mid ? y : y + off * sinA + (r(4 + i * 4) - 0.5) * (sc < 0.8 ? 8 : 16);
+
+        // Đảm bảo núi đất liền luôn nằm an toàn sâu trong lục địa, không tràn ra bờ biển
+        if (!isIsle) {
+          const nearestMass = Object.values(LANDMASS).reduce((best, m) => {
+            const d1 = Math.hypot((px - m.x) / m.rx, (py - m.y) / m.ry);
+            const d2 = Math.hypot((px - best.x) / best.rx, (py - best.y) / best.ry);
+            return d1 < d2 ? m : best;
+          });
+          const dNorm = Math.hypot((px - nearestMass.x) / nearestMass.rx, (py - nearestMass.y) / nearestMass.ry);
+          if (dNorm > 0.65) continue; // Không sinh đỉnh núi nếu quá sát bờ biển, tránh xếp hàng dọc bờ biển
+        }
+
+        const hVar = 0.82 + r(2 + i * 4) * 0.4;
+        const wVar = 0.85 + r(3 + i * 4) * 0.35;
+        const h = (isIsle ? 26 + r(2 + i * 4) * 14 : 38 + r(2 + i * 4) * 32) * sc * (mid ? 1.25 : 0.9) * hVar;
+        const w = (isIsle ? 24 + r(3 + i * 4) * 8 : 38 + r(3 + i * 4) * 14) * sc * wVar;
         peaks.push({ x: px, y: py, h, w, id: sid, root: isRoot && mid });
       }
     });
-    // núi gốc cao nhất dãy, đỉnh trùng vị trí thế lực
+    // Núi gốc cao nhất dãy, đỉnh trùng vị trí thế lực
     for (const [sid, [bx, by]] of rangeBase) {
       const range = peaks.filter((p) => p.id === sid);
       const root = range.find((p) => p.root);
       if (!root) continue;
-      root.h = Math.max(...range.filter((p) => p !== root).map((p) => p.h)) * 1.25; // núi gốc cao hơn hẳn để đỉnh cổng thấp hơn rõ, chữ không đè
+      root.h = Math.max(...range.filter((p) => p !== root).map((p) => p.h)) * 1.25;
       root.w = Math.max(root.w, root.h * 0.42);
-      const dy = (by - 6) - (root.y - root.h); // đỉnh núi gốc = by - 6 (ngay dưới ký hiệu)
+      const dy = (by - 6) - (root.y - root.h);
       for (const p of range) p.y += dy;
       root.x = bx;
     }
@@ -1538,7 +1757,7 @@ function chauCenter(c: Chau): [number, number] {
   let x = m.x, y = m.y;
   if (c.vuc === 'trung') {
     const q = CHAU_MID.indexOf(c.id);
-    const R = 0.62;
+    const R = 0.68;
     if (q === 1) y = m.y - m.ry * R;
     else if (q === 2) y = m.y + m.ry * R;
     else if (q === 3) x = m.x + m.rx * R;
@@ -1577,8 +1796,8 @@ const wantsCoast = (l: Loc) => l.type === 'sect' && /biển|sóng|hải|bờ đ�
  * 2) Trong châu, thế lực càng mạnh càng gần tâm châu; tông môn ven biển và hiểm địa ra rìa. Vị trí đảo, núi Sơn Hải Kinh, Hư Linh Tiên Sơn giữ nguyên.
  */
 function arrangeByPower() {
-  const MIN_D = 260; // bằng khoảng giãn tối thiểu của layout
-  const STEP = 80;
+  const MIN_D = 400; // Khoảng giãn mục tiêu giữa các thế lực
+  const STEP = 65;   // Lưới ứng viên mịn và rộng rãi khắp lục địa
   const force = new Map<string, string>(); // locId → châu bắt buộc (triều được điều sang châu thiếu)
   // ---- 1) một châu một triều ----
   for (const v of Object.keys(LANDMASS) as Vuc[]) {
@@ -1602,28 +1821,118 @@ function arrangeByPower() {
     const [cx, cy] = chauCenter(c);
     const members = L.filter((l) => !isFixedLoc(l) && vucOf(l) === c.vuc && (force.get(l.id) ?? l.chau) === c.id);
     if (!members.length) continue;
-    // ứng viên: lưới điểm trong lục địa thuộc châu này, kèm bán kính chuẩn hoá f
+    // ứng viên: lưới điểm trong lục địa thuộc châu này kèm nhiễu hữu cơ, tránh dàn hàng
     const cands: { x: number; y: number; f: number; d: number; used: boolean }[] = [];
     for (let x = m.x - m.rx; x <= m.x + m.rx; x += STEP) for (let y = m.y - m.ry; y <= m.y + m.ry; y += STEP) {
-      const nx = (x - m.x) / m.rx, ny = (y - m.y) / m.ry, f = Math.hypot(nx, ny);
-      if (f > 0.9 || chauIdAt(c.vuc, x, y) !== c.id) continue;
-      cands.push({ x, y, f, d: Math.hypot(x - cx, y - cy), used: false });
+      const jx = (hrand(c.id + 'jx' + x, y) - 0.5) * STEP * 0.85;
+      const jy = (hrand(c.id + 'jy' + y, x) - 0.5) * STEP * 0.85;
+      const px = x + jx, py = y + jy;
+      const nx = (px - m.x) / m.rx, ny = (py - m.y) / m.ry, f = Math.hypot(nx, ny);
+      if (f > 0.85) continue;
+      const inThisChau = chauIdAt(c.vuc, px, py) === c.id;
+      const distFromCenter = Math.hypot(px - cx, py - cy);
+      // Ưu tiên điểm trong châu; khi châu đã chật thì mở rộng sang vùng thoáng lân cận cùng vực
+      const d = inThisChau ? distFromCenter : distFromCenter + 400;
+      cands.push({ x: px, y: py, f, d, used: false });
     }
     cands.sort((a, b) => a.d - b.d);
     const rank = (l: Loc) => (l.type === 'wild' || l.type === 'realm' ? -1 : wantsCoast(l) ? -0.5 : powerOf(l));
     const order = members.slice().sort((a, b) => rank(b) - rank(a) || L.indexOf(a) - L.indexOf(b));
     for (const l of order) {
-      const coast = wantsCoast(l) || l.type === 'wild' || l.type === 'realm';
-      const pool = coast ? cands.slice().sort((a, b) => b.f - a.f) : cands;
+      let pool: typeof cands;
+      if (wantsCoast(l)) {
+        // Chỉ những tông môn/thế lực ven biển mới xếp sát bờ
+        pool = cands.slice().sort((a, b) => b.f - a.f);
+      } else if (l.type === 'wild' || l.type === 'realm') {
+        // Hiểm địa và bí cảnh: phân bố tự nhiên rải rác khắp vùng núi non, thung lũng, cao nguyên nội địa
+        const targetF = 0.22 + hrand(l.id, 10) * 0.40;
+        pool = cands.slice().sort((a, b) => Math.abs(a.f - targetF) - Math.abs(b.f - targetF));
+      } else {
+        pool = cands; // thế lực, thành thị xếp theo khoảng cách tới tâm châu cx, cy
+      }
       let pick: typeof cands[number] | undefined;
-      for (const d of [MIN_D, MIN_D * 0.85, MIN_D * 0.7, MIN_D * 0.5]) { pick = pool.find((q) => !q.used && farEnough(q.x, q.y, d)); if (pick) break; }
-      if (!pick) pick = pool.find((q) => !q.used);
+      for (const d of [MIN_D, MIN_D * 0.9, MIN_D * 0.8, 290, 250]) {
+        pick = pool.find((q) => !q.used && farEnough(q.x, q.y, d));
+        if (pick) break;
+      }
+      if (!pick) {
+        // Tìm điểm có khoảng cách lớn nhất tới các thế lực đã đặt
+        let bestQ: typeof cands[number] | undefined;
+        let maxD = -1;
+        for (const q of pool) {
+          if (q.used) continue;
+          const minSep = placed.length ? Math.min(...placed.map((o) => Math.hypot(o.x - q.x, o.y - q.y))) : 1e9;
+          if (minSep > maxD) { maxD = minSep; bestQ = q; }
+        }
+        pick = bestQ;
+      }
+      // Nếu vẫn quá sát thế lực khác (< 230px), quét thêm điểm thoáng bất kỳ trên toàn bộ lục địa
+      if (!pick || (placed.length && Math.min(...placed.map((o) => Math.hypot(o.x - pick!.x, o.y - pick!.y))) < 230)) {
+        for (let rad = 0.2; rad <= 0.82; rad += 0.08) {
+          for (let a = 0; a < 360; a += 15) {
+            const radA = (a + hrand(l.id, a) * 12) * DEG;
+            const qx = m.x + Math.cos(radA) * m.rx * rad;
+            const qy = m.y + Math.sin(radA) * m.ry * rad;
+            if (farEnough(qx, qy, 260)) {
+              pick = { x: qx, y: qy, f: rad, d: 0, used: true };
+              break;
+            }
+          }
+          if (pick) break;
+        }
+      }
       if (!pick) continue;
       pick.used = true;
-      l.x = pick.x + (hrand(l.id, 31) - 0.5) * STEP * 0.6;
-      l.y = pick.y + (hrand(l.id, 32) - 0.5) * STEP * 0.6;
+      l.x = pick.x + (hrand(l.id, 31) - 0.5) * 26;
+      l.y = pick.y + (hrand(l.id, 32) - 0.5) * 26;
       placed.push(l);
     }
+  }
+}
+
+/** Giãn đẩy vật lý toàn cục: Đảm bảo khoảng cách tối thiểu giữa mọi thế lực trên toàn bản đồ */
+function relaxLocations(minD = 320) {
+  for (let it = 0; it < 200; it++) {
+    let moved = false;
+    for (let i = 0; i < L.length; i++) {
+      for (let j = i + 1; j < L.length; j++) {
+        const a = L[i], b = L[j];
+        if (!!a.island !== !!b.island) continue;
+        const isGatePair = (a.gate && a.near === b.id) || (b.gate && b.near === a.id);
+        const isSchoolPair = (a.id + '_sect' === b.id) || (b.id + '_sect' === a.id);
+        const req = (isGatePair || isSchoolPair) ? 150 : minD;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx, dy) || 1;
+        if (d < req) {
+          const p = (req - d) / 2 + 1;
+          const ux = dx / d, uy = dy / d;
+          const aFixed = !!a.pin || !!a.xy;
+          const bFixed = !!b.pin || !!b.xy;
+          if (aFixed && !bFixed) {
+            b.x += ux * p * 2; b.y += uy * p * 2;
+          } else if (!aFixed && bFixed) {
+            a.x -= ux * p * 2; a.y -= uy * p * 2;
+          } else {
+            // Khi cả hai cùng cố định hoặc cùng tự do, đẩy cả hai giãn đều
+            a.x -= ux * p; a.y -= uy * p;
+            b.x += ux * p; b.y += uy * p;
+          }
+          moved = true;
+        }
+      }
+    }
+    // Giữ các điểm đất liền trong bán kính an toàn của lục địa (không văng ra biển)
+    for (const l of L) {
+      if (l.island || l.sea) continue;
+      const m = LANDMASS[vucOf(l)];
+      const nx = (l.x - m.x) / m.rx, ny = (l.y - m.y) / m.ry;
+      const r = Math.hypot(nx, ny);
+      if (r > 0.85) {
+        l.x = m.x + (nx / r) * 0.85 * m.rx;
+        l.y = m.y + (ny / r) * 0.85 * m.ry;
+      }
+    }
+    if (!moved) break;
   }
 }
 export const chauOf = (l: Loc) => CHAU[l.chau || CHAU_MID[0]] || Object.values(CHAU)[0];
@@ -1652,14 +1961,42 @@ export function ownerTxt(l: Loc): string {
 let SEAS: [string, string, string, string] = ['ĐÔNG HẢI', 'NAM HẢI', 'TÂY HẢI', 'BẮC HẢI'];
 export const REGION_LABELS: [string, number, number, number][] = [];
 function buildLabels() {
+  const chauLabels: [string, number, number, number][] = Object.values(CHAU).map((c) => {
+    const [x, y] = chauCenter(c);
+    const sz = c.vuc === 'trung' && CHAU_MID.indexOf(c.id) <= 0 ? 86 : 70;
+    return [c.n.toUpperCase(), x, y + 36, sz];
+  });
+  // Giãn nhẹ nếu 2 nhãn châu giáp ranh quá sát nhau (khoảng cách tối thiểu 480px để không đè chữ)
+  for (let it = 0; it < 30; it++) {
+    let moved = false;
+    for (let i = 0; i < chauLabels.length; i++) {
+      for (let k = i + 1; k < chauLabels.length; k++) {
+        const a = chauLabels[i], b = chauLabels[k];
+        const dx = b[1] - a[1], dy = b[2] - a[2], d = Math.hypot(dx, dy) || 1;
+        const minSep = 500;
+        if (d < minSep) {
+          const push = (minSep - d) / 2;
+          const ux = dx / d, uy = dy / d;
+          a[1] -= ux * push; a[2] -= uy * push;
+          b[1] += ux * push; b[2] += uy * push;
+          moved = true;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
   fill(REGION_LABELS, [
-    ...(['trung', 'dong', 'nam', 'tay', 'bac'] as const).map((v) => [VUC[v].n.toUpperCase(), LANDMASS[v].x, LANDMASS[v].y - LANDMASS[v].ry * 0.93 + 60, 110] as [string, number, number, number]),
-    [SEAS[0], CX + 4400, CY - 2500, 70], [SEAS[1], CX - 900, CY + 3300, 70], [SEAS[2], CX - 4400, CY - 2300, 70], [SEAS[3], CX, CY - 3900, 70],
-    ...Object.values(CHAU).map((c) => {
-      const [x, y] = chauCenter(c);
-      const sz = c.vuc === 'trung' && CHAU_MID.indexOf(c.id) <= 0 ? 90 : 72;
-      return [c.n.toUpperCase(), x, y + 40, sz] as [string, number, number, number];
-    }),
+    [VUC.trung.n.toUpperCase(), LANDMASS.trung.x, LANDMASS.trung.y - LANDMASS.trung.ry * 0.72, 105],
+    [VUC.dong.n.toUpperCase(), LANDMASS.dong.x + LANDMASS.dong.rx * 0.40, LANDMASS.dong.y - LANDMASS.dong.ry * 0.68, 105],
+    [VUC.tay.n.toUpperCase(), LANDMASS.tay.x - LANDMASS.tay.rx * 0.40, LANDMASS.tay.y - LANDMASS.tay.ry * 0.68, 105],
+    [VUC.nam.n.toUpperCase(), LANDMASS.nam.x, LANDMASS.nam.y + LANDMASS.nam.ry * 0.72, 105],
+    [VUC.bac.n.toUpperCase(), LANDMASS.bac.x, LANDMASS.bac.y - LANDMASS.bac.ry * 0.72, 105],
+    [SEAS[0], Math.min(MAP_W - 650, LANDMASS.dong.x + LANDMASS.dong.rx + 360), LANDMASS.dong.y, 70],
+    [SEAS[1], LANDMASS.nam.x, Math.min(MAP_H - 600, LANDMASS.nam.y + LANDMASS.nam.ry + 360), 70],
+    [SEAS[2], Math.max(650, LANDMASS.tay.x - LANDMASS.tay.rx - 360), LANDMASS.tay.y, 70],
+    [SEAS[3], LANDMASS.bac.x, Math.max(650, LANDMASS.bac.y - LANDMASS.bac.ry - 320), 70],
+    ...chauLabels,
   ]);
   buildChauBorders();
   fill(RIVER_LABELS, RIVERS.map((pts, i) => {
@@ -1744,7 +2081,6 @@ export const worldPack = (w: number): WorldPack => PACKS[w] || PACKS[0];
 const BASE_CHU = SECT_TIER_INFO.map((x) => x.chu);
 const BASE_TOP = SECT_TOP.slice();
 const BASE_GUARD = EMPIRE_GUARD.slice();
-let curWorld = 0;
 /** Tăng mỗi lần đổi giới — bản đồ dựa vào đây để vẽ lại nền. */
 export let worldVer = 0;
 const swap = <T extends object>(t: T, src: T) => { for (const k of Object.keys(t)) delete (t as Record<string, unknown>)[k]; Object.assign(t, src); };
@@ -1782,12 +2118,14 @@ export function applyWorld(w: number) {
     assignChau();
     ensureChauEmpires(p.empires);
     arrangeByPower();
+    relaxLocations(320);
     assignChau();
     p.laid = true;
   }
   for (const l of L) if (l.xy) [l.x, l.y] = l.xy; // đảo và núi dựng theo đúng toạ độ ghim
   buildGeo();
   placeSpecial();
+  relaxLocations(300);
   assignChau();
   buildLabels();
 }

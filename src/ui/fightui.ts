@@ -70,7 +70,7 @@ function openFight(p: FightPending, done: (sc: Script) => void) {
   };
   const draw = () => {
     if (!root) return;
-    const f = b.foe, me = b.p;
+    const f = b.targetFoe ? b.targetFoe() : b.foe, me = b.p;
     const myT = !b.over && !auto;
     root.innerHTML = '';
     const sc = arenaScene(b, p.seed);
@@ -117,7 +117,7 @@ function openFight(p: FightPending, done: (sc: Script) => void) {
     if (b.over) {
       // Kết quả hiện bằng hộp nổi giữa sân, bảng chiêu bên dưới vẫn vẽ nhưng bị khoá.
       const title = b.over === 'win' ? 'Thắng trận' : b.over === 'fled' ? 'Thoát thân' : b.over === 'draw' ? 'Bất phân thắng bại' : 'Bại trận';
-      const msg = b.over === 'win' ? `${f.name} bại trận.` : b.over === 'fled' ? 'Ngươi đã thoát thân.' : b.over === 'draw' ? 'Hai bên giằng co, đành rút lui.' : 'Ngươi gục xuống…';
+      const msg = b.over === 'win' ? (b.foes.length ? 'Toàn bộ kẻ địch đã bị tiêu diệt.' : `${f.name} bại trận.`) : b.over === 'fled' ? 'Ngươi đã thoát thân.' : b.over === 'draw' ? 'Hai bên giằng co, đành rút lui.' : 'Ngươi gục xuống…';
       root.append(h('div', { class: 'fa-veil' }),
         h('div', { class: 'fa-result res-' + b.over }, // tiền tố res-: tránh trùng class .win của cửa sổ game
           h('h2', {}, h('span', { class: 'seal', html: glyphSvg(b.over, 20) }), title),

@@ -19,7 +19,9 @@ import { askConfirm, notice } from './dialog';
 import { BEAST_INNATE_SKILLS } from '../data/items';
 import { applyEvolutionChoice, getAvailableEvolutionBranches, type EvolutionBranch } from '../engine/beast-evolution';
 import { isMythicBeast } from '../data/beast-lineage';
-import { save } from '../engine/state';
+import { save, getActiveSlot } from '../engine/state';
+import { openSaveSlotsModal } from './save-slots-modal';
+import { titleScreen } from './screens';
 import { addLog, mark } from '../engine/core';
 import { h, $, btn, bar } from './dom';
 import { s, meta, saveMeta } from '../engine/state';
@@ -1450,7 +1452,7 @@ function chatPanel(): HTMLElement[] {
       // TAB 1: ĐÀM ĐẠO TRỰC TIẾP VỚI GEMINI AI
       const isGemini = isGeminiActive();
       const aiBadge = isGemini
-        ? h('div', { class: 'badge green small', style: { marginBottom: '8px', display: 'inline-block' } }, '✨ Đang kết nối: Google Gemini AI (gemini-2.5-flash)')
+        ? h('div', { class: 'badge green small', style: { marginBottom: '8px', display: 'inline-block' } }, `✨ Đang kết nối: Google Gemini AI (${meta.settings.geminiModel || DEFAULT_GEMINI_MODEL})`)
         : h('div', { class: 'badge small', style: { marginBottom: '8px', display: 'inline-block' } }, '💻 Đang kết nối: Ollama Local');
 
       const chatContainer = h('div', {
@@ -1526,7 +1528,8 @@ Quy tắc:
           }
           aiChatHistory.push({ role: 'ai', text: reply || 'Thiên đạo mịt mờ, chốc lát chưa thấu triệt ý niệm...' });
         } catch (err: any) {
-          aiChatHistory.push({ role: 'ai', text: 'Hư không dao động, chưa thể kết nối thần thức lúc này. (' + (err.message || 'Lỗi mạng') + ')' });
+          const { formatGeminiError } = await import('../ai/gemini');
+          aiChatHistory.push({ role: 'ai', text: 'Hư không dao động, chưa thể kết nối thần thức lúc này. (' + formatGeminiError(err.message || 'Lỗi mạng') + ')' });
         } finally {
           sendBtn.textContent = 'Gửi';
           sendBtn.removeAttribute('disabled');
@@ -1706,8 +1709,8 @@ function setPanel(): HTMLElement[] {
   if (st.aiProvider === 'gemini' || isGem) {
     const gemBox = h('div', { class: 'card small', style: { padding: '12px', margin: '10px 0', border: '1px solid rgba(52, 168, 83, 0.4)' } });
     gemBox.append(
-      h('div', { style: { color: '#2e7d32', fontWeight: 'bold', marginBottom: '6px' } }, '✨ Đang Dùng: Google Gemini 2.5 Flash'),
-      h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Model Gemini 2.5 Flash trên đám mây để viết sự kiện & đàm đạo.')
+      h('div', { style: { color: '#2e7d32', fontWeight: 'bold', marginBottom: '6px' } }, `✨ Đang Dùng: Google Gemini AI (${meta.settings.geminiModel || DEFAULT_GEMINI_MODEL})`),
+      h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Tự động kết nối và luân chuyển model dự phòng khi máy chủ Google quá tải.')
     );
 
     const currentKey = meta.settings.geminiKey || '';
@@ -1735,7 +1738,8 @@ function setPanel(): HTMLElement[] {
         const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu phong cách tiên hiệp ngắn gọn.', 60, 0.7);
         notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
       } catch (err: any) {
-        notice('✕ ' + (err.message || 'Lỗi kết nối Gemini.'));
+        const { formatGeminiError } = await import('../ai/gemini');
+        notice('✕ ' + formatGeminiError(err.message || 'Lỗi kết nối Gemini.'));
       } finally {
         testGeminiBtn.textContent = 'Kiểm tra kết nối Gemini AI';
       }
@@ -1795,9 +1799,67 @@ function setPanel(): HTMLElement[] {
 }
 
 function helpPanel(): HTMLElement[] {
-  const P = (t: string, d: string) => h('p', { class: 'small' }, h('b', {}, t + '. '), d);
+  const P = (t: string, ...d: (string | HTMLElement)[]) => h('p', { class: 'small' }, h('b', {}, t + '. '), ...d);
+
+  const worldRealms = [
+    {
+      name: 'Thương Lan Giới (Hạ giới)',
+      capNote: 'Độ Kiếp 9 đạo lôi kiếp để phi thăng',
+      list: REALMS.slice(0, 10),
+    },
+    {
+      name: 'Linh Giới',
+      capNote: 'Thiên Tiên phi thăng',
+      list: REALMS.slice(10, 13),
+    },
+    {
+      name: 'Tiên Giới',
+      capNote: 'Kim Tiên phi thăng',
+      list: REALMS.slice(13, 16),
+    },
+    {
+      name: 'Thần Giới',
+      capNote: 'Chuẩn Thánh phi thăng',
+      list: REALMS.slice(16, 19),
+    },
+    {
+      name: 'Hồng Hoang',
+      capNote: 'Hợp Đạo phi thăng',
+      list: REALMS.slice(19, 21),
+    },
+    {
+      name: 'Hỗn Độn',
+      capNote: 'Cảnh giới chí cao độc tôn',
+      list: REALMS.slice(21, 22),
+    },
+  ];
+
+  const realmsEl = h('div', { class: 'help-realms', style: 'margin: 6px 0 10px; display: flex; flex-direction: column; gap: 8px;' },
+    ...worldRealms.map((w) =>
+      h('div', { style: 'background: rgba(0,0,0,0.025); border: 1px solid var(--line); border-radius: 4px; padding: 7px 10px;' },
+        h('div', { style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;' },
+          h('b', { style: 'color: var(--seal); font-size: 13px;' }, w.name),
+          h('span', { class: 'pill muted', style: 'font-size: 11px;' }, w.capNote)
+        ),
+        h('div', { style: 'display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center;' },
+          ...w.list.map((r, i) => [
+            i > 0 ? h('span', { style: 'color: var(--muted); font-size: 11px; user-select: none;' }, '→') : null,
+            h('span', { class: 'pill', style: 'background: rgba(255,255,255,0.6); padding: 1px 7px;' },
+              h('span', { style: 'font-weight: 600;' }, r.n),
+              h('small', { style: 'color: var(--muted); margin-left: 4px;' }, "thọ " + fmt(r.life) + " năm")
+            )
+          ]).flat().filter(Boolean)
+        )
+      )
+    )
+  );
+
   return [
     P('Mục tiêu', 'Sống một kiếp tu tiên: từ phàm nhân bước lên Luyện Khí, Trúc Cơ, Kết Đan... tới Đại Thừa rồi độ kiếp phi thăng. Phần lớn sẽ chết giữa đường — đó là chuyện thường. Mỗi kiếp kết thúc được tính điểm, đổi thành điểm luân hồi để kiếp sau mạnh hơn.'),
+    P('Hệ thống cảnh giới',
+      'Toàn bộ con đường tu tiên gồm 22 cảnh giới phân bổ qua 6 đại thế giới. Mỗi cảnh giới có bốn tiểu cảnh (Sơ Kỳ, Trung Kỳ, Hậu Kỳ, Viên Mãn). Đạt tới đỉnh phong mỗi giới sẽ đối mặt thiên kiếp để phi thăng lên giới cao hơn (riêng Đại Đạo tại Hỗn Độn chỉ duy nhất một người nắm giữ):',
+      realmsEl
+    ),
     P('Thời gian', 'Mỗi hành động đều tốn thời gian. Cảnh giới càng cao, một lượt bế quan càng dài (Luyện Khí nửa năm, Nguyên Anh bốn năm...), nhưng thọ nguyên cũng dài hơn nhiều.'),
     P('Bản đồ', 'Kéo để di chuyển, cuộn hoặc nút +/− để phóng to. Bấm vào địa điểm để lên đường. Biểu tượng địa điểm: mái nhà = thôn, tường thành = thành trì, sạp hàng = phường thị, cổng điện = tông môn, núi cây khô = hiểm địa, cổng vòm = bí cảnh (chỉ mở theo chu kỳ). Dấu tròn: ? kỳ ngộ, ! nguy hiểm, rương = bảo vật, ổ khoá = bí ẩn — tự biến mất sau một thời gian.'),
     P('Tu luyện', 'Bế quan tăng tu vi. Mỗi cảnh giới có bốn tiểu cảnh (Sơ, Trung, Hậu, Viên Mãn). Viên Mãn đầy thì gặp bình cảnh, phải đột phá — có thể thất bại, bị thương, tâm ma tăng. Đan phá cảnh (Trúc Cơ Đan, Kết Kim Đan...) tăng mạnh tỉ lệ. Tông môn và hiểm địa có linh khí dày hơn.'),

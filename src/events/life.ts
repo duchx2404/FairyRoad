@@ -77,7 +77,7 @@ function sectElder(): NPC {
   const k = 'life_elder_' + s.sect!.id;
   const old = findNpc(s.flags[k]);
   if (old && old.alive) return old;
-  const n = meet({ r: clamp(Math.max(effRi() + 2, mySect().tier + 1), 1, 8), sect: s.sect!.id, tag: 'senior', rel: 10, how: `Trưởng lão ${mySect().n}` });
+  const n = meet({ r: clamp(Math.max(effRi() + 2, mySect().tier + 1), 1, npcCap()), sect: s.sect!.id, tag: 'senior', rel: 10, how: `Trưởng lão ${mySect().n}` });
   s.flags[k] = n.id;
   return n;
 }

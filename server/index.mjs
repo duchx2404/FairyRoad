@@ -380,9 +380,36 @@ app.post('/api/multiplayer/chat', (req, res) => {
 });
 
 // 10. Gemini AI Proxy (gọi qua server nếu client không muốn lộ key hoặc gặp hạn chế mạng)
+function translateGeminiError(rawMsg) {
+  if (!rawMsg) return 'Lỗi không xác định khi gọi Google AI.';
+  const str = String(rawMsg);
+  const lower = str.toLowerCase();
+  if (lower.includes('experiencing high demand') || lower.includes('spikes in demand') || lower.includes('503') || lower.includes('overloaded')) {
+    return 'Máy chủ Google AI hiện đang quá tải hoặc có lượng truy cập đột biến. Vui lòng thử lại sau giây lát!';
+  }
+  if (lower.includes('no longer available to new users')) {
+    return 'Phiên bản model này đã dừng cung cấp cho người dùng mới.';
+  }
+  if (lower.includes('api_key_invalid') || lower.includes('api key not valid') || lower.includes('invalid api key')) {
+    return 'Mã Gemini API Key không chính xác hoặc không hợp lệ. Vui lòng kiểm tra lại mã đã lấy từ Google AI Studio (aistudio.google.com).';
+  }
+  if (lower.includes('resource_exhausted') || lower.includes('quota') || lower.includes('rate limit') || lower.includes('429')) {
+    return 'Đã chạm hạn mức truy vấn miễn phí của Google AI trong phút này. Vui lòng đợi 1 phút rồi thử lại.';
+  }
+  if (lower.includes('user location is not supported') || lower.includes('location_not_supported')) {
+    return 'Khu vực địa lý hiện tại chưa được Google AI hỗ trợ trực tiếp. Vui lòng bật VPN hoặc đổi mạng.';
+  }
+  if (lower.includes('has not been used in project') || lower.includes('disabled')) {
+    return 'Dự án Google Cloud của bạn chưa bật "Generative Language API". Hãy vào console.cloud.google.com để Bật API này.';
+  }
+  const cleaned = str.replace(/^Error:\s*/i, '').replace(/^Google API:\s*/i, '').trim();
+  return `Lỗi từ Google AI: ${cleaned}`;
+}
+
 app.post('/api/ai/gemini-proxy', async (req, res) => {
   try {
-    const { prompt, model = 'gemini-2.5-flash', apiKey } = req.body;
+    let { prompt, model = 'gemini-flash-latest', apiKey } = req.body;
+    if (model === 'gemini-2.5-flash') model = 'gemini-flash-latest';
     const key = apiKey || req.user?.gemini_key || process.env.GEMINI_API_KEY;
 
     if (!key) {
@@ -392,30 +419,57 @@ app.post('/api/ai/gemini-proxy', async (req, res) => {
       });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 600,
-        },
-      }),
-    });
+    const candidateModels = Array.from(new Set([
+      model,
+      'gemini-flash-latest',
+      'gemini-2.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3.8-flash'
+    ])).filter((m) => m !== 'gemini-2.5-flash');
 
-    if (!resp.ok) {
-      const errTxt = await resp.text();
-      return res.status(resp.status).json({ ok: false, error: `Gemini API lỗi (${resp.status}): ${errTxt}` });
+    let lastError = '';
+    for (const curModel of candidateModels) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${curModel}:generateContent?key=${key}`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.85,
+              maxOutputTokens: 600,
+            },
+          }),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          return res.json({ ok: true, text, modelUsed: curModel });
+        }
+
+        const errTxt = await resp.text();
+        lastError = errTxt;
+        const isTransient =
+          resp.status === 503 ||
+          resp.status === 429 ||
+          errTxt.toLowerCase().includes('high demand') ||
+          errTxt.toLowerCase().includes('not available') ||
+          errTxt.toLowerCase().includes('overloaded');
+
+        if (!isTransient) {
+          return res.status(resp.status).json({ ok: false, error: translateGeminiError(errTxt) });
+        }
+      } catch (innerErr) {
+        lastError = innerErr.message;
+      }
     }
 
-    const data = await resp.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    res.json({ ok: true, text });
+    return res.status(503).json({ ok: false, error: translateGeminiError(lastError) });
   } catch (err) {
     console.error('Lỗi Gemini Proxy:', err);
-    res.status(500).json({ ok: false, error: 'Lỗi kết nối Gemini AI.' });
+    res.status(500).json({ ok: false, error: 'Lỗi kết nối máy chủ Gemini AI.' });
   }
 });
 

@@ -7,19 +7,29 @@ import { kmFillNew } from './engine/kinhmach';
 import './events/core';
 import './events/wild';
 import './events/town';
-import { s } from './engine/state';
+import { s, setState } from './engine/state';
 import { hooks } from './engine/bus';
 import { renderHud, renderActions, showLocPopup, showPinPopup, closePopup } from './ui/hud';
 import { renderNav, renderPanels, closeAll } from './ui/panels';
 import { setRefresh, setToast, closeModal, modalOpen, showScene } from './ui/modal';
 import { openingScene } from './engine/intro';
-import { titleScreen, deathScreen, setOnStart } from './ui/screens';
+import { titleScreen, deathScreen, setOnStart, hideScreen } from './ui/screens';
 import { scionEnroll, syncClanHouse, syncHolySurnames } from './engine/life';
 import { loadItemPhotos } from './ui/art';
-import { LOCS, REGIONS, VUC, SECTS, daoTitle, TITLE_RE, applyWorld } from './data/world';
+import { LOCS, REGIONS, VUC, SECTS, daoTitle, TITLE_RE, applyWorld, worldPack } from './data/world';
 import './data/worlds';
+import { elderRoster } from './engine/sectx';
+import { openSectRoster } from './ui/place';
+(window as any).LOCS = LOCS;
+(window as any).worldPack = worldPack;
+(window as any).applyWorld = applyWorld;
+(window as any).SECTS = SECTS;
+(window as any).elderRoster = elderRoster;
+(window as any).openSectRoster = openSectRoster;
+(window as any).setState = setState;
+(window as any).s = s;
 import { WORLD, EL, type El } from './data/core';
-import { resize, draw, centerOn, zoom, setMapHandlers, startAnim } from './ui/map';
+import { resize, draw, centerOn, zoom, setMapHandlers, startAnim, fitWorldView } from './ui/map';
 import { h, $ } from './ui/dom';
 
 function refreshAll() {
@@ -106,6 +116,20 @@ resize();
 startAnim();
 renderNav();
 titleScreen();
+
+// Hỗ trợ chế độ xem trước thế giới (?world=X)
+const urlWorld = new URLSearchParams(window.location.search).get('world');
+if (urlWorld !== null) {
+  const wIdx = parseInt(urlWorld, 10);
+  if (!isNaN(wIdx)) {
+    hideScreen();
+    applyWorld(wIdx);
+    setTimeout(() => {
+      fitWorldView();
+      refreshAll();
+    }, 50);
+  }
+}
 import './events/life';
 import './events/clan';
 import './events/scion';

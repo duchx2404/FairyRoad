@@ -285,6 +285,7 @@ export class Battle {
   meSide = () => [this.p, ...this.allies].filter((x) => x.hp > 0 && !x.fled);
   /** Bên địch còn sống (kẻ chính + nhóm). */
   foeSide = () => [this.foe, ...this.foes].filter((x) => x.hp > 0);
+  targetFoe = (): Fighter => (this.foe.hp > 0 ? this.foe : this.foes.find((x) => x.hp > 0) || this.foe);
   /** Tỉ lệ đồng hành chạy thoát khi sắp gục. */
   allyFleeChance = (a: Fighter) => clamp(0.5 + (stat('van') - 5) * 0.02 + (a.hp / a.maxHp) * 0.2 - (this.uyDiff > 0 ? 0.1 * this.uyDiff : 0), 0.1, 0.9);
   private ch = (p: number) => this.rng() < p;
@@ -318,7 +319,7 @@ export class Battle {
   }
   /** Ước lượng tác dụng một chiêu của ngươi: sát thương lên địch, hoặc lượng hồi / hộ thuẫn. */
   estSkill(sk: Skill): { v: number; k: 'dmg' | 'heal' | 'shield'; em: number } {
-    const p = this.p, f = this.foe;
+    const p = this.p, f = this.targetFoe();
     const m = sk.id === 'quyen' ? 1 : this.skMul(sk);
     const el = sk.id === 'quyen' ? p.el : sk.el ?? p.el;
     const em = elMult(el, f.el);
@@ -336,17 +337,19 @@ export class Battle {
   }
   /** Các đòn địch có thể ra (để hiện bảng chiêu thức của địch). */
   foeMoves(): Intent[] {
-    return [{ sk: null, n: 'đòn thường', m: 1, k: 'atk' }, ...this.foe.skills.map((k) => ({ sk: k, n: k.n, m: k.m, k: k.k }))];
+    const f = this.targetFoe();
+    return [{ sk: null, n: 'đòn thường', m: 1, k: 'atk' }, ...f.skills.map((k) => ({ sk: k, n: k.n, m: k.m, k: k.k }))];
   }
   estMove(it: Intent): number {
+    const f = this.targetFoe();
     const m = it.k === 'atk' || it.k === 'multi' || it.k === 'dot' ? it.m * (it.k === 'multi' ? 3 : 1) : 0;
-    const em = elMult(it.sk ? it.sk.el ?? this.foe.el : this.foe.el, this.p.el);
-    return Math.round(Math.max(0, this.foe.atk * m * em * this.foeDmgMul() * (this.guard ? 0.6 : 1) * daoMult({ laws: this.foe.laws || [], daos: this.foe.daos || [] }, { laws: this.p.laws || [], daos: this.p.daos || [] }) - this.p.def * 0.5));
+    const em = elMult(it.sk ? it.sk.el ?? f.el : f.el, this.p.el);
+    return Math.round(Math.max(0, f.atk * m * em * this.foeDmgMul() * (this.guard ? 0.6 : 1) * daoMult({ laws: f.laws || [], daos: f.daos || [] }, { laws: this.p.laws || [], daos: this.p.daos || [] }) - this.p.def * 0.5));
   }
   private foeDmgMul = () => (this.uyDiff > 0 ? 1 + 0.15 * this.uyDiff : 1) * Math.pow(0.67, this.burns);
 
   private pickIntent(): Intent {
-    const f = this.foe;
+    const f = this.targetFoe();
     const opts: [Intent, number][] = [[{ sk: null, n: 'đòn thường', m: 1, k: 'atk' }, 3]];
     for (const k of f.skills) {
       if (k.k === 'shield' && f.shield > 0) continue;
@@ -463,13 +466,13 @@ export class Battle {
         this.mp -= skCost(sk);
         this.used.push(sk.id);
         if (sk.id === 'phapthientuongdia' || sk.id === 'honnguyenphaptuong') this.pttd = true;
-        this.cast(this.p, this.foe, sk);
+        this.cast(this.p, this.targetFoe(), sk);
         break;
       }
       case 'basic':
         if (this.used.includes('quyen')) return false;
         this.used.push('quyen');
-        this.hit(this.p, this.foe, 1, this.p.el, BASIC.n);
+        this.hit(this.p, this.targetFoe(), 1, this.p.el, BASIC.n);
         break;
       case 'item': {
         if (this.itemUsed || count(a.id, a.g) < 1) return false;
@@ -539,7 +542,7 @@ export class Battle {
     const t = TALIS[key];
     const gm = (GRADE_MULT[g] ?? 1) * (t.co ? 10 : 1);
     const power = Math.max(this.p.atk, Math.max(10, REALMS[t.p - 1].pow) * 1.2) * gm;
-    if (t.k === 'atk') this.hit({ ...this.p, atk: power }, this.foe, t.m, t.el, `phù ${t.n}`);
+    if (t.k === 'atk') this.hit({ ...this.p, atk: power }, this.targetFoe(), t.m, t.el, `phù ${t.n}`);
     else if (t.k === 'shield') { this.p.shield += Math.round(power * t.m * 1.5); this.log.push(`${this.p.name} kích phát ${t.n}, hộ thuẫn ${this.p.shield}.`); }
     else { const h = Math.round(this.p.maxHp * t.m * 0.5); this.p.hp = Math.min(this.p.maxHp, this.p.hp + h); this.log.push(`${this.p.name} đốt ${t.n}, hồi ${h} khí huyết.`); }
   }
@@ -641,7 +644,7 @@ export class Battle {
   // ----- tự đánh -----
   /** Một lượt do máy chọn (dùng cho chế độ tự động, bot, và phần còn lại sau nút Tự động). */
   autoTurn() {
-    const p = this.p, f = this.foe;
+    const p = this.p, f = this.targetFoe();
     if (this.pending) { this.do({ t: 'rescue', mode: 'flee' }); return; }
     if (this.canUy()) { this.do({ t: 'uy' }); return; }
     const hpPct = p.hp / p.maxHp;

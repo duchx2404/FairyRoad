@@ -1,5 +1,6 @@
 // Trạng thái một kiếp (s) và dữ liệu xuyên kiếp (meta). Lưu localStorage.
-import { EVERY_EL, HON_DON_ROOT } from '../data/core';
+import { EVERY_EL, HON_DON_ROOT, REALMS, STAGES, worldName } from '../data/core';
+import { LOCS } from '../data/world';
 import type { El, StatKey } from '../data/core';
 import { mkNgocBoiDoi, type Gear } from '../data/items';
 
@@ -171,13 +172,111 @@ export interface Meta {
   seenIntro: boolean;
 }
 
+export const MAX_SAVE_SLOTS = 5;
+const ACTIVE_SLOT_KEY = 'tienlo.active_slot.v1';
 const SAVE_KEY = 'tienlo.save.v1';
 const META_KEY = 'tienlo.meta.v1';
+
+export function getSlotKey(slot: number): string {
+  return slot === 1 ? SAVE_KEY : `tienlo.save.slot.${slot}.v1`;
+}
+
+export function getActiveSlot(): number {
+  try {
+    const v = parseInt(localStorage.getItem(ACTIVE_SLOT_KEY) || '1', 10);
+    return v >= 1 && v <= MAX_SAVE_SLOTS ? v : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export function setActiveSlot(slot: number) {
+  const sNum = Math.max(1, Math.min(MAX_SAVE_SLOTS, Math.floor(slot)));
+  try {
+    localStorage.setItem(ACTIVE_SLOT_KEY, String(sNum));
+  } catch {}
+}
+
+export interface SaveSlotInfo {
+  slot: number;
+  hasSave: boolean;
+  name?: string;
+  gender?: 'm' | 'f';
+  realm?: number;
+  realmName?: string;
+  stageName?: string;
+  world?: number;
+  worldName?: string;
+  locName?: string;
+  year?: number;
+  age?: number;
+  money?: number;
+  savedAt?: number | null;
+  body?: string;
+  tang?: number;
+}
+
+export function getSlotInfo(slot: number): SaveSlotInfo {
+  try {
+    const raw = localStorage.getItem(getSlotKey(slot));
+    if (!raw) return { slot, hasSave: false };
+    const st = JSON.parse(raw);
+    if (!st || st.v !== 1 || st.dead) return { slot, hasSave: false };
+    const r = st.r ?? 0;
+    const realmName = REALMS[r]?.n || 'Phàm nhân';
+    const stage = STAGES[st.st ?? 0] || 'Sơ kỳ';
+    const isThienDo = st.body === 'thiendo' && r === 1;
+    const stageStr = isThienDo ? `Luyện Khí tầng ${st.flags?.tang ?? 1}` : `${realmName} ${stage}`;
+    return {
+      slot,
+      hasSave: true,
+      name: st.name || 'Vô Danh',
+      gender: st.g || 'm',
+      realm: r,
+      realmName,
+      stageName: stageStr,
+      world: st.world ?? 0,
+      worldName: worldName(st.world ?? 0),
+      locName: LOCS[st.loc]?.n || 'Thương Lan Giới',
+      year: Math.floor(st.year ?? 3120),
+      age: Math.floor((st.year ?? 3120) - (st.born ?? 3100)),
+      money: st.money ?? 0,
+      savedAt: st.savedAt || null,
+      body: st.body,
+      tang: st.flags?.tang,
+    };
+  } catch {
+    return { slot, hasSave: false };
+  }
+}
+
+export function getAllSlotsInfo(): SaveSlotInfo[] {
+  const res: SaveSlotInfo[] = [];
+  for (let i = 1; i <= MAX_SAVE_SLOTS; i++) {
+    res.push(getSlotInfo(i));
+  }
+  return res;
+}
+
+export function deleteSlot(slot: number) {
+  try {
+    localStorage.removeItem(getSlotKey(slot));
+    if (slot === getActiveSlot()) {
+      const other = getAllSlotsInfo().find((x) => x.hasSave && x.slot !== slot);
+      if (other) {
+        setActiveSlot(other.slot);
+        load(other.slot);
+      } else {
+        s = null as unknown as State;
+      }
+    }
+  } catch {}
+}
 
 export let s: State = null as unknown as State;
 export const setState = (n: State) => {
   s = n;
-  if (EVERY_EL.every(e => s.root.els.includes(e))) s.root.k = HON_DON_ROOT;
+  if (s.root?.els && EVERY_EL.every(e => s.root.els.includes(e))) s.root.k = HON_DON_ROOT;
   const hasNb = [...(s.gear || []), ...(s.gearBag || [])].some(g => g && /ngọc bội/i.test(g.n));
   if (!hasNb) {
     const nb = mkNgocBoiDoi();
@@ -206,7 +305,7 @@ function loadMeta(): Meta {
     settings: {
       ai: true,
       aiProvider: 'gemini',
-      geminiModel: 'gemini-2.5-flash',
+      geminiModel: 'gemini-flash-latest',
       googleClientId: '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com',
       serverUrl: 'http://localhost:3001',
       url: 'http://127.0.0.1:11434',
@@ -225,6 +324,9 @@ function loadMeta(): Meta {
     const karma = Math.max(m.karma ?? 0, 9999999);
     const karmaTotal = Math.max(m.karmaTotal ?? 0, 9999999);
     const settings = { ...base.settings, ...(m.settings || {}) };
+    if (!settings.geminiModel || settings.geminiModel === 'gemini-2.5-flash') {
+      settings.geminiModel = 'gemini-flash-latest';
+    }
     if (!settings.googleClientId || !settings.googleClientId.includes('.apps.googleusercontent.com')) {
       settings.googleClientId = base.settings.googleClientId;
     }
@@ -238,16 +340,20 @@ export function saveMeta() {
   localStorage.setItem(META_KEY, JSON.stringify(meta));
 }
 
-export function save() {
+export function save(slot = getActiveSlot()) {
   if (!s) return;
-  if (s.dead || s.ascended) localStorage.removeItem(SAVE_KEY);
-  else localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+  const key = getSlotKey(slot);
+  if (s.dead || s.ascended) localStorage.removeItem(key);
+  else {
+    (s as any).savedAt = Date.now();
+    localStorage.setItem(key, JSON.stringify(s));
+  }
   saveMeta();
 }
 
-export function load(): boolean {
+export function load(slot = getActiveSlot()): boolean {
   try {
-    const raw = localStorage.getItem(SAVE_KEY);
+    const raw = localStorage.getItem(getSlotKey(slot));
     if (!raw) return false;
     const st = JSON.parse(raw) as State;
     if (st.v !== 1 || st.dead) return false;
@@ -266,7 +372,7 @@ export function load(): boolean {
       st.sect.rank = st.flags.thanhtu === st.sect.id ? 8 : [0, 1, 2, 5, 7][old] ?? old;
     }
     st.flags.rankV2 = true;
-    if (EVERY_EL.every(e => st.root.els.includes(e))) st.root.k = HON_DON_ROOT;
+    if (st.root?.els && EVERY_EL.every(e => st.root.els.includes(e))) st.root.k = HON_DON_ROOT;
     for (const b of st.bag || []) if (b.id === 'x:cophu') b.id = 'fq:cophu';
     const hasNbGear = [...(st.gear || []), ...(st.gearBag || [])].some(g => g && /ngọc bội/i.test(g.n));
     if (!hasNbGear) {
@@ -276,14 +382,15 @@ export function load(): boolean {
     }
     st.bag = (st.bag || []).filter(item => item.id !== 'x:ngocboidoi');
     s = st;
+    setActiveSlot(slot);
     return true;
   } catch {
     return false;
   }
 }
 
-export function wipeSave() {
-  localStorage.removeItem(SAVE_KEY);
+export function wipeSave(slot = getActiveSlot()) {
+  localStorage.removeItem(getSlotKey(slot));
 }
 
 export function codexAdd(k: keyof Meta['codex'], id: string) {

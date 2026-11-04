@@ -270,7 +270,7 @@ function drawLake(g: CanvasRenderingContext2D, lake: Lake) {
   g.restore();
 }
 
-const BG_S = 0.6; // nền dựng ở 60% độ phân giải để tiết kiệm bộ nhớ
+const BG_S = 0.45; // nền dựng ở 45% độ phân giải cho bản đồ siêu rộng 16000x12000 mượt mà tiết kiệm RAM
 function buildBg() {
   const c = document.createElement('canvas');
   c.width = Math.round(MAP_W * BG_S);
@@ -357,6 +357,31 @@ function buildBg() {
     g.beginPath();
     g.arc(x, y, 5 + rnd() * 8, 0, Math.PI * 2);
     g.fill();
+  }
+  // cây cỏ, rặng thông & thảm thực vật hải đảo trên toàn bộ các đảo
+  for (const [ix, iy, irx, iry] of ISLANDS) {
+    // Vệt loang linh khí đảo ngọc (màu xanh lục bảo)
+    const grd = g.createRadialGradient(ix, iy, 0, ix, iy, Math.max(irx, iry) * 0.95);
+    grd.addColorStop(0, 'rgba(68, 136, 88, 0.32)');
+    grd.addColorStop(0.7, 'rgba(78, 148, 98, 0.18)');
+    grd.addColorStop(1, 'rgba(78, 148, 98, 0)');
+    g.fillStyle = grd;
+    g.beginPath();
+    g.ellipse(ix, iy, irx * 0.95, iry * 0.95, 0, 0, Math.PI * 2);
+    g.fill();
+
+    // Rặng tùng bách hải đảo xanh tươi
+    const nTrees = Math.max(4, Math.round(irx * iry * 0.0028));
+    for (let ti = 0; ti < nTrees; ti++) {
+      const ta = rnd() * Math.PI * 2;
+      const tr = Math.sqrt(rnd()) * 0.72;
+      const tx = ix + Math.cos(ta) * irx * tr;
+      const ty = iy + Math.sin(ta) * iry * tr;
+      g.fillStyle = `rgba(32, 78, 46, ${0.16 + rnd() * 0.24})`;
+      g.beginPath();
+      g.arc(tx, ty, 3.5 + rnd() * 5.5, 0, Math.PI * 2);
+      g.fill();
+    }
   }
   // sa mạc: gợn cát (Tây Vực + rìa tây Trung Vực)
   for (let i = 0; i < 9000; i++) {
@@ -539,43 +564,154 @@ function playerImg(): HTMLImageElement | null {
   const im = imgCache.get(key);
   return im && im.complete && im.naturalWidth > 0 ? im : null;
 }
-/** Núi kiểu kim tự tháp: hai mặt sáng/tối, màu lấy theo nền địa hình tại chỗ, đỉnh tuyết ở vùng băng.
- *  Vẽ theo thứ tự từ xa tới gần (y tăng dần) và tô đặc nên núi trước che núi sau. */
+/** Núi phong cách thủy mặc cổ họa tiên hiệp:
+ *  - Dáng núi uốn lượn tự nhiên theo nét bút lông (bezier curves thay vì tam giác phẳng).
+ *  - Sống núi (long tích) uốn mềm mại phân định dương diện (đón sáng) và âm diện (khuất bóng).
+ *  - Chân núi có gradient hòa sắc sương khói mờ ảo vào nền đất giấy da cổ.
+ *  - Nét gân đá (披麻皴 - phi ma huân) truyền thống tôn tạo chiều sâu vách đá.
+ *  - Đỉnh tuyết phủ mềm mại uốn lượn theo dáng sườn núi.
+ *  Vẽ theo thứ tự từ xa tới gần (y tăng dần), núi trước che chở núi sau tự nhiên. */
 function drawMountains(g: CanvasRenderingContext2D) {
   type Peak = { px: number; py: number; h: number; w: number };
   const peaks: Peak[] = PEAKS.map((p) => ({ px: p.x, py: p.y, h: p.h, w: p.w }));
   peaks.sort((a, b) => a.py - b.py);
-  const mix = (c: [number, number, number], to: [number, number, number], k: number) => `rgb(${c.map((v, i) => Math.round(v + (to[i] - v) * k)).join(',')})`;
+  const mix = (c: [number, number, number], to: [number, number, number], k: number) =>
+    `rgb(${c.map((v, i) => Math.round(v + (to[i] - v) * k)).join(',')})`;
+
   for (const { px, py, h, w } of peaks) {
-    // màu nền ngay dưới chân núi (canvas nền dựng ở tỉ lệ BG_S)
+    // Màu nền ngay dưới chân núi (canvas nền dựng ở tỉ lệ BG_S)
     const d = g.getImageData(Math.max(0, Math.round(px * BG_S)), Math.max(0, Math.round((py - 2) * BG_S)), 1, 1).data;
-    const base: [number, number, number] = [d[0], d[1], d[2]];
-    const light = mix(base, [255, 250, 238], 0.45);
-    const dark = mix(base, [42, 36, 31], 0.42);
+    const base: [number, number, number] = [d[0] || 220, d[1] || 210, d[2] || 195];
+
+    // Seed jitter dựa theo tọa độ đỉnh núi để mỗi ngọn có hình thái riêng sinh động nhưng ổn định
+    const sVal = Math.sin(px * 12.9898 + py * 78.233) * 43758.5453;
+    const rJit = (n: number) => {
+      const v = Math.sin(sVal + n * 91.345) * 43758.5453;
+      return v - Math.floor(v);
+    };
+
     const snow = climateAt(px, py) === 'bac';
-    const ax = px, ay = py - h; // đỉnh
-    const rx = px + w * 0.14; // chân sống núi
-    // mặt sáng (trái) và mặt tối (phải)
-    g.fillStyle = light;
-    g.beginPath(); g.moveTo(px - w, py); g.lineTo(ax, ay); g.lineTo(rx, py); g.closePath(); g.fill();
-    g.fillStyle = dark;
-    g.beginPath(); g.moveTo(rx, py); g.lineTo(ax, ay); g.lineTo(px + w, py); g.closePath(); g.fill();
+    // Đỉnh núi hơi lệch ngẫu nhiên nhẹ (-10% đến +10% bề rộng)
+    const apexOff = (rJit(1) - 0.5) * w * 0.2;
+    const ax = px + apexOff;
+    const ay = py - h;
+    // Chân sống núi (long tích)
+    const rx = px + w * 0.12 + (rJit(2) - 0.5) * w * 0.1;
+
+    // Màu sắc thủy mặc: đỉnh đậm đà chất đá, chân núi thoa mờ vào sương nền
+    const lightPeak = mix(base, [255, 252, 246], 0.52);
+    const lightMid = mix(base, [248, 242, 230], 0.35);
+    const darkPeak = mix(base, [38, 32, 27], 0.48);
+    const darkMid = mix(base, [45, 38, 33], 0.38);
+
+    // Gradient sương mù chân núi: chuyển từ màu đá ở đỉnh xuống hòa tan mờ vào nền tại chân núi
+    const gradLight = g.createLinearGradient(0, ay, 0, py + 3);
+    gradLight.addColorStop(0, lightPeak);
+    gradLight.addColorStop(0.68, lightMid);
+    gradLight.addColorStop(1, mix(base, [240, 235, 225], 0.18));
+
+    const gradDark = g.createLinearGradient(0, ay, 0, py + 3);
+    gradDark.addColorStop(0, darkPeak);
+    gradDark.addColorStop(0.65, darkMid);
+    gradDark.addColorStop(1, mix(base, [42, 36, 31], 0.2));
+
+    // Điểm uốn cong tự nhiên của sườn núi (tạo dáng núi thủy mặc uốn lượn hữu cơ)
+    const l1x = px - w * 0.82, l1y = py - h * 0.26;
+    const l2x = px - w * 0.42 + (rJit(3) - 0.5) * 6, l2y = py - h * 0.68;
+
+    const r1x = px + w * 0.38 + (rJit(4) - 0.5) * 6, r1y = py - h * 0.68;
+    const r2x = px + w * 0.78, r2y = py - h * 0.26;
+
+    // Điểm uốn của sống núi (long tích lượn sóng mềm)
+    const crx = (ax + rx) / 2 + (rJit(5) - 0.5) * w * 0.14;
+    const cry = (ay + py) / 2 + (rJit(6) - 0.5) * h * 0.08;
+
+    // 1. Mặt sáng (dương diện - sườn đón sáng bên trái)
+    g.fillStyle = gradLight;
+    g.beginPath();
+    g.moveTo(px - w, py);
+    g.bezierCurveTo(l1x, l1y, l2x, l2y, ax, ay);
+    g.quadraticCurveTo(crx, cry, rx, py);
+    g.closePath();
+    g.fill();
+
+    // 2. Mặt tối (âm diện - sườn khuất bóng bên phải)
+    g.fillStyle = gradDark;
+    g.beginPath();
+    g.moveTo(rx, py);
+    g.quadraticCurveTo(crx, cry, ax, ay);
+    g.bezierCurveTo(r1x, r1y, r2x, r2y, px + w, py);
+    g.closePath();
+    g.fill();
+
+    // 3. Đỉnh tuyết phủ (vùng Bắc Vực hoặc núi thần)
     if (snow) {
-      const k = 0.3; // 30% chiều cao phủ tuyết
-      const yl = ay + h * k;
-      const lw = w * k, lr = (rx - px) * k;
-      g.fillStyle = 'rgba(248,250,252,0.95)';
-      g.beginPath(); g.moveTo(px - lw, yl); g.lineTo(ax, ay); g.lineTo(px + lr, yl); g.closePath(); g.fill();
-      g.fillStyle = 'rgba(205,218,230,0.95)';
-      g.beginPath(); g.moveTo(px + lr, yl); g.lineTo(ax, ay); g.lineTo(px + lw, yl); g.closePath(); g.fill();
+      const sk = 0.32;
+      const say = ay + h * sk;
+      const slx = px - w * sk * 0.85;
+      const srx = px + w * sk * 0.85;
+      const scx = ax + (rx - ax) * sk;
+
+      // Nửa sáng tuyết
+      g.fillStyle = 'rgba(252, 254, 255, 0.94)';
+      g.beginPath();
+      g.moveTo(slx, say);
+      g.bezierCurveTo(px - w * 0.45 * sk, ay + h * 0.18, ax - w * 0.15 * sk, ay + h * 0.08, ax, ay);
+      g.quadraticCurveTo((ax + scx) / 2, (ay + say) / 2, scx, say);
+      g.closePath();
+      g.fill();
+
+      // Nửa khuất tuyết ánh lam
+      g.fillStyle = 'rgba(215, 228, 240, 0.92)';
+      g.beginPath();
+      g.moveTo(scx, say);
+      g.quadraticCurveTo((ax + scx) / 2, (ay + say) / 2, ax, ay);
+      g.bezierCurveTo(ax + w * 0.15 * sk, ay + h * 0.08, px + w * 0.45 * sk, ay + h * 0.18, srx, say);
+      g.closePath();
+      g.fill();
     }
-    // viền
-    g.strokeStyle = 'rgba(42,36,31,0.6)';
-    g.lineWidth = 1.3;
+
+    // 4. Đường nét mực họa (Chinese Ink Brush Outlines)
+    g.lineCap = 'round';
     g.lineJoin = 'round';
-    g.beginPath(); g.moveTo(px - w, py); g.lineTo(ax, ay); g.lineTo(px + w, py); g.stroke();
-    g.strokeStyle = 'rgba(42,36,31,0.35)';
-    g.beginPath(); g.moveTo(ax, ay); g.lineTo(rx, py); g.stroke();
+
+    // Đường sống núi uốn lượn
+    g.strokeStyle = 'rgba(38, 32, 28, 0.48)';
+    g.lineWidth = 1.25;
+    g.beginPath();
+    g.moveTo(ax, ay);
+    g.quadraticCurveTo(crx, cry, rx, py);
+    g.stroke();
+
+    // Viền sườn núi mềm mại
+    g.strokeStyle = 'rgba(35, 30, 26, 0.6)';
+    g.lineWidth = 1.35;
+    g.beginPath();
+    g.moveTo(px - w, py);
+    g.bezierCurveTo(l1x, l1y, l2x, l2y, ax, ay);
+    g.bezierCurveTo(r1x, r1y, r2x, r2y, px + w, py);
+    g.stroke();
+
+    // 5. Nếp gân đá thủy mặc (披麻皴 - Phi Ma Huân) trên sườn núi tối
+    if (h > 34) {
+      g.strokeStyle = 'rgba(35, 30, 26, 0.22)';
+      g.lineWidth = 0.9;
+      // Gân đá thứ nhất
+      g.beginPath();
+      const tx1 = (ax + r1x) / 2, ty1 = (ay + r1y) / 2;
+      g.moveTo(tx1, ty1);
+      g.quadraticCurveTo(tx1 + (rJit(7) - 0.5) * 8 + 4, ty1 + h * 0.2, (crx + px + w) / 2, py - 4);
+      g.stroke();
+
+      // Gân đá thứ hai cho núi trung/lớn
+      if (h > 52) {
+        g.beginPath();
+        const tx2 = (ax + crx) / 2, ty2 = (ay + cry) / 2;
+        g.moveTo(tx2, ty2);
+        g.quadraticCurveTo(tx2 + 6, ty2 + h * 0.22, rx + (rJit(8) - 0.5) * 8, py - 2);
+        g.stroke();
+      }
+    }
   }
 }
 function hexA(hex: string, a: number) {
@@ -595,6 +731,54 @@ const TYPE_STYLE: Record<string, { c: string; shape: 'sq' | 'ci' | 'di' }> = {
 };
 const PIN_C: Record<string, string> = { '?': '#9a7a2e', '!': '#9b2a1f', bao: '#4f7a55', bi: '#5e4c8a' };
 
+export function getContentBounds(): { minX: number; maxX: number; minY: number; maxY: number } {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  // 1. Đại lục (LANDMASS)
+  for (const m of Object.values(LANDMASS)) {
+    minX = Math.min(minX, m.x - m.rx * 1.12);
+    maxX = Math.max(maxX, m.x + m.rx * 1.12);
+    minY = Math.min(minY, m.y - m.ry * 1.12);
+    maxY = Math.max(maxY, m.y + m.ry * 1.12);
+  }
+  // 2. Toạ độ bờ biển thực tế
+  for (const [x, y] of MAINLAND) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  for (const pts of LANDS) for (const [x, y] of pts) {
+    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+  }
+  // 3. Toàn bộ quần đảo ngoại hải (kèm viền sóng loang ~40px)
+  for (const [x, y, rx, ry] of ISLANDS) {
+    minX = Math.min(minX, x - rx - 45);
+    maxX = Math.max(maxX, x + rx + 45);
+    minY = Math.min(minY, y - ry - 45);
+    maxY = Math.max(maxY, y + ry + 45);
+  }
+  // 4. Nhãn biển và nhãn vùng (đảm bảo chữ không chạm mép)
+  for (const [, x, y, sz] of REGION_LABELS) {
+    const w = (sz >= 100 ? 500 : sz < 72 ? 320 : 380);
+    const h = 75;
+    minX = Math.min(minX, x - w / 2);
+    maxX = Math.max(maxX, x + w / 2);
+    minY = Math.min(minY, y - h);
+    maxY = Math.max(maxY, y + 25);
+  }
+  const padX = 140;
+  const padY = 250; // Đệm rộng đỉnh và đáy để thanh header và nút thao tác không che nhãn địa danh
+  return {
+    minX: Math.max(0, minX - padX),
+    maxX: Math.min(MAP_W, maxX + padX),
+    minY: Math.max(0, minY - padY),
+    maxY: Math.min(MAP_H, maxY + padY),
+  };
+}
+
+export function fitWorld() {
+  fitWorldView();
+}
+
 export function resize() {
   dpr = Math.min(2, window.devicePixelRatio || 1);
   cv.width = innerWidth * dpr;
@@ -603,11 +787,35 @@ export function resize() {
   draw();
 }
 function clampView() {
-  const minZ = Math.min(innerWidth / MAP_W, innerHeight / MAP_H) * 0.95; // thu nhỏ được tới mức thấy cả thế giới
-  view.z = Math.max(minZ, Math.min(2.2, view.z));
+  const b = getContentBounds();
+  const spanW = Math.max(1000, b.maxX - b.minX);
+  const spanH = Math.max(1000, b.maxY - b.minY);
+  // Trừ đệm UI: thanh menu đỉnh (~75px) và thanh hành động đáy (~80px)
+  const availW = Math.max(400, innerWidth - 90);
+  const availH = Math.max(300, innerHeight - 210);
+  const fitZ = Math.min(availW / spanW, availH / spanH);
+  // Cho phép thu nhỏ thêm để nhìn bao quát toàn bộ tứ hải và quần đảo xa
+  const minZ = Math.max(0.06, fitZ * 0.75);
+  view.z = Math.max(minZ, Math.min(2.5, view.z));
+
   const vw = innerWidth / view.z, vh = innerHeight / view.z;
-  view.x = vw >= MAP_W ? (MAP_W - vw) / 2 : Math.max(-vw * 0.3, Math.min(MAP_W - vw * 0.7, view.x));
-  view.y = vh >= MAP_H ? (MAP_H - vh) / 2 : Math.max(-vh * 0.3, Math.min(MAP_H - vh * 0.7, view.y));
+  const midX = (b.minX + b.maxX) / 2;
+  const midY = (b.minY + b.maxY) / 2;
+
+  // Khi camera thu nhỏ thấy toàn bộ thế giới: căn giữa đối xứng hoàn hảo trong không gian khả dụng, chừa khoảng trống cho header
+  const idealX = midX - vw / 2;
+  const idealY = midY - vh / 2 + 25 / view.z;
+
+  if (vw >= spanW * 1.04) {
+    view.x = idealX;
+  } else {
+    view.x = Math.max(b.minX - vw * 0.2, Math.min(b.maxX - vw * 0.8, view.x));
+  }
+  if (vh >= spanH * 1.04) {
+    view.y = idealY;
+  } else {
+    view.y = Math.max(b.minY - vh * 0.2, Math.min(b.maxY - vh * 0.8, view.y));
+  }
 }
 export function centerOn(x: number, y: number) {
   view.x = x - innerWidth / view.z / 2;
@@ -615,6 +823,10 @@ export function centerOn(x: number, y: number) {
   clampView();
   draw();
 }
+(window as any).centerOn = centerOn;
+(window as any).zoom = zoom;
+(window as any).mapView = view;
+(window as any).mapDraw = draw;
 export function zoom(dir: number, cx = innerWidth / 2, cy = innerHeight / 2) {
   const wx = view.x + cx / view.z, wy = view.y + cy / view.z;
   view.z *= dir > 0 ? 1.2 : 1 / 1.2;
@@ -656,12 +868,12 @@ function drawRegionLabels(g: CanvasRenderingContext2D, z: number) {
     const alpha = isVuc ? aVuc : isSea ? aSea : aChau;
     if (alpha <= 0.01) continue;
 
-    // Khi thu nhỏ tối đa (zoom out), đảm bảo kích thước hiển thị trên màn hình tối thiểu ~11-15px để luôn đọc rõ nét
-    const minScreenPx = isVuc ? 15 : isSea ? 11 : 12;
+    // Khi thu nhỏ tối đa (zoom out), đảm bảo kích thước hiển thị trên màn hình tối thiểu ~10-14px để luôn đọc rõ nét
+    const minScreenPx = isVuc ? 14 : isSea ? 10 : 9.5;
     const effectiveSz = Math.max(sz, minScreenPx / z);
 
     g.font = `700 ${Math.round(effectiveSz)}px "Noto Serif", serif`;
-    g.letterSpacing = isVuc ? '30px' : isSea ? '12px' : '10px';
+    g.letterSpacing = isVuc ? '22px' : isSea ? '10px' : '6px';
 
     // Viền sáng mỏng (halo) màu giấy cổ giúp chữ nổi bật, đậm đà trên mọi nền địa hình
     const haloAlpha = alpha * 0.75;
@@ -693,7 +905,7 @@ export function draw() {
   ctx.translate(-view.x, -view.y);
   ctx.drawImage(bg!, 0, 0, MAP_W, MAP_H);
   drawRegionLabels(ctx, view.z);
-  if (!s) { ctx.restore(); return; }
+  // In world preview or spectator mode, continue drawing terrain and locations even if s is null
   // đường đi dự kiến
   if (travelLine) {
     ctx.setLineDash([8, 8]);
@@ -710,7 +922,7 @@ export function draw() {
   const showNames = view.z > 0.2;
   for (const l of LOC_LIST) {
     const st = TYPE_STYLE[l.type];
-    const closed = l.type === 'realm' && !realmOpen(l);
+    const closed = l.type === 'realm' && (s ? !realmOpen(l) : false);
     const r = l.type === 'sect' || l.type === 'town' ? 13 : 11;
     ctx.save();
     ctx.translate(l.x, l.y);
@@ -748,8 +960,8 @@ export function draw() {
       ctx.moveTo(-9, -r - 4); ctx.lineTo(-9, -r - 13); ctx.lineTo(-4.5, -r - 8); ctx.lineTo(0, -r - 15); ctx.lineTo(4.5, -r - 8); ctx.lineTo(9, -r - 13); ctx.lineTo(9, -r - 4); ctx.closePath();
       ctx.fill(); ctx.stroke();
     }
-    if (showNames) {
-      ctx.font = `${l.id === s.loc ? 700 : 600} 14px "Noto Serif", serif`;
+    if (showNames || l.gate) {
+      ctx.font = `${l.id === s?.loc ? 700 : 600} 14px "Noto Serif", serif`;
       ctx.lineWidth = 4;
       ctx.strokeStyle = 'rgba(239,230,208,0.9)';
       ctx.strokeText(l.n, 0, r + 14);
@@ -760,7 +972,7 @@ export function draw() {
   }
   // dấu
   pulse = (performance.now() / 600) % (Math.PI * 2);
-  for (const p of s.pins) {
+  for (const p of (s?.pins || [])) {
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.scale(f, f);
@@ -781,7 +993,7 @@ export function draw() {
     else ctx.fillText(p.k, 0, 1);
     ctx.restore();
   }
-  // người chơi: chân dung tròn lơ lửng phía trên địa điểm; ký hiệu và tên địa điểm bên dưới vẫn thấy rõ
+  if (s) { // người chơi: chân dung tròn lơ lửng phía trên địa điểm; ký hiệu và tên địa điểm bên dưới vẫn thấy rõ
   {
     const R = 17; // bán kính chân dung
     const LIFT = R + 35; // tâm chân dung nằm trên ký hiệu địa điểm
@@ -823,7 +1035,28 @@ export function draw() {
     ctx.beginPath(); ctx.arc(0, 0, R + 1.9, 0, Math.PI * 2); ctx.stroke();
     ctx.restore();
   }
+  }
   ctx.restore();
+}
+
+/** Tự động cân chỉnh camera bao quát toàn bộ thế giới, mở rộng kín màn hình nhưng không bị lẹm UI */
+export function fitWorldView() {
+  const b = getContentBounds();
+  const spanW = Math.max(1000, b.maxX - b.minX);
+  const spanH = Math.max(1000, b.maxY - b.minY);
+  // Khoảng không khả dụng trừ thanh header (~75px) và thanh hành động đáy (~80px)
+  const availW = Math.max(400, innerWidth - 90);
+  const availH = Math.max(300, innerHeight - 210);
+  const fitZ = Math.min(availW / spanW, availH / spanH);
+  view.z = Math.max(0.06, fitZ * 0.91);
+  const vw = innerWidth / view.z, vh = innerHeight / view.z;
+  const midX = (b.minX + b.maxX) / 2;
+  const midY = (b.minY + b.maxY) / 2;
+  view.x = midX - vw / 2;
+  // Căn giữa cân đối, dịch nhẹ xuống để header đỉnh không đè nhãn cực bắc
+  view.y = midY - vh / 2 + 25 / view.z;
+  clampView();
+  draw();
 }
 
 // ---------- Tương tác ----------
@@ -926,7 +1159,7 @@ export function startAnim() {
   const loop = (t: number) => {
     if (t - lastT > 80) {
       lastT = t;
-      if (s && (s.pins.length || true)) draw();
+      draw();
     }
     raf = requestAnimationFrame(loop);
   };

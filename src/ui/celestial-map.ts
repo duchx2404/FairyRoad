@@ -123,7 +123,7 @@ function mixRgb(c: [number, number, number], to: [number, number, number], k: nu
   return `rgb(${c.map((v, i) => Math.round(v + (to[i] - v) * k)).join(',')})`;
 }
 
-/** Vẽ núi kiểu Kim Tự Tháp chuẩn Hình 5: 2 mặt sáng tối, đỉnh tuyết phủ, gân sống núi */
+/** Vẽ núi phong cách thủy mặc hữu cơ: 2 mặt sáng tối, uốn cong tự nhiên, đỉnh tuyết phủ, gân sống núi */
 function drawPyramidPeak(
   ctx: CanvasRenderingContext2D,
   px: number,
@@ -133,67 +133,111 @@ function drawPyramidPeak(
   snow = false,
   baseColor: [number, number, number] = [225, 218, 206]
 ) {
-  const light = mixRgb(baseColor, [255, 252, 244], 0.52);
-  const dark = mixRgb(baseColor, [44, 38, 33], 0.44);
-  const ax = px, ay = py - h;
-  const rx = px + w * 0.15;
+  const sVal = Math.sin(px * 12.9898 + py * 78.233) * 43758.5453;
+  const rJit = (n: number) => {
+    const v = Math.sin(sVal + n * 91.345) * 43758.5453;
+    return v - Math.floor(v);
+  };
 
-  // Mặt sáng (trái)
-  ctx.fillStyle = light;
+  const apexOff = (rJit(1) - 0.5) * w * 0.18;
+  const ax = px + apexOff, ay = py - h;
+  const rx = px + w * 0.14 + (rJit(2) - 0.5) * w * 0.08;
+
+  const lightPeak = mixRgb(baseColor, [255, 252, 246], 0.55);
+  const lightMid = mixRgb(baseColor, [248, 242, 230], 0.35);
+  const darkPeak = mixRgb(baseColor, [40, 34, 28], 0.48);
+  const darkMid = mixRgb(baseColor, [46, 38, 33], 0.38);
+
+  const gradLight = ctx.createLinearGradient(0, ay, 0, py + 3);
+  gradLight.addColorStop(0, lightPeak);
+  gradLight.addColorStop(0.68, lightMid);
+  gradLight.addColorStop(1, mixRgb(baseColor, [240, 235, 225], 0.18));
+
+  const gradDark = ctx.createLinearGradient(0, ay, 0, py + 3);
+  gradDark.addColorStop(0, darkPeak);
+  gradDark.addColorStop(0.65, darkMid);
+  gradDark.addColorStop(1, mixRgb(baseColor, [42, 36, 31], 0.2));
+
+  const l1x = px - w * 0.82, l1y = py - h * 0.26;
+  const l2x = px - w * 0.42 + (rJit(3) - 0.5) * 5, l2y = py - h * 0.68;
+  const r1x = px + w * 0.38 + (rJit(4) - 0.5) * 5, r1y = py - h * 0.68;
+  const r2x = px + w * 0.78, r2y = py - h * 0.26;
+
+  const crx = (ax + rx) / 2 + (rJit(5) - 0.5) * w * 0.12;
+  const cry = (ay + py) / 2 + (rJit(6) - 0.5) * h * 0.08;
+
+  // Mặt sáng (dương diện)
+  ctx.fillStyle = gradLight;
   ctx.beginPath();
   ctx.moveTo(px - w, py);
-  ctx.lineTo(ax, ay);
-  ctx.lineTo(rx, py);
+  ctx.bezierCurveTo(l1x, l1y, l2x, l2y, ax, ay);
+  ctx.quadraticCurveTo(crx, cry, rx, py);
   ctx.closePath();
   ctx.fill();
 
-  // Mặt tối (phải)
-  ctx.fillStyle = dark;
+  // Mặt tối (âm diện)
+  ctx.fillStyle = gradDark;
   ctx.beginPath();
   ctx.moveTo(rx, py);
-  ctx.lineTo(ax, ay);
-  ctx.lineTo(px + w, py);
+  ctx.quadraticCurveTo(crx, cry, ax, ay);
+  ctx.bezierCurveTo(r1x, r1y, r2x, r2y, px + w, py);
   ctx.closePath();
   ctx.fill();
 
-  // Đỉnh tuyết hoặc kim quang phủ 32% chiều cao
+  // Đỉnh tuyết hoặc kim quang
   if (snow) {
-    const k = 0.32;
-    const yl = ay + h * k;
-    const lw = w * k, lr = (rx - px) * k;
-    ctx.fillStyle = 'rgba(252, 254, 255, 0.96)';
+    const sk = 0.32;
+    const say = ay + h * sk;
+    const slx = px - w * sk * 0.85;
+    const srx = px + w * sk * 0.85;
+    const scx = ax + (rx - ax) * sk;
+
+    ctx.fillStyle = 'rgba(252, 254, 255, 0.95)';
     ctx.beginPath();
-    ctx.moveTo(px - lw, yl);
-    ctx.lineTo(ax, ay);
-    ctx.lineTo(px + lr, yl);
+    ctx.moveTo(slx, say);
+    ctx.bezierCurveTo(px - w * 0.45 * sk, ay + h * 0.18, ax - w * 0.15 * sk, ay + h * 0.08, ax, ay);
+    ctx.quadraticCurveTo((ax + scx) / 2, (ay + say) / 2, scx, say);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = 'rgba(215, 226, 238, 0.96)';
+    ctx.fillStyle = 'rgba(215, 226, 238, 0.94)';
     ctx.beginPath();
-    ctx.moveTo(px + lr, yl);
-    ctx.lineTo(ax, ay);
-    ctx.lineTo(px + lw, yl);
+    ctx.moveTo(scx, say);
+    ctx.quadraticCurveTo((ax + scx) / 2, (ay + say) / 2, ax, ay);
+    ctx.bezierCurveTo(ax + w * 0.15 * sk, ay + h * 0.08, px + w * 0.45 * sk, ay + h * 0.18, srx, say);
     ctx.closePath();
     ctx.fill();
   }
 
-  // Viền mực ngoài
-  ctx.strokeStyle = 'rgba(44, 38, 33, 0.65)';
-  ctx.lineWidth = 1.35;
+  // Viền nét bút mực ngoài
+  ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  ctx.beginPath();
-  ctx.moveTo(px - w, py);
-  ctx.lineTo(ax, ay);
-  ctx.lineTo(px + w, py);
-  ctx.stroke();
 
-  // Sống núi giữa
-  ctx.strokeStyle = 'rgba(44, 38, 33, 0.38)';
+  ctx.strokeStyle = 'rgba(40, 34, 28, 0.48)';
+  ctx.lineWidth = 1.25;
   ctx.beginPath();
   ctx.moveTo(ax, ay);
-  ctx.lineTo(rx, py);
+  ctx.quadraticCurveTo(crx, cry, rx, py);
   ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(38, 32, 26, 0.6)';
+  ctx.lineWidth = 1.35;
+  ctx.beginPath();
+  ctx.moveTo(px - w, py);
+  ctx.bezierCurveTo(l1x, l1y, l2x, l2y, ax, ay);
+  ctx.bezierCurveTo(r1x, r1y, r2x, r2y, px + w, py);
+  ctx.stroke();
+
+  // Nếp gân đá
+  if (h > 32) {
+    ctx.strokeStyle = 'rgba(38, 32, 26, 0.22)';
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    const tx1 = (ax + r1x) / 2, ty1 = (ay + r1y) / 2;
+    ctx.moveTo(tx1, ty1);
+    ctx.quadraticCurveTo(tx1 + (rJit(7) - 0.5) * 6 + 3, ty1 + h * 0.2, (crx + px + w) / 2, py - 3);
+    ctx.stroke();
+  }
 }
 
 /** Vẽ đường bờ biển hữu cơ bằng quadratic beziers */

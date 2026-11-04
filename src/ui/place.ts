@@ -7,7 +7,7 @@ import { h, btn } from './dom';
 import { openModal, closeModal, run, refresh, showScene, toast as toastMsg } from './modal';
 import { s } from '../engine/state';
 import { RMAX, REALMS, EL, STAGES } from '../data/core';
-import { LOCS, LOC_TYPE, REGIONS, VUC, SECTS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, type Loc } from '../data/world';
+import { LOCS, LOC_TYPE, REGIONS, VUC, SECTS, SECT_TIER, SECT_TIER_INFO, SECT_TOP, CRAFT_LABEL, type Loc } from '../data/world';
 import { EVENTS, eligible } from '../engine/events';
 import { eventScene } from '../engine/actions';
 import { CLANS } from '../data/core';
@@ -172,7 +172,7 @@ function sectDesc(l: Loc) {
   const sc = SECTS[l.sect!];
   const sk = schoolKeyOfSect(sc.n);
   const headTxt = sc.leader ? `Người đứng đầu giữ chức ${sc.leader}. ` : sk ? `Đạo hiệu đứng đầu là ${SCHOOL_HEAD_TITLE[sk]}. ` : '';
-  const chuR = (s.world ?? 0) === 4 && sk ? 8 : SECT_TIER_INFO[sc.tier].chu;
+  const chuR = sk ? (SECT_TOP[sc.tier] ?? SECT_TIER_INFO[sc.tier].chu) : SECT_TIER_INFO[sc.tier].chu;
   return headTxt + (sc.tribe ? (sc.tribe === 'hai' ? 'Chỉ thu nhận hải tộc yêu thú hóa hình. ' : 'Chỉ thu nhận thủy tộc yêu thú hóa hình. ') : '') + `${SECT_TIER[sc.tier]} ${sc.evil ? 'ma đạo' : 'chính đạo'}, tu ${sc.el.map((e) => EL[e].n).join(' · ')}. ${headTitle(sc)} là cao thủ ${REALMS[chuR].n}. Truyền nghề ${CRAFT_LABEL[sc.craft]}, nhận đệ tử dưới ${SECT_TIER_INFO[sc.tier].maxAge} tuổi.`;
 }
 
@@ -478,7 +478,7 @@ export function openSectRoster(sectId: string) {
       : s.npcs.find((n) => n.alive && isSameSect(n.sect, sct.id) && (n.name === e.name || (e.legacyRole && n.how?.includes(e.legacyRole))));
     const rel = existingNpc ? existingNpc.rel : (isMine ? 20 : 0);
     const relC = rel >= 40 ? '#4f7a55' : rel <= -40 ? '#9b2a1f' : '#6e6253';
-    const roleTitle = e.top ? (e.role === 'chu' ? headTitle(sct) : 'Thái thượng trưởng lão') : (e.inner ? 'Trưởng lão nội môn' : 'Trưởng lão ngoại môn');
+    const roleTitle = e.top ? (e.role === 'chu' ? headTitle(sct) : (e.seat.includes('Thái thượng đại trưởng lão') ? 'Thái thượng đại trưởng lão' : 'Thái thượng trưởng lão')) : (e.inner ? 'Trưởng lão nội môn' : 'Trưởng lão ngoại môn');
 
     return h('div', { class: 'item' },
       h('div', {

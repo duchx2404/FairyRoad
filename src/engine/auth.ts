@@ -1,5 +1,5 @@
 // Hệ thống Xác thực, Đồng bộ Đám mây & Multi-player cho FairyRoad
-import { meta, saveMeta, s } from './state';
+import { meta, saveMeta, s, MAX_SAVE_SLOTS, getSlotKey, getActiveSlot, setActiveSlot } from './state';
 import { REALMS } from '../data/core';
 
 export interface AuthUser {
@@ -127,39 +127,48 @@ export async function updateAccountGeminiKey(apiKey: string): Promise<boolean> {
   }
 }
 
-/** Đồng bộ dữ liệu Save Game lên Đám Mây */
+/** Đồng bộ dữ liệu Save Game (tất cả 5 slot) lên Đám Mây */
 export async function syncSaveToCloud(): Promise<boolean> {
   const user = getCurrentUser();
   if (!user) return false;
 
   try {
-    const rawSave = localStorage.getItem('tienlo.save.v1');
+    const slotsData: Record<number, any> = {};
+    for (let i = 1; i <= MAX_SAVE_SLOTS; i++) {
+      const raw = localStorage.getItem(getSlotKey(i));
+      if (raw) {
+        try { slotsData[i] = JSON.parse(raw); } catch {}
+      }
+    }
     const rawMeta = localStorage.getItem('tienlo.meta.v1');
-    if (!rawSave && !rawMeta) return false;
+    const activeSlot = getActiveSlot();
 
+    const curSave = slotsData[activeSlot] || slotsData[1] || (s ? s : null);
     const saveData = {
-      save: rawSave ? JSON.parse(rawSave) : null,
+      activeSlot,
+      slots: slotsData,
+      save: curSave,
       meta: rawMeta ? JSON.parse(rawMeta) : null,
     };
 
     // Tạo preview nhân vật hiện tại cho Bảng Thiên Kiêu / Lôi Đài
     let characterPreview = null;
-    if (s) {
+    if (curSave) {
       characterPreview = {
-        name: s.name,
-        gender: s.g,
-        realm: REALMS[s.r]?.n || 'Phàm nhân',
-        realmIdx: s.r,
-        life: s.year - s.born,
-        born: s.born,
-        score: s.money,
+        name: curSave.name,
+        gender: curSave.g,
+        realm: REALMS[curSave.r]?.n || 'Phàm nhân',
+        realmIdx: curSave.r,
+        life: curSave.year - curSave.born,
+        born: curSave.born,
+        score: curSave.money,
         karma: meta.karma,
         spec: {
-          name: s.name,
-          r: s.r,
+          name: curSave.name,
+          r: curSave.r,
           mult: 1.1,
           kind: 'cultivator',
-          el: s.root?.els?.[0] || null,
+          el: curSave.root?.els?.[0] || null,
         },
       };
     }
@@ -180,7 +189,7 @@ export async function syncSaveToCloud(): Promise<boolean> {
   }
 }
 
-/** Tải Save Game từ Đám Mây về */
+/** Tải Save Game từ Đám Mây về máy (cả 5 slot) */
 export async function loadSaveFromCloud(): Promise<{ ok: boolean; hasSave: boolean; error?: string }> {
   const user = getCurrentUser();
   if (!user) return { ok: false, hasSave: false, error: 'Chưa đăng nhập.' };
@@ -195,14 +204,29 @@ export async function loadSaveFromCloud(): Promise<{ ok: boolean; hasSave: boole
     if (!res.ok || !data.ok) return { ok: false, hasSave: false, error: data.error };
     if (!data.hasSave || !data.saveData) return { ok: true, hasSave: false };
 
-    if (data.saveData.save) {
-      localStorage.setItem('tienlo.save.v1', JSON.stringify(data.saveData.save));
+    let restoredCount = 0;
+    if (data.saveData.slots && typeof data.saveData.slots === 'object') {
+      for (let i = 1; i <= MAX_SAVE_SLOTS; i++) {
+        const slotSave = data.saveData.slots[i];
+        if (slotSave) {
+          localStorage.setItem(getSlotKey(i), JSON.stringify(slotSave));
+          restoredCount++;
+        }
+      }
+      if (data.saveData.activeSlot) {
+        setActiveSlot(data.saveData.activeSlot);
+      }
+    } else if (data.saveData.save) {
+      localStorage.setItem(getSlotKey(1), JSON.stringify(data.saveData.save));
+      setActiveSlot(1);
+      restoredCount = 1;
     }
+
     if (data.saveData.meta) {
       localStorage.setItem('tienlo.meta.v1', JSON.stringify(data.saveData.meta));
     }
 
-    return { ok: true, hasSave: true };
+    return { ok: true, hasSave: restoredCount > 0 };
   } catch (err: any) {
     return { ok: false, hasSave: false, error: err.message };
   }

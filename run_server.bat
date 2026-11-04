@@ -10,7 +10,7 @@ if errorlevel 1 (
   exit /b 1
 )
 
-if not exist "node_modules" (
+if not exist "node_modules\express" (
   echo Dang cai thu vien lan dau ^(npm install^)...
   call npm install
   if errorlevel 1 (

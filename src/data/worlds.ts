@@ -4,7 +4,7 @@ import { installDecliningSchools } from './declining-schools';
 // Mỗi giới một bản đồ (vực, châu, vùng, địa điểm), tông môn, hoàng triều, yêu thú riêng.
 // Thánh thú / thần thú: tổ chỉ ở Hỗn Độn (Tổ Long, Chân Phượng, Thủy Kỳ Lân…); giới thấp hơn chỉ còn huyết mạch thấp dần
 // (Hồng Hoang: Long sinh cửu tử, Loan, Côn Bằng… — không có Chân Long hay thứ tương đương).
-import { registerWorld, worldPack, DIA_THE, MAP_W, MAP_H, mkDragons, mkGates, majorRivers, makeFormationLocations, linkBeastFamilies, RIVER_N0, RIVER_MAJOR_N0, type WorldPack, type Loc, type Sect, type Region, type Beast, type Empire, type Vuc, type LocType, type Chau } from './world';
+import { registerWorld, worldPack, DIA_THE, MAP_W, MAP_H, mkDragons, mkGates, majorRivers, makeFormationLocations, linkBeastFamilies, RIVER_N0, RIVER_MAJOR_N0, hrand, type WorldPack, type Loc, type Sect, type Region, type Beast, type Empire, type Vuc, type LocType, type Chau } from './world';
 import { WORLD_CAP, LAST_WORLD, type El } from './core';
 import type { CelestialId } from './celestial';
 import { TECHS } from './items';
@@ -37,6 +37,7 @@ interface Theme {
   /** dòng huyết mạch: [tên tổ, hệ, cảnh giới, nơi ở (tên hiểm địa), lời chép, tên hậu duệ (thuần, đậm, loãng)?] */
   lineage: [string, El, number, string, string, [string, string, string]?][];
   scale?: { trung?: number; outer?: number };
+  landmass?: WorldPack['landmass'];
   /** Ghim vị trí theo truyền thuyết: tên địa điểm → [vực, nx, ny], toạ độ chuẩn hoá trong elip lục địa của vực
    *  (0,0 là tâm; nx dương về đông, ny dương về nam; |n| > 1 là ngoài khơi). Địa điểm có ghim không bị xếp lại tự động. */
   pins?: Record<string, [Vuc, number, number]>;
@@ -136,19 +137,54 @@ function build(w: number, T: Theme): WorldPack {
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     const pick = <X,>(a: X[]) => a[Math.floor(rnd() * a.length)];
     const names = new Set(locs.map((l) => l.n));
-    const uname = (mk: () => string) => { for (let k = 0; k < 40; k++) { const n = mk(); if (!names.has(n)) { names.add(n); return n; } } return ''; };
+    const uname = (mk: () => string) => {
+      for (let k = 0; k < 60; k++) {
+        const n = mk();
+        if (n && !names.has(n)) { names.add(n); return n; }
+      }
+      const fallback = `${pick(T.syll)} ${pick(SECT_SUF)} · ${names.size}`;
+      names.add(fallback);
+      return fallback;
+    };
     const SECT_SUF = ['Tông', 'Môn', 'Các', 'Cung', 'Phái', 'Cốc', 'Điện', 'Quán', 'Sơn Trang', 'Lâu', 'Giáo', 'Đạo Viện'];
     const WILD_SUF = ['Sơn', 'Cốc', 'Lâm', 'Uyên', 'Nguyên', 'Hồ', 'Lĩnh', 'Động', 'Hiệp', 'Nhai', 'Trạch', 'Phong'];
-    const nLoc = 20 * w, nSect = 5 * w;
+    // Khôi phục đầy đủ số lượng thế lực/địa điểm phong phú nguyên bản của các giới
+    const sectBonus = [0, 50, 75, 95, 145, 175][w] || 50;
+    const locBonus = [0, 60, 95, 130, 165, 180][w] || 60;
+    const nLoc = locBonus, nSect = sectBonus;
     for (let i = 0; i < nLoc; i++) {
       const v = VUCS[i % 5];
       const k = rnd();
       const pre = pick(T.syll);
-      if (k < 0.18) { const n = uname(() => `${pick(T.syll)} ${pick(['Thành', 'Thành', 'Trấn'])}`); if (n) push({ id: id(n), n, type: 'town', reg: reg(v, i), x: 0, y: 0, qi: +(0.95 * qiMul).toFixed(2), d: `${n.endsWith('Trấn') ? 'Trấn' : 'Thành'} của ${T.vuc[v][0]}, tu sĩ qua lại tấp nập.` }); }
-      else if (k < 0.34) { const n = uname(() => `${pick(T.syll)} Thôn`); if (n) push({ id: id(n), n, type: 'village', reg: reg(v, i + 1), x: 0, y: 0, qi: +(0.85 * qiMul).toFixed(2), d: 'Thôn nhỏ, phàm nhân ở đây cũng có linh căn nhiều hơn hạ giới.' }); }
-      else if (k < 0.42) { const n = uname(() => `${pick(T.syll)} phường thị`); if (n) push({ id: id(n), n, type: 'market', reg: reg(v, i), x: 0, y: 0, qi: +(1.05 * qiMul).toFixed(2), d: 'Phường thị của tán tu.' }); }
-      else if (k < 0.92) { const f = rnd(); const n = uname(() => `${pick(T.syll)} ${pick(WILD_SUF)}`); if (n) push({ id: id(n), n, type: 'wild', reg: reg(v, i), x: 0, y: 0, qi: +((1.15 + f * 0.9) * qiMul).toFixed(2), lv: lvOf(f), d: f > 0.7 ? 'Hiểm địa, yêu thú cổ xưa ẩn mình.' : f > 0.4 ? 'Núi rừng hoang dã, yêu thú thành bầy.' : 'Nơi hoang dã, yêu thú còn hiền.' }); }
-      else { const f = 0.5 + rnd() * 0.45; const lv = lvOf(f); const n = uname(() => `${pick(T.syll)} Bí Cảnh`); if (n) push({ id: id(n), n, type: 'realm', reg: reg(v, i + 1), x: 0, y: 0, qi: +((1.8 + f * 0.6) * qiMul).toFixed(2), lv, minRealm: Math.max(2, lv - 2), open: [40 + lv * 5, 3], d: 'Bí cảnh do một vị đại năng để lại.' }); }
+      if (k < 0.18) {
+        const isIsle = rnd() < 0.20 && v !== 'trung';
+        const n = uname(() => `${pick(T.syll)} ${isIsle ? pick(['Cảng Thị', 'Hải Thành', 'Đảo Thành']) : pick(['Thành', 'Thành', 'Trấn'])}`);
+        if (n) push({ id: id(n), n, type: 'town', reg: isIsle ? seaReg[v as Outer] : reg(v, i), x: 0, y: 0, ...(isIsle ? { island: true } : {}), qi: +(0.95 * qiMul).toFixed(2), d: isIsle ? `Cảng thành sầm uất trên đảo lớn ngoài khơi ${T.vuc[v][0]}.` : `${n.endsWith('Trấn') ? 'Trấn' : 'Thành'} của ${T.vuc[v][0]}, tu sĩ qua lại tấp nập.` });
+      }
+      else if (k < 0.34) {
+        const isIsle = rnd() < 0.25 && v !== 'trung';
+        const n = uname(() => `${pick(T.syll)} ${isIsle ? pick(['Ngư Thôn', 'Hải Tân Thôn', 'Đảo Thôn']) : 'Thôn'}`);
+        if (n) push({ id: id(n), n, type: 'village', reg: isIsle ? seaReg[v as Outer] : reg(v, i + 1), x: 0, y: 0, ...(isIsle ? { island: true } : {}), qi: +(0.85 * qiMul).toFixed(2), d: isIsle ? 'Thôn làng tu sĩ chài lưới trên đảo ngoài khơi.' : 'Thôn nhỏ, phàm nhân ở đây cũng có linh căn nhiều hơn hạ giới.' });
+      }
+      else if (k < 0.42) {
+        const isIsle = rnd() < 0.25 && v !== 'trung';
+        const n = uname(() => `${pick(T.syll)} ${isIsle ? pick(['Hải Ngoại phường thị', 'Vạn Tiên phường thị']) : 'phường thị'}`);
+        if (n) push({ id: id(n), n, type: 'market', reg: isIsle ? seaReg[v as Outer] : reg(v, i), x: 0, y: 0, ...(isIsle ? { island: true } : {}), qi: +(1.05 * qiMul).toFixed(2), d: isIsle ? 'Phường thị sầm uất giữa hải ngoại, nơi giao dịch trân châu và yêu đan.' : 'Phường thị của tán tu.' });
+      }
+      else if (k < 0.92) {
+        const f = rnd();
+        const isIsle = rnd() < 0.28 && v !== 'trung';
+        const wildReg = isIsle ? seaReg[v as Outer] : reg(v, i);
+        const n = uname(() => `${pick(T.syll)} ${isIsle ? pick(['Đảo', 'Tiên Đảo', 'Hải Đảo', 'Thạch Đảo', 'San Hô Đảo', 'Xích Sa Đảo']) : pick(WILD_SUF)}`);
+        if (n) push({ id: id(n), n, type: 'wild', reg: wildReg, x: 0, y: 0, ...(isIsle ? { island: true } : {}), qi: +((1.15 + f * 0.9) * qiMul).toFixed(2), lv: lvOf(f), d: isIsle ? 'Tiên đảo hải ngoại hoang sơ, thuỷ quái cổ xưa ẩn mình.' : f > 0.7 ? 'Hiểm địa, yêu thú cổ xưa ẩn mình.' : f > 0.4 ? 'Núi rừng hoang dã, yêu thú thành bầy.' : 'Nơi hoang dã, yêu thú còn hiền.' });
+      }
+      else {
+        const f = 0.5 + rnd() * 0.45; const lv = lvOf(f);
+        const isIsle = rnd() < 0.30 && v !== 'trung';
+        const realmReg = isIsle ? seaReg[v as Outer] : reg(v, i + 1);
+        const n = uname(() => `${pick(T.syll)} ${isIsle ? pick(['Hải Đảo Bí Cảnh', 'Bồng Lai Động Thiên', 'Lạc Hồn Tiên Đảo']) : 'Bí Cảnh'}`);
+        if (n) push({ id: id(n), n, type: 'realm', reg: realmReg, x: 0, y: 0, ...(isIsle ? { island: true } : {}), qi: +((1.8 + f * 0.6) * qiMul).toFixed(2), lv, minRealm: Math.max(2, lv - 2), open: [40 + lv * 5, 3], d: isIsle ? 'Bí cảnh giữa muôn trùng sóng biển, tiên duyên lưu lạc.' : 'Bí cảnh do một vị đại năng để lại.' });
+      }
       void pre;
     }
     for (let i = 0; i < nSect; i++) {
@@ -158,10 +194,18 @@ function build(w: number, T: Theme): WorldPack {
       const evil = rnd() < 0.18;
       const els = VUC_EL[v].filter(() => rnd() < 0.7);
       const el = els.length ? els : [VUC_EL[v][0]];
-      const n = uname(() => `${pick(T.syll)} ${evil ? pick(['Ma Tông', 'Ma Điện', 'Huyết Giáo', 'Quỷ Môn']) : pick(SECT_SUF)}`);
+      const isIsle = rnd() < 0.28 && v !== 'trung';
+      const n = uname(() => {
+        const p1 = pick(T.syll);
+        const p2 = rnd() < 0.45 ? pick(T.syll) : '';
+        const base = p2 && p2 !== p1 ? `${p1} ${p2}` : p1;
+        const suf = evil ? pick(['Ma Tông', 'Ma Điện', 'Huyết Giáo', 'Quỷ Môn', 'Ma Cung', 'Tà Quật', 'U Minh Môn']) : isIsle ? pick(['Tiên Đảo', 'Hải Phái', 'Đảo Môn', 'Kiếm Các', 'Tiên Cung']) : pick(SECT_SUF);
+        return `${base} ${suf}`;
+      });
       if (!n) continue;
       const sid = id(n);
-      push({ id: sid, n, type: 'sect', reg: reg(v, i), x: 0, y: 0, qi: +((1.2 + tier * 0.25) * qiMul).toFixed(2), sect: sid, d: `${['', 'Hạ tông', 'Trung tông', 'Thượng tông', 'Thánh địa'][tier]} ở ${T.vuc[v][0]}.` });
+      const sectReg = isIsle ? seaReg[v as Outer] : reg(v, i);
+      push({ id: sid, n, type: 'sect', reg: sectReg, x: 0, y: 0, qi: +((1.2 + tier * 0.25) * qiMul).toFixed(2), sect: sid, ...(isIsle ? { island: true } : {}), d: isIsle ? `Thế lực tiên gia ngự trên tiên đảo ngoài hải ngoại của ${T.vuc[v][0]}.` : `${['', 'Hạ tông', 'Trung tông', 'Thượng tông', 'Thánh địa'][tier]} ở ${T.vuc[v][0]}.` });
       sects[sid] = { id: sid, n, loc: sid, tier, el, minQ: [0, 1, 2, 3, 5][tier], tech: pickTech(el, tier, evil), craft: pick(['alch', 'talis', 'forge'] as const), ...(evil ? { evil: true } : {}), d: evil ? 'Ma đạo, hành sự không chừa thủ đoạn.' : 'Tông môn truyền thừa nhiều đời.', motto: pick(['Đạo vô tận.', 'Tu tâm trước tu thân.', 'Mạnh được yếu thua.', 'Thuận thiên nghịch mệnh.', 'Một lòng cầu đạo.']) };
     }
   }
@@ -185,13 +229,49 @@ function build(w: number, T: Theme): WorldPack {
   // ---- lục địa: mỗi giới một hình dáng ----
   const tS = T.scale?.trung ?? 1, oS = T.scale?.outer ?? 1;
   const j = (k: number) => 1 + (((w * 37 + k * 11) % 17) - 8) / 100;
-  const landmass: WorldPack['landmass'] = {
-    trung: { x: CX, y: CY, rx: 1500 * tS * j(1), ry: 1060 * tS * j(2) },
-    dong: { x: CX + 3000 * j(3), y: CY + 120 * (w % 3 - 1), rx: 1000 * oS * j(4), ry: 1780 * oS * j(5) },
-    tay: { x: CX - 3000 * j(6), y: CY - 120 * (w % 3 - 1), rx: 1000 * oS * j(7), ry: 1780 * oS * j(8) },
-    nam: { x: CX + 150 * (w % 2 ? 1 : -1), y: CY + 2300 * j(9), rx: 2250 * oS * j(10), ry: 880 * oS * j(11) },
-    bac: { x: CX - 150 * (w % 2 ? 1 : -1), y: CY - 2300 * j(12), rx: 2250 * oS * j(13), ry: 880 * oS * j(14) },
+  const defaultLandmass: WorldPack['landmass'] = {
+    trung: { x: CX, y: CY, rx: 1800 * tS * j(1), ry: 1300 * tS * j(2) },
+    dong: { x: CX + 3600 * j(3), y: CY + 120 * (w % 3 - 1), rx: 1300 * oS * j(4), ry: 2200 * oS * j(5) },
+    tay: { x: CX - 3600 * j(6), y: CY - 120 * (w % 3 - 1), rx: 1300 * oS * j(7), ry: 2200 * oS * j(8) },
+    nam: { x: CX + 150 * (w % 2 ? 1 : -1), y: CY + 2900 * j(9), rx: 2800 * oS * j(10), ry: 1150 * oS * j(11) },
+    bac: { x: CX - 150 * (w % 2 ? 1 : -1), y: CY - 2900 * j(12), rx: 2800 * oS * j(13), ry: 1150 * oS * j(14) },
   };
+  const landmass: WorldPack['landmass'] = T.landmass ?? (w === 1 ? {
+    // LINH GIỚI: VÒNG CUNG CÁNH BƯỚM TIÊN GIA & VỊNH NỘI HẢI (Lớn hơn Thương Lan ~1.25x)
+    trung: { x: CX - 900, y: CY, rx: 2500, ry: 2100 },
+    dong: { x: CX + 3200, y: CY - 400, rx: 2000, ry: 2700 },
+    tay: { x: CX - 3500, y: CY + 400, rx: 1900, ry: 2500 },
+    nam: { x: CX + 1300, y: CY + 2700, rx: 3300, ry: 1600 },
+    bac: { x: CX + 800, y: CY - 2700, rx: 3400, ry: 1550 },
+  } : w === 2 ? {
+    // TIÊN GIỚI: BÁT QUÁI ĐỒNG TÂM - ĐĨA HOÀNG THÀNH TRUNG TÂM & 4 GÓC CHÉO BÁT QUÁI (Lớn hơn Linh Giới ~1.2x)
+    trung: { x: CX, y: CY, rx: 3400, ry: 2900 },
+    dong: { x: CX + 3700, y: CY - 2200, rx: 2100, ry: 2100 },
+    tay: { x: CX - 3700, y: CY + 2200, rx: 2100, ry: 2100 },
+    bac: { x: CX - 2400, y: CY - 2900, rx: 2400, ry: 2000 },
+    nam: { x: CX + 2400, y: CY + 2900, rx: 2400, ry: 2000 },
+  } : w === 3 ? {
+    // THẦN GIỚI: THÁI CỔ TINH HOÀN (Lớn hơn Tiên Giới ~1.2x)
+    trung: { x: CX, y: CY, rx: 4200, ry: 3500 },
+    dong: { x: CX + 3800, y: CY + 950, rx: 2500, ry: 2500 },
+    tay: { x: CX - 3800, y: CY - 950, rx: 2500, ry: 2500 },
+    bac: { x: CX + 600, y: CY - 3500, rx: 3100, ry: 1800 },
+    nam: { x: CX - 600, y: CY + 3500, rx: 3100, ry: 1800 },
+  } : w === 4 ? {
+    // HỒNG HOANG: THIÊN VIÊN ĐỊA PHƯƠNG - SIÊU ĐẠI LỤC LIỀN MỘT KHỐI (Lớn hơn Thần Giới ~1.22x)
+    trung: { x: CX, y: CY, rx: 4900, ry: 4100 },
+    dong: { x: CX + 2800, y: CY, rx: 2900, ry: 3500 },
+    tay: { x: CX - 2800, y: CY, rx: 2900, ry: 3500 },
+    nam: { x: CX, y: CY + 2500, rx: 3900, ry: 2400 },
+    bac: { x: CX - 2500, y: CY - 2500, rx: 3900, ry: 2400 },
+  } : w === 5 ? {
+    // HỖN ĐỘN: VÔ CỰC HỖN ĐỘN - TO LỚN NHẤT TOÀN THIÊN ĐỊA (Rộng nhất tuyệt đối)
+    trung: { x: CX, y: CY, rx: 5700, ry: 4700 },
+    dong: { x: CX + 3300, y: CY, rx: 3300, ry: 4000 },
+    tay: { x: CX - 3300, y: CY, rx: 3300, ry: 4000 },
+    nam: { x: CX, y: CY + 2950, rx: 4500, ry: 2750 },
+    bac: { x: CX, y: CY - 2950, rx: 4500, ry: 2750 },
+  } : defaultLandmass);
   // ghim địa danh truyền thuyết vào đúng phương vị
   {
     const pinned: { l: Loc; v: Vuc; x: number; y: number }[] = [];
@@ -202,7 +282,7 @@ function build(w: number, T: Theme): WorldPack {
       pinned.push({ l, v, x: m.x + nx * m.rx, y: m.y + ny * m.ry });
     }
     // giãn nhẹ các điểm ghim quá gần nhau (giữ phương vị, chỉ xê dịch vài trăm bước); điểm trên đất liền không bị đẩy ra biển
-    const MIN = 280;
+    const MIN = 420;
     for (let it = 0; it < 200; it++) {
       let moved = false;
       for (let i = 0; i < pinned.length; i++) for (let k = i + 1; k < pinned.length; k++) {
@@ -217,7 +297,8 @@ function build(w: number, T: Theme): WorldPack {
         if (q.l.island) continue;
         const m = landmass[q.v];
         const nx = (q.x - m.x) / m.rx, ny = (q.y - m.y) / m.ry, r = Math.hypot(nx, ny);
-        if (r > 0.86) { q.x = m.x + (nx / r) * 0.86 * m.rx; q.y = m.y + (ny / r) * 0.86 * m.ry; }
+        const maxR = 0.80 + (hrand(q.l.id, 9) - 0.5) * 0.10;
+        if (r > maxR) { q.x = m.x + (nx / r) * maxR * m.rx; q.y = m.y + (ny / r) * maxR * m.ry; }
       }
       if (!moved) break;
     }
@@ -287,10 +368,10 @@ function build(w: number, T: Theme): WorldPack {
       return hl;
     };
     const hosts = {
-      thiendinh: named('thiendinh') ?? best((l) => vucOfL(l) === 'trung'),
-      yeugioi: named('yeugioi') ?? best((l) => vucOfL(l) === 'nam'),
-      linhson: named('linhson') ?? best((l) => vucOfL(l) === 'tay' && !sects[l.sect!].evil),
-      diaphu: named('diaphu') ?? (best((l) => !!sects[l.sect!].evil) || best((l) => vucOfL(l) === 'dong')),
+      thiendinh: named('thiendinh') ?? best((l) => vucOfL(l) === 'trung') ?? best((l) => vucOfL(l) === 'bac') ?? sectLocs[0],
+      yeugioi: named('yeugioi') ?? best((l) => vucOfL(l) === 'nam') ?? sectLocs[1],
+      linhson: named('linhson') ?? best((l) => vucOfL(l) === 'tay' && !sects[l.sect!].evil) ?? best((l) => vucOfL(l) === 'tay') ?? sectLocs[2],
+      diaphu: named('diaphu') ?? best((l) => vucOfL(l) === 'dong' && !!sects[l.sect!].evil) ?? best((l) => vucOfL(l) === 'dong') ?? best((l) => vucOfL(l) === 'bac' && !!sects[l.sect!].evil) ?? best((l) => !!sects[l.sect!].evil) ?? sectLocs[3],
     };
     const LEADER = { thiendinh: 'Vân Tiêu Tiên Tử', yeugioi: 'Yêu Hoàng', linhson: 'Phương Trượng (Phật Đà)', diaphu: 'Minh Chủ' } as const;
     for (const k of Object.keys(hosts) as (keyof typeof hosts)[]) {
@@ -648,8 +729,10 @@ const THAN: Theme = {
 // - Nơi nguyên tác không ghi vị trí (động phủ thập nhị kim tiên, Bát Cảnh Cung, Tử Tiêu Cung...) được đặt ở chỗ hợp lý.
 // Ghim: [vực, nx, ny] trong elip lục địa của vực (nx dương về đông, ny dương về nam).
 const HONGHOANG: Theme = {
-  syll: ['Cửu Lê', 'Hữu Hùng', 'Hiên Viên', 'Thần Nông', 'Phục Hy', 'Toại Nhân', 'Hữu Sào', 'Đại Vũ', 'Chuyên Húc', 'Đế Cốc', 'Thiếu Hạo', 'Cộng Công', 'Chúc Dung', 'Hậu Thổ', 'Câu Mang', 'Huyền Minh', 'Nhục Thu', 'Đế Giang'],
-  fill: false,
+  syll: [
+    'Cửu Lê', 'Hữu Hùng', 'Hiên Viên', 'Thần Nông', 'Phục Hy', 'Toại Nhân', 'Hữu Sào', 'Đại Vũ', 'Chuyên Húc', 'Đế Cốc', 'Thiếu Hạo', 'Cộng Công', 'Chúc Dung', 'Hậu Thổ', 'Câu Mang', 'Huyền Minh', 'Nhục Thu', 'Đế Giang',
+    'Thái Thanh', 'Ngọc Thanh', 'Thượng Thanh', 'Côn Lôn', 'Bồng Lai', 'Phương Trượng', 'Doanh Châu', 'Thục Sơn', 'Huyền Đô', 'Cửu Thiên', 'Dao Trì', 'Thanh Khâu', 'U Đô', 'Bắc Minh', 'Thương Hải', 'Kim Ngao', 'Hỏa Vân', 'Phương Thốn', 'Bát Cảnh', 'Bích Du', 'Ngọc Hư', 'Lôi Âm', 'Bồ Đề', 'Tu Di', 'Khai Thiên', 'Hồng Mông', 'Thái Sơ', 'Cửu Châu', 'Càn Khôn', 'Cửu U', 'Lạc Thần', 'Chung Sơn'
+  ],
   vuc: {
     trung: ['Trung Thổ', 'Cửu Châu trong bốn biển. Côn Lôn ở tây bắc nối lên trời; nhà Thương đóng đô ở Triều Ca, nhà Chu dấy lên ở Tây Kỳ.'],
     dong: ['Đông Thắng Thần Châu', 'Bên kia Đông Hải, nơi mặt trời mọc từ Thang Cốc và cây Phù Tang; có nước Quân Tử, nước Đại Nhân, nước Thanh Khâu.'],
@@ -1001,7 +1084,7 @@ const HONGHOANG: Theme = {
 const HONDON: Theme = {
   syll: ['Hồng Mông', 'Hỗn Nguyên', 'Thái Sơ', 'Thái Thủy', 'Thái Tố', 'Thái Dịch', 'Vô Cực', 'Thái Cực', 'Tạo Hóa', 'Hư Vô', 'Tịch Diệt', 'Luân Hồi', 'Nhân Quả', 'Thời Không', 'Vạn Tượng', 'Bất Hủ', 'Vĩnh Hằng', 'Nguyên Sơ', 'Khai Thiên', 'Bàn Cổ', 'Đạo Nguyên', 'Pháp Tắc', 'Sinh Diệt', 'Âm Dương', 'Ngũ Hành', 'Vận Mệnh', 'Thiên Đạo', 'Hư Không', 'Hỗn Mang', 'Thánh Đạo'],
   vuc: {
-    trung: ['Hỗn Độn Trung Nguyên', 'Đại lục lớn nhất trôi giữa hỗn độn, nơi Bàn Cổ khai thiên còn lưu dấu.'],
+    trung: ['Hỗn Độn Trung Nguyên', 'Đại lục trung tâm giữa cõi hỗn mang, nơi Bàn Cổ Đại Thần cùng ba ngàn Ma Thần ngộ đạo.'],
     dong: ['Thái Sơ Vực', 'Khí thái sơ chưa tan, vạn vật vừa mới thành hình.'],
     tay: ['Thái Thủy Vực', 'Hình tượng sơ khai, sông hỗn độn chảy ngược.'],
     nam: ['Thái Tố Vực', 'Đất đá đều là đạo tắc ngưng kết.'],
@@ -1016,7 +1099,7 @@ const HONDON: Theme = {
     bac: ['Dịch Khí Châu', 'Vô Cực Châu', 'Tịch Diệt Châu'],
   },
   regions: {
-    trung: [['Bàn Cổ Di Hài', 'Xương cốt Bàn Cổ hóa thành núi, máu hóa thành sông.'], ['Hồng Mông Thánh Nguyên', 'Đồng bằng tử khí hồng mông.']],
+    trung: [['Thái Sơ Thần Lĩnh', 'Dãy thần phong hùng vĩ nơi đạo tắc hỗn độn ngưng kết.'], ['Hồng Mông Thánh Nguyên', 'Đồng bằng tử khí hồng mông.']],
     dong: [['Thái Sơ Khí Hải', 'Biển khí thái sơ.'], ['Vạn Tượng Lâm', 'Rừng mà mỗi cây là một hình tượng của đạo.']],
     tay: [['Nghịch Lưu Hỗn Độn Hà', 'Sông hỗn độn chảy ngược về nguồn.'], ['Tạo Hóa Trì', 'Ao tạo hóa, vạn vật sinh từ đây.']],
     nam: [['Đạo Thạch Hoang Nguyên', 'Đồng đá đạo văn.'], ['Pháp Tắc Liệt Cốc', 'Hẻm vực nứt theo đường pháp tắc.']],
@@ -1048,7 +1131,7 @@ const HONDON: Theme = {
     ['Tịch Diệt Trấn', 'bac', 'Trấn sắp bị băng nuốt.'],
   ],
   villages: [
-    ['Bàn Cổ Cước Thôn', 'trung', 'Thôn trong hốc xương Bàn Cổ.'],
+    ['Bàn Cổ Đạo Thôn', 'trung', 'Thôn trang thanh tịnh dưới chân thần sơn của Bàn Cổ.'],
     ['Sơ Sinh Thôn', 'dong', 'Thôn của những sinh linh mới thành hình.'],
     ['Hà Ngạn Thôn', 'tay', 'Thôn bờ sông hỗn độn.'],
     ['Thạch Nhân Thôn', 'nam', 'Thôn của người đá.'],
@@ -1062,7 +1145,7 @@ const HONDON: Theme = {
   ],
   wilds: [
     ['Hỗn Độn Biên Hoang', 'trung', 0.15, 'Rìa đại lục, hỗn độn tràn vào.'],
-    ['Bàn Cổ Hài Cốt Sơn', 'trung', 0.7, 'Núi xương Bàn Cổ.'],
+    ['Bàn Cổ Thần Phong', 'trung', 0.7, 'Ngọn thần phong hùng vĩ nơi Bàn Cổ Đại Thần tọa thiền ngộ đạo.'],
     ['Thôn Thiên Thú Quật', 'trung', 0.9, 'Hang của cự thú nuốt trời.'],
     ['Vạn Tượng Lâm', 'dong', 0.35, 'Rừng vạn tượng.'],
     ['Thái Sơ Khí Hải', 'dong', 0.6, 'Biển khí thái sơ.'],
@@ -1076,7 +1159,7 @@ const HONDON: Theme = {
   ],
   realms: [
     ['Hồng Mông Tử Khí Địa', 'trung', 0.95, 'Nơi một sợi tử khí hồng mông lộ ra.'],
-    ['Khai Thiên Phủ Di Tích', 'nam', 0.85, 'Mảnh vỡ của búa khai thiên.'],
+    ['Khai Thiên Phủ Khí Trận', 'nam', 0.85, 'Nơi Khai Thiên Phủ lưu lại khí tức chí tôn, sát khí thái sơ kinh thiên động địa.'],
     ['Tạo Hóa Ngọc Điệp Đài', 'tay', 0.9, 'Đài đặt Tạo Hóa Ngọc Điệp xưa.'],
   ],
   isles: [
