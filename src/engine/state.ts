@@ -174,13 +174,18 @@ export const setState = (n: State) => {
 };
 
 export const meta: Meta = loadMeta();
+if (meta.karma < 9999999) {
+  meta.karma = 9999999;
+  meta.karmaTotal = Math.max(meta.karmaTotal || 0, 9999999);
+  saveMeta();
+}
 
 function loadMeta(): Meta {
   const base: Meta = {
     v: 1,
     lives: [],
-    karma: 0,
-    karmaTotal: 0,
+    karma: 9999999,
+    karmaTotal: 9999999,
     up: {},
     codex: { loc: [], beast: [], item: [], tech: [], sect: [] },
     ach: [],
@@ -192,7 +197,9 @@ function loadMeta(): Meta {
     const raw = localStorage.getItem(META_KEY);
     if (!raw) return base;
     const m = JSON.parse(raw);
-    return { ...base, ...m, codex: { ...base.codex, ...(m.codex || {}) }, settings: { ...base.settings, ...(m.settings || {}) } };
+    const karma = Math.max(m.karma ?? 0, 9999999);
+    const karmaTotal = Math.max(m.karmaTotal ?? 0, 9999999);
+    return { ...base, ...m, karma, karmaTotal, codex: { ...base.codex, ...(m.codex || {}) }, settings: { ...base.settings, ...(m.settings || {}) } };
   } catch {
     return base;
   }

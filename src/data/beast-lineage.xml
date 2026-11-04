@@ -10,7 +10,7 @@
                         <Tứ Vĩ Hồ el="hoa" myth="1">
                             <Tam Vĩ Hồ el="hoa" myth="1">
                                 <Nhị Vĩ Hồ el="hoa" myth="1">
-                                    <Nhất Vĩ Hồ el="hoa" myth="1"></Nhất Vĩ Hồ>
+                                    <Nhất Vĩ Hồ el="none" myth="1"></Nhất Vĩ Hồ>
                                 </Nhị Vĩ Hồ>
                             </Tam Vĩ Hồ>
                         </Tứ Vĩ Hồ>
@@ -26,8 +26,8 @@
                         <Tứ Vĩ Tuyết Ảnh Hồ el="bang">
                             <Tam Vĩ Tuyết Ảnh Hồ el="bang">
                                 <Nhị Vĩ Tuyết Ảnh Hồ el="bang">
-                                    <Nhất Vĩ Tuyết Ảnh Hồ el="bang"></Nhất Vĩ Tuyết Ảnh Hồ>
-                                    <Tuyết Ảnh Hồ el="bang"></Tuyết Ảnh Hồ>
+                                    <Nhất Vĩ Tuyết Ảnh Hồ el="none"></Nhất Vĩ Tuyết Ảnh Hồ>
+                                    <Tuyết Ảnh Hồ el="none"></Tuyết Ảnh Hồ>
                                 </Nhị Vĩ Tuyết Ảnh Hồ>
                             </Tam Vĩ Tuyết Ảnh Hồ>
                         </Tứ Vĩ Tuyết Ảnh Hồ>
@@ -42,8 +42,8 @@
                         <Tứ Vĩ Xích Diễm Hồ el="hoa">
                             <Tam Vĩ Xích Diễm Hồ el="hoa">
                                 <Nhị Vĩ Xích Diễm Hồ el="hoa">
-                                    <Nhất Vĩ Xích Diễm Hồ el="hoa"></Nhất Vĩ Xích Diễm Hồ>
-                                    <Xích Diễm Hồ el="hoa"></Xích Diễm Hồ>
+                                    <Nhất Vĩ Xích Diễm Hồ el="none"></Nhất Vĩ Xích Diễm Hồ>
+                                    <Xích Diễm Hồ el="none"></Xích Diễm Hồ>
                                 </Nhị Vĩ Xích Diễm Hồ>
                             </Tam Vĩ Xích Diễm Hồ>
                         </Tứ Vĩ Xích Diễm Hồ>

@@ -1,7 +1,7 @@
 import { worldDefinitions } from '../data/local-items';
 // Đầu thai, cái chết, điểm số, luân hồi và thành tựu.
 import { kmSyncSkills, kmFillNew, kmAutoAll } from './kinhmach';
-import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, BEAST_BODIES, ORIGINS, PERKS, BEAST_PERKS, originName, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, HON_DON_ROOT, hiddenRootKind, REALMS, STAGES, type El, type StatKey } from '../data/core';
+import { setSurname, splitName, HOLY_SUR, holySur, EL, WORLD, worldName, ROOTS, BODIES, BEAST_BODIES, ORIGINS, PERKS, BEAST_PERKS, originName, originRace, CLANS, type Origin, STAT_KEYS, BASIC_EL, VARIANT_EL, VARIANT_W, YINYANG_EL, BATQUAI, ALL_EL, THAP, HON_DON_ROOT, hiddenRootKind, REALMS, STAGES, type El, type StatKey } from '../data/core';
 import { BEASTS, LOCS, LOC_LIST, SECTS, RK, REGIONS, applyWorld, beastRoot, worldPack, beastLeafNodes } from '../data/world';
 import { tryEvolvePlayerBeast } from './beast-evolution';
 import { mkGear, BEAST_INNATE_SKILLS } from '../data/items';
@@ -61,6 +61,80 @@ export function unlockOrigin(id: string): boolean {
 }
 export const rerolls = () => (freeMode() ? 999 : 2 + upLv('reroll'));
 
+export function getOriginTier(o: Origin): { tier: 1 | 2 | 3 | 4 | 5; tierName: string; weight: number } {
+  if (o.tier) {
+    if (o.tier === 5) return { tier: 5, tierName: 'Thần Phẩm', weight: 4 };
+    if (o.tier === 4) return { tier: 4, tierName: 'Thiên Phẩm', weight: 10 };
+    if (o.tier === 3) return { tier: 3, tierName: 'Địa Phẩm', weight: 25 };
+    if (o.tier === 2) return { tier: 2, tierName: 'Huyền Phẩm', weight: 40 };
+    return { tier: 1, tierName: 'Hoàng Phẩm', weight: 60 };
+  }
+  // 1. Thần Phẩm (Tier 5): Thánh tử, Thánh nữ, Chuyển thế, Huyết mạch tổ thần (Đích tử/Đích nữ & Hoàng tộc không thuộc Thần Phẩm)
+  if (
+    o.id === 'diep_hondon' || o.sect ||
+    (!o.clanId && !o.clan && o.id !== 'thegia_diep' && o.id !== 'hoang_toc_dich' && o.karma && o.karma >= 100) || o.id === 'chuyenthe' ||
+    o.id === 'yeu_than_thu' || o.id === 'ma_than_duoc' || o.id === 'vu_than_due' ||
+    o.id === 'hienvien_thanh_hoang' || o.id === 'hinhthein_chien_than' || o.id === 'cuule_thanh_tu'
+  ) {
+    return { tier: 5, tierName: 'Thần Phẩm', weight: 4 };
+  }
+  // 2. Thiên Phẩm (Tier 4): Thế gia vọng tộc, Thiếu chủ, Hậu duệ Yêu Tướng, Hoàng tộc
+  if (
+    o.clanId || o.clan || (o.karma && o.karma >= 30) || o.rootBoost ||
+    o.id === 'thaitu' || o.id === 'giatoc' || o.id === 'yeu_yeu_tuong' ||
+    o.id === 'ma_thieu_chu' || o.id === 'vu_te_tu' || o.id === 'hienvien_hoang_ton' ||
+    o.id === 'hinhthein_thieu_chu' || o.id === 'cuule_thieu_chu'
+  ) {
+    return { tier: 4, tierName: 'Thiên Phẩm', weight: 10 };
+  }
+  // 3. Địa Phẩm (Tier 3): Có truyền thừa công pháp, bách nghệ, động phủ yêu bộc, rèn khí, độc dược
+  if (
+    o.craft || o.tech || o.id === 'hieuthuoc' || o.id === 'thorentieu' || o.id === 'phuthuy' ||
+    o.id === 'yeu_dong_boc' || o.id === 'yeu_linh_thu' || o.id === 'ma_duoc_do' ||
+    o.id === 'vu_thao_y' || o.id === 'hienvien_kiem_do' || o.id === 'hinhthein_tho_ren' || o.id === 'cuule_thiet_giap'
+  ) {
+    return { tier: 3, tierName: 'Địa Phẩm', weight: 25 };
+  }
+  // 4. Huyền Phẩm (Tier 2): Chiến sĩ, trinh sát, tuần binh, thú con bầy đàn, giang hồ
+  if (
+    o.id === 'lacda' || o.id === 'tieucuc' || o.id === 'dochu' || o.id === 'kepphuong' ||
+    o.id === 'yeu_thay_dan' || o.id === 'ma_binh' || o.id === 'vu_chien_binh' ||
+    o.id === 'hienvien_thi_ve' || o.id === 'hinhthein_dung_si' || o.id === 'cuule_trinh_sat'
+  ) {
+    return { tier: 2, tierName: 'Huyền Phẩm', weight: 40 };
+  }
+  // 5. Hoàng Phẩm (Tier 1): Bần hàn, mồ côi, tân binh, nô lệ
+  return { tier: 1, tierName: 'Hoàng Phẩm', weight: 60 };
+}
+export const getHumanOriginTier = getOriginTier;
+
+export function rollWeightedRaceOrigins(targetRace: string, count = 3): Origin[] {
+  const pool = ORIGINS.filter((o) => originRace(o) === targetRace && originUnlocked(o.id));
+  if (pool.length <= count) return [...pool].sort((a, b) => getOriginTier(b).tier - getOriginTier(a).tier || (b.money ?? 0) - (a.money ?? 0));
+
+  const selected: Origin[] = [];
+  const poolCopy = [...pool];
+
+  for (let i = 0; i < count && poolCopy.length > 0; i++) {
+    const totalWeight = poolCopy.reduce((sum, o) => sum + getOriginTier(o).weight, 0);
+    let rnd = Math.random() * totalWeight;
+    let chosenIdx = 0;
+    for (let j = 0; j < poolCopy.length; j++) {
+      rnd -= getOriginTier(poolCopy[j]).weight;
+      if (rnd <= 0) {
+        chosenIdx = j;
+        break;
+      }
+    }
+    selected.push(poolCopy[chosenIdx]);
+    poolCopy.splice(chosenIdx, 1);
+  }
+
+  selected.sort((a, b) => getOriginTier(b).tier - getOriginTier(a).tier || (b.money ?? 0) - (a.money ?? 0));
+  return selected;
+}
+export const rollWeightedHumanOrigins = (count = 3) => rollWeightedRaceOrigins('Nhân tộc', count);
+
 export function rollRoot(boost = false): { k: number; els: El[] } {
   const ub = upLv('root');
   const w = (r: (typeof ROOTS)[number]) => r.w * (r.q >= 4 ? 1 + ub * 0.6 : 1) * (r.q === 0 ? 1 / (1 + ub) : 1);
@@ -85,12 +159,12 @@ export function rollFate(boostRoot = false, g: 'm' | 'f' = 'm', isBeastRace = fa
   if (isBeastRace) {
     const bodies = BEAST_BODIES;
     const body = pick(bodies).id;
-    const perkOffer = shuffle(BEAST_PERKS.map((p) => p.id)).slice(0, 5);
+    const perkOffer = shuffle(BEAST_PERKS.map((p) => p.id)).slice(0, 6);
     return { stats, root: { k: 0, els: [] }, body, perkOffer };
   }
   const bodies = BODIES.filter((b) => !b.g || b.g === g);
   const body = wpick(bodies, (b) => b.w).id;
-  const perkOffer = shuffle(PERKS.map((p) => p.id)).slice(0, 5);
+  const perkOffer = shuffle(PERKS.map((p) => p.id)).slice(0, 6);
   return { stats, root: rollRoot(boostRoot), body, perkOffer };
 }
 

@@ -975,8 +975,8 @@ for (const [n, el, r, home, d] of SHJ_BEASTS) {
   loc.lv = Math.max(loc.lv ?? 0, Math.min(7, r - 1));
   loc.qi = Math.max(loc.qi, 1.4 + r * 0.12);
 }
-import { BEAST_LINEAGE, beastDescendants, beastLeafNodes, isMythicBeast, type BeastLineageNode } from './beast-lineage';
-export { BEAST_LINEAGE, beastDescendants, beastLeafNodes, isMythicBeast, type BeastLineageNode };
+import { BEAST_LINEAGE, beastDescendants, beastLeafNodes, isMythicBeast, getBeastFamilies, rollWeightedBeastFamilies, type BeastLineageNode, type BeastFamilyInfo } from './beast-lineage';
+export { BEAST_LINEAGE, beastDescendants, beastLeafNodes, isMythicBeast, getBeastFamilies, rollWeightedBeastFamilies, type BeastLineageNode, type BeastFamilyInfo };
 export function linkBeastFamilies(beasts: Beast[]) {
   for (const node of BEAST_LINEAGE) {
     let beast = beasts.find((b) => b.n === node.n);

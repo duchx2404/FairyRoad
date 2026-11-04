@@ -167,7 +167,7 @@ register([
     ],
   },
 
-  // ----- Kẻ thù diệt môn (thiên phú "Gánh huyết hải thâm thù") -----
+  // ----- Kẻ thù diệt môn (thiên phú "Huyết hải thâm thù") -----
   {
     id: 'core_nemesis',
     where: ['town', 'market', 'road', 'wild'],

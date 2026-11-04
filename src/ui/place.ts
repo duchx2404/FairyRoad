@@ -847,7 +847,7 @@ export function openLibrary(kind: 'book' | 'vault', tab = 0) {
     };
     // xếp: trấn tông trước, rồi theo giai, theo giá
     const ord = (id: string) => (id.startsWith('cp:') && isExclusiveTech(id.slice(3)) ? 0 : 1);
-    wares.sort((a, b) => giaiOf(a.id, a.gear) - giaiOf(b.id, b.gear) || ord(a.id) - ord(b.id) || a.cost - b.cost);
+    wares.sort((a, b) => giaiOf(b.id, b.gear) - giaiOf(a.id, a.gear) || ord(a.id) - ord(b.id) || b.cost - a.cost);
     cards = wares.map((w) => {
       const [k, key] = w.id.split(':');
       const locked = s.sect!.rank < w.minRank;

@@ -6,7 +6,7 @@
 //    - Hoặc loài khác yếu hơn loài của người chơi nhiều (much weaker)
 
 import { s } from './state';
-import { REALMS, type El } from '../data/core';
+import { REALMS, type El, splitName, SURN } from '../data/core';
 import { isYao } from './char';
 import { addLog } from './core';
 import { fight, mkFoe, type FoeSpec } from './combat';
@@ -404,7 +404,7 @@ export const YAO_SPECIES_DATA: Record<string, YaoSpeciesInfo> = {
   bachcot: {
     speciesKey: 'bachcot',
     name: 'Bạch Cốt Tinh (Huyễn Cốt Linh Ma)',
-    surname: 'Bạch',
+    surname: 'Cốt',
     homeLoc: 'cochientruong',
     homeLocName: 'Bạch Hổ Lĩnh · Bạch Cốt Động Phủ',
     defaultRealm: 4,
@@ -426,7 +426,7 @@ export const YAO_SPECIES_DATA: Record<string, YaoSpeciesInfo> = {
   kimsidieubang: {
     speciesKey: 'kimsidieubang',
     name: 'Kim Sí Đại Bằng Điêu (Sư Đà Lĩnh Thần Điêu)',
-    surname: 'Bằng',
+    surname: 'Điêu',
     homeLoc: 'suda',
     homeLocName: 'Sư Đà Lĩnh · Kim Sí Điêu Bằng Nhai',
     defaultRealm: 6,
@@ -626,7 +626,7 @@ export const YAO_SPECIES_DATA: Record<string, YaoSpeciesInfo> = {
   ngaiviephoabao: {
     speciesKey: 'ngaiviephoabao',
     name: 'Ngải Diệp Hoa Báo (Ẩn Vụ Báo Vương)',
-    surname: 'Báo',
+    surname: 'Quách',
     homeLoc: 'thapvan',
     homeLocName: 'Ẩn Vụ Sơn · Chiết Nhạc Động',
     defaultRealm: 3,
@@ -663,41 +663,1014 @@ export const YAO_SPECIES_DATA: Record<string, YaoSpeciesInfo> = {
       statBoost: { exp: 12000, val: 120 },
     },
   },
-};
 
-/** Nhận diện loài yêu thú và họ tộc từ tên loài */
-export function identifyYaoSpecies(beastName?: string): YaoSpeciesInfo {
-  const b = (beastName || s.beast || '').toLowerCase();
-  // Hỗn thế tứ hầu & thần hầu
+  // THẦN THÚ THÁI CỔ
+  long: {
+    speciesKey: 'long',
+    name: 'Long Tộc (Tổ Long Huyết Mạch)',
+    surname: 'Long',
+    homeLoc: 'donghai',
+    homeLocName: 'Đông Hải · Long Cung Thủy Tộc',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['quy', 'xa'],
+    desc: 'Vạn long chi tổ, ngự lôi chế thủy, chấp chưởng thiên phạt vũ phong, tôn quý vô song.',
+    treasure: {
+      name: 'Thái Cổ Tổ Long Châu',
+      envDesc: 'Đáy sâu muôn trượng Long Cung Đông Hải, nơi Tổ Long từng ngủ say.',
+      desc: 'Bảo châu long thần ẩn chứa chân long uy áp làm vạn thú quy phục.',
+      effect: 'Tăng vĩnh viễn +2,000 Khí Huyết, +100 Công Kích, +30 Uy Áp.',
+      guardian: 'Thượng Cổ Thần Long Hộ Châu',
+      guardianRealm: 6,
+      statBoost: { exp: 35000, hp: 2000, val: 100 },
+    },
+  },
+  phuong: {
+    speciesKey: 'phuong',
+    name: 'Phượng Tộc (Chân Phượng Huyết Mạch)',
+    surname: 'Phượng',
+    homeLoc: 'namman',
+    homeLocName: 'Bất Tử Sơn · Ngô Đồng Lâm',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['ung', 'kimo'],
+    desc: 'Bách điểu chi chiêm, dục hỏa trùng sinh, niết bàn bất tử, hào quang cửu sắc chiếu sáng thế gian.',
+    treasure: {
+      name: 'Bất Tử Niết Bàn Thần Tinh',
+      envDesc: 'Đỉnh cây Thần Ngô Đồng trên Bất Tử Sơn nơi Phượng Hoàng niết bàn.',
+      desc: 'Giọt máu niết bàn chân phượng giúp thần hồn tái sinh vượt qua tử kiếp.',
+      effect: 'Tăng vĩnh viễn +1,800 Khí Huyết, +90 Công Kích, +150 Thọ Nguyên.',
+      guardian: 'Chân Phượng Thần Điểu Hộ Thể',
+      guardianRealm: 6,
+      statBoost: { exp: 35000, hp: 1800, val: 90 },
+    },
+  },
+  conbang: {
+    speciesKey: 'conbang',
+    name: 'Côn Bằng Tộc (Bắc Minh Chi Chủ)',
+    surname: 'Bằng',
+    homeLoc: 'bacminh',
+    homeLocName: 'Bắc Minh Băng Uyên · Thôn Hải Nhai',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['kimsidieubang'],
+    desc: 'Hóa cá làm Côn rộng mấy ngàn dặm, hóa chim làm Bằng che rợp nửa bầu trời, bay bổng chín vạn dặm.',
+    treasure: {
+      name: 'Bắc Minh Liệt Không Thần Vũ',
+      envDesc: 'Lông vũ rụng nơi cuồng phong Bắc Minh của Thần Thú Côn Bằng.',
+      desc: 'Cánh bằng xé rách hư không, tốc độ cực hạn vượt qua không gian.',
+      effect: 'Tăng vĩnh viễn +1,000 Khí Huyết, +80 Công Kích, +120% Tốc Độ.',
+      guardian: 'Côn Bằng Thần Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 32000, hp: 1000, val: 80 },
+    },
+  },
+  huyenvu: {
+    speciesKey: 'huyenvu',
+    name: 'Huyền Vũ Tộc (Bắc Phương Chân Thần)',
+    surname: 'Quy',
+    homeLoc: 'bachai',
+    homeLocName: 'Bắc Cực · Huyền Thủy Thác Thiên Giới',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['quy', 'xa'],
+    desc: 'Quy xà hợp thể, chống đỡ trời đất, phòng ngự tuyệt đối vạn pháp bất xâm, thọ nguyên vô tận.',
+    treasure: {
+      name: 'Thác Thiên Huyền Vũ Giáp Thần Tinh',
+      envDesc: 'Mảnh mai rùa hóa thạch ngàn vạn năm dưới đáy biển băng bắc cực.',
+      desc: 'Mảnh giáp thần bảo hộ nhục thân bất toái, tiêu trừ mọi sát thương chí mạng.',
+      effect: 'Tăng vĩnh viễn +200 Phòng Ngự, +2,500 Khí Huyết, +300 Thọ Nguyên.',
+      guardian: 'Huyền Vũ Thần Thú Hộ Tinh',
+      guardianRealm: 6,
+      statBoost: { exp: 35000, hp: 2500, val: 200 },
+    },
+  },
+  bachho: {
+    speciesKey: 'bachho',
+    name: 'Bạch Hổ Tộc (Tây Phương Sát Thần)',
+    surname: 'Bạch',
+    homeLoc: 'tayluong',
+    homeLocName: 'Tây Cực · Canh Kim Sát Khí Cốc',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['ho_man'],
+    desc: 'Canh kim sát thần, chưởng quản phạt lục chiến tranh, tiếng gầm nứt toác ngàn non, sát phạt đệ nhất.',
+    treasure: {
+      name: 'Canh Kim Sát Phạt Hổ Nha',
+      envDesc: 'Răng nanh thần thú cắm sâu vào mạch khoáng Canh Kim Tây Vực vạn năm.',
+      desc: 'Răng nanh tỏa ánh kim mang chói mắt, chém sắt như chém bùn xuyên phá mọi hộ giáp.',
+      effect: 'Tăng vĩnh viễn +120 Công Kích, tăng 30% sát thương bạo kích.',
+      guardian: 'Bạch Hổ Sát Thần',
+      guardianRealm: 6,
+      statBoost: { exp: 35000, val: 120 },
+    },
+  },
+  bachtrach: {
+    speciesKey: 'bachtrach',
+    name: 'Bạch Trạch Tộc (Thông Tri Vạn Vật)',
+    surname: 'Trạch',
+    homeLoc: 'trungtho',
+    homeLocName: 'Trung Thổ · Thần Thú Đạo Quán',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['kylan'],
+    desc: 'Thụy thú thông hiểu vạn sự, thấu suốt hình dáng danh hiệu muôn loài quỷ thần, mang lại điềm lành thái bình.',
+    treasure: {
+      name: 'Bạch Trạch Đồ Thần Giản',
+      envDesc: 'Mảnh ngọc giản ngưng tụ linh trí vạn cổ của Bạch Trạch.',
+      desc: 'Ghi chép điểm yếu và bí mật của vạn vật thiên địa, giúp ngộ đạo cực nhanh.',
+      effect: 'Tăng vĩnh viễn +15 Ngộ Tính, +6 Khí Vận, +25% Tốc Độ Tu Luyện.',
+      guardian: 'Bạch Trạch Thần Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 30000, val: 15, statKey: 'ngo' },
+    },
+  },
+  cuuviho: {
+    speciesKey: 'cuuviho',
+    name: 'Thanh Khâu Hồ Tộc (Cửu Vĩ Linh Hồ)',
+    surname: 'Hồ',
+    homeLoc: 'thapvan',
+    homeLocName: 'Thanh Khâu Sơn · Cửu Vĩ Hồ Quật',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: ['ho'],
+    desc: 'Cửu vĩ hồ ly tuyệt sắc khuynh thành, huyễn biến vô song, mị hoặc chúng sinh, chín mạng luân hồi.',
+    treasure: {
+      name: 'Cửu Vĩ Thanh Khâu Huyễn Châu',
+      envDesc: 'Bảo châu hấp thu nguyệt hoa trên đỉnh Thanh Khâu Sơn ngàn năm.',
+      desc: 'Châu sáng biến ảo khôn lường mê hoặc tâm trí đối thủ, tăng thêm một mạng sống.',
+      effect: 'Tăng vĩnh viễn +800 Khí Huyết, +10 Mị Lực, +50% Tỷ Lệ Đào Thoát.',
+      guardian: 'Cửu Vĩ Thiên Hồ Hộ Bảo',
+      guardianRealm: 6,
+      statBoost: { exp: 28000, hp: 800, val: 10, statKey: 'mi' },
+    },
+  },
+
+  // CÁC LOÀI DỊ THÚ SƠN HẢI KINH & NGUYÊN TỐ
+  loithu: {
+    speciesKey: 'loithu',
+    name: 'Lôi Thú Tộc (Sơn Hải Dị Thú)',
+    surname: 'Lôi',
+    homeLoc: 'loiminh',
+    homeLocName: 'Lôi Minh Đảo · Lôi Thú Lĩnh Địa',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['ung'],
+    desc: 'Dị thú sinh ra từ sấm sét thiên địa, tiếng gầm vang như sấm dậy sóng trào, nắm giữ thiên lôi chi lực.',
+    treasure: {
+      name: 'Thiên Cực Lôi Hạch Linh Tinh',
+      envDesc: 'Ngưng tụ từ tia sét vĩnh hằng trên đỉnh Lôi Minh Đảo.',
+      desc: 'Linh hạch sấm sét tôi rèn thần thể lôi đình bất hoại.',
+      effect: 'Tăng vĩnh viễn +70 Công Kích, +20 Bộc Phát Lôi Thương.',
+      guardian: 'Thái Cổ Lôi Thú Trưởng Lão',
+      guardianRealm: 5,
+      statBoost: { exp: 16000, val: 70 },
+    },
+  },
+  trung: {
+    speciesKey: 'trung',
+    name: 'Trùng Tộc (Thượng Cổ Hung Trùng)',
+    surname: 'Đỗ',
+    homeLoc: 'thapvan',
+    homeLocName: 'Thập Vạn Đại Sơn · Trùng Tộc Lĩnh Địa',
+    defaultRealm: 3,
+    tier: 2,
+    alliedWith: ['bantychu', 'bachnhanngocong'],
+    desc: 'Huyết mạch vạn trùng thượng cổ, sinh sôi mãnh liệt, vỏ ngoài cứng cáp kịch độc vô song.',
+    treasure: {
+      name: 'Thượng Cổ Thần Trùng Giáp & Trùng Đan',
+      envDesc: 'Ẩn sâu trong sào huyệt vạn trùng dưới lòng đất Thập Vạn Đại Sơn.',
+      desc: 'Linh vật tăng cường sinh mệnh dẻo dai và hộ thể cương khí.',
+      effect: 'Tăng vĩnh viễn +900 Khí Huyết, +50 Phòng Ngự.',
+      guardian: 'Thượng Cổ Mẫu Trùng Hộ Bảo',
+      guardianRealm: 5,
+      statBoost: { exp: 15000, hp: 900, val: 50 },
+    },
+  },
+  thuyeu: {
+    speciesKey: 'thuyeu',
+    name: 'Thụ Tộc (Vạn Niên Linh Mộc / Thụ Yêu)',
+    surname: 'Lâm',
+    homeLoc: 'thapvan',
+    homeLocName: 'Cổ Mộc U Lâm · Thụ Tộc Lĩnh Địa',
+    defaultRealm: 3,
+    tier: 2,
+    alliedWith: [],
+    desc: 'Cây cỏ thụ yêu tu luyện vạn năm hóa linh, cội rễ đâm sâu vào mạch linh địa phủ, sinh cơ bất tuyệt.',
+    treasure: {
+      name: 'Vạn Niên Thanh Mộc Trường Sinh Tủy',
+      envDesc: 'Ngưng tụ từ tâm lõi cây đại thụ nguyên thủy trong Cổ Mộc U Lâm.',
+      desc: 'Nhựa tiên mộc hồi phục sinh lực và kéo dài tuổi thọ.',
+      effect: 'Tăng vĩnh viễn +160 Thọ Nguyên, +800 Khí Huyết.',
+      guardian: 'Cổ Thụ Thần Quân Hộ Bảo',
+      guardianRealm: 5,
+      statBoost: { exp: 14000, hp: 800, val: 160 },
+    },
+  },
+  bao: {
+    speciesKey: 'bao',
+    name: 'Báo Tộc (Ảnh Báo / Toái Thạch Báo)',
+    surname: 'Báo',
+    homeLoc: 'thapvan',
+    homeLocName: 'Đoạn Sơn Nhai · Báo Tộc Lĩnh Địa',
+    defaultRealm: 3,
+    tier: 2,
+    alliedWith: ['lang', 'ho_man'],
+    desc: 'Lẹ làng như tia chớp, móng vuốt xé đá nát vàng, ẩn hiện như bóng ma.',
+    treasure: {
+      name: 'Phong Lôi Ảnh Báo Cốt Tinh',
+      envDesc: 'Vách đá gió hú nơi bầy báo tôi luyện móng vuốt ngàn năm.',
+      desc: 'Xương báo ngưng tụ phong sát chi lực tăng tốc độ cực hạn.',
+      effect: 'Tăng vĩnh viễn +50 Công Kích, +35% Tỷ Lệ Đào Thoát.',
+      guardian: 'U Ảnh Báo Vương',
+      guardianRealm: 4,
+      statBoost: { exp: 11000, val: 50 },
+    },
+  },
+  haikinh: {
+    speciesKey: 'haikinh',
+    name: 'Kình Tộc (Thượng Cổ Hải Kình)',
+    surname: 'Giang',
+    homeLoc: 'donghai',
+    homeLocName: 'Đông Hải · Cự Kình Thủy Vực',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: ['long', 'quy'],
+    desc: 'Bá chủ đại dương, thân thể khổng lồ tựa hòn đảo di động, nuốt sóng nhả sương.',
+    treasure: {
+      name: 'Thôn Ba Hải Kình Châu',
+      envDesc: 'Đáy sâu ngàn trượng Đông Hải nơi cự kình hóa đạo ngàn năm.',
+      desc: 'Bảo châu chế ngự hải lưu, gia tăng khí huyết dồi dào.',
+      effect: 'Tăng vĩnh viễn +1,800 Khí Huyết, +70 Phòng Ngự.',
+      guardian: 'Thâm Hải Cự Kình Vương',
+      guardianRealm: 6,
+      statBoost: { exp: 26000, hp: 1800, val: 70 },
+    },
+  },
+  thiquy: {
+    speciesKey: 'thiquy',
+    name: 'Thi Tộc (Cổ Thi / Bác Thi Quỷ)',
+    surname: 'Dạ',
+    homeLoc: 'cochientruong',
+    homeLocName: 'Cổ Chiến Trường · Thi Quỷ U Quật',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['bachcot'],
+    desc: 'Thi thể cổ đại ngưng tụ sát khí vạn năm hóa thành linh trí, mình đồng da sắt bách đao bất nhập.',
+    treasure: {
+      name: 'U Minh Thi Sát Hắc Ngọc Tinh',
+      envDesc: 'Đáy hố chôn chiến trường xưa ngập tràn huyết sát khí.',
+      desc: 'Hắc ngọc rèn luyện thi thể kim cương bất toái.',
+      effect: 'Tăng vĩnh viễn +65 Công Kích, +600 Khí Huyết, đòn đánh hút 15% huyết.',
+      guardian: 'Cổ Thi Ma Tướng Hộ Trì',
+      guardianRealm: 5,
+      statBoost: { exp: 16000, hp: 600, val: 65 },
+    },
+  },
+  thiencau: {
+    speciesKey: 'thiencau',
+    name: 'Cẩu Tộc (Thôn Nhật Thiên Cẩu)',
+    surname: 'Dương',
+    homeLoc: 'phongson',
+    homeLocName: 'Côn Lôn Sơn · Thiên Cẩu Lĩnh Địa',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['lang'],
+    desc: 'Thần thú ngự phong nuốt trăng sao, khứu giác thấu suốt tam giới thiện ác.',
+    treasure: {
+      name: 'Thôn Nhật Nguyệt Hoa Tinh',
+      envDesc: 'Đỉnh Côn Lôn nơi Thiên Cẩu đón nhận ánh nhật nguyệt giao hòa.',
+      desc: 'Linh tinh tăng cường giác quan và phá tan mọi ảo cảnh.',
+      effect: 'Tăng vĩnh viễn +50 Công Kích, +5 Ngộ Tính.',
+      guardian: 'Thiên Cẩu Hộ Sơn Thần Thú',
+      guardianRealm: 5,
+      statBoost: { exp: 15000, val: 50 },
+    },
+  },
+  chuyem: {
+    speciesKey: 'chuyem',
+    name: 'Yếm Tộc (Chiến Hỏa Chu Yếm)',
+    surname: 'Hạ',
+    homeLoc: 'thapvan',
+    homeLocName: 'Thập Vạn Đại Sơn · Chu Yếm Lĩnh Địa',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: ['ho_man', 'hung'],
+    desc: 'Đầu trắng chân đỏ, xuất hiện ắt thiên hạ đại loạn chiến chinh, bản tính hung bạo hiếu chiến vô song.',
+    treasure: {
+      name: 'Chiến Loạn Hồng Hoang Huyết Đỉnh',
+      envDesc: 'Hố nham thạch nung đỏ rực nơi Chu Yếm gầm thét khi thiên hạ đại loạn.',
+      desc: 'Huyết đỉnh khơi dậy chiến ý bất khuất cuồng bạo.',
+      effect: 'Tăng vĩnh viễn +85 Công Kích, khi dưới 50% máu tăng 30% sát thương.',
+      guardian: 'Hồng Hoang Chu Yếm Thần Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 25000, val: 85 },
+    },
+  },
+  thontien: {
+    speciesKey: 'thontien',
+    name: 'Thôn Tộc (Thôn Thiên Cự Thú)',
+    surname: 'Vương',
+    homeLoc: 'thapvan',
+    homeLocName: 'Hỗn Độn Vực · Thôn Thiên Thần Sơn',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: [],
+    desc: 'Một miệng nuốt càn khôn nhật nguyệt, dạ dày luyện hóa vạn vật thành chân nguyên tinh khiết.',
+    treasure: {
+      name: 'Thôn Càn Khôn Hỗn Độn Đan',
+      envDesc: 'Nơi giao thoa giữa hư không và đại lục, ngưng tụ lực cắn nuốt vạn cổ.',
+      desc: 'Nội đan nuốt trời chuyển hóa mọi sát thương thành linh lực.',
+      effect: 'Tăng vĩnh viễn +2,200 Khí Huyết, +30% Tốc Độ Hấp Thu Linh Khí.',
+      guardian: 'Thôn Thiên Cổ Thú Tôn Giả',
+      guardianRealm: 6,
+      statBoost: { exp: 32000, hp: 2200, val: 30 },
+    },
+  },
+  degiang: {
+    speciesKey: 'degiang',
+    name: 'Giang Tộc (Không Gian Thần Thú Đế Giang)',
+    surname: 'Tần',
+    homeLoc: 'phongson',
+    homeLocName: 'Thiên Ngoại Thiên · Đế Giang Thần Lĩnh',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: [],
+    desc: 'Sáu chân bốn cánh, không mặt mũi, ca múa trong hư không, chưởng quản không gian tốc độ tuyệt đối.',
+    treasure: {
+      name: 'Hư Không Phá Toái Thần Dực',
+      envDesc: 'Vết nứt không gian vĩnh hằng trên Thiên Ngoại Thiên.',
+      desc: 'Cánh thần vượt qua không gian, né tránh mọi đòn công kích vật lý.',
+      effect: 'Tăng vĩnh viễn +100 Công Kích, +150% Tốc Độ Thân Pháp.',
+      guardian: 'Đế Giang Thần Tôn Hộ Bảo',
+      guardianRealm: 6,
+      statBoost: { exp: 35000, val: 100 },
+    },
+  },
+  baohao: {
+    speciesKey: 'baohao',
+    name: 'Thao Tộc (Bào Hào / Thao Thiết Ma Thú)',
+    surname: 'Đổng',
+    homeLoc: 'hacphong',
+    homeLocName: 'Hung Thú Uyên · Thao Thiết Ma Động',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: [],
+    desc: 'Thân dê mặt người, mắt dưới nách, tiếng kêu như trẻ sơ sinh, tham lam nuốt trọn sinh linh muôn phương.',
+    treasure: {
+      name: 'Thao Thiết Huyết Thực Ma Hạch',
+      envDesc: 'Đáy vực Hung Thú Uyên ngưng tụ tham niệm cắn nuốt muôn thuở.',
+      desc: 'Ma hạch tăng cường sức cắn xé và hấp thụ sinh mệnh đối thủ.',
+      effect: 'Tăng vĩnh viễn +95 Công Kích, +1,200 Khí Huyết, hút 25% sát thương.',
+      guardian: 'Thao Thiết Ma Tôn',
+      guardianRealm: 6,
+      statBoost: { exp: 30000, hp: 1200, val: 95 },
+    },
+  },
+  cungky: {
+    speciesKey: 'cungky',
+    name: 'Cùng Tộc (Cùng Kỳ Tứ Hung)',
+    surname: 'Khương',
+    homeLoc: 'tayluong',
+    homeLocName: 'Tây Man Hoang Địa · Cùng Kỳ Lĩnh Địa',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: [],
+    desc: 'Hình dáng tựa hổ có cánh, trừng phạt kẻ thiện thưởng cho kẻ ác, hung tàn khét tiếng thượng cổ.',
+    treasure: {
+      name: 'Tứ Hung Nghịch Đạo Cốt',
+      envDesc: 'Hang đá nung nấu nghịch khí thiên địa Tây Man.',
+      desc: 'Khúc xương hung thú kích phát nghịch cảnh sát phạt cực hạn.',
+      effect: 'Tăng vĩnh viễn +90 Công Kích, giảm 40% sát thương từ ma đạo.',
+      guardian: 'Cùng Kỳ Thần Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 28000, val: 90 },
+    },
+  },
+  lucngo: {
+    speciesKey: 'lucngo',
+    name: 'Lục Tộc (Lục Ngô Côn Lôn Thần Thú)',
+    surname: 'Lục',
+    homeLoc: 'trungtho',
+    homeLocName: 'Côn Lôn Khâu · Lục Ngô Thần Cung',
+    defaultRealm: 6,
+    tier: 3,
+    alliedWith: ['kylan'],
+    desc: 'Mặt người thân hổ chín đuôi, cai quản chín cõi trời và vườn tiên của Thiên Đế.',
+    treasure: {
+      name: 'Cửu Vĩ Côn Lôn Trấn Thiên Ấn',
+      envDesc: 'Cung điện ngọc thần trên đỉnh Côn Lôn Khâu.',
+      desc: 'Ngọc ấn trấn áp tà ma và gia tăng uy nghiêm thần thánh.',
+      effect: 'Tăng vĩnh viễn +100 Phòng Ngự, +12 Ngộ Tính, +5 Khí Vận.',
+      guardian: 'Lục Ngô Khai Minh Thần',
+      guardianRealm: 6,
+      statBoost: { exp: 30000, val: 100 },
+    },
+  },
+  quynguu: {
+    speciesKey: 'quynguu',
+    name: 'Quỳ Tộc (Lưu Ba Quỳ Ngưu)',
+    surname: 'Hải',
+    homeLoc: 'loiminh',
+    homeLocName: 'Lưu Ba Sơn · Quỳ Ngưu Thần Vực',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: ['loithu'],
+    desc: 'Thân xanh một chân không sừng, vào ra biển ắt có mưa gió, ánh sáng như nhật nguyệt tiếng gầm như sấm rền.',
+    treasure: {
+      name: 'Lưu Ba Lôi Đình Quỳ Da Thần Cổ',
+      envDesc: 'Đỉnh núi Lưu Ba nhô lên giữa muôn trùng sóng sét biển Đông.',
+      desc: 'Mảnh da quỳ vang tiếng sấm chấn nhiếp hồn phách quân địch.',
+      effect: 'Tăng vĩnh viễn +80 Công Kích, +800 Khí Huyết, đòn đánh làm choáng 20%.',
+      guardian: 'Đông Hải Quỳ Ngưu Cổ Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 26000, hp: 800, val: 80 },
+    },
+  },
+  ngungcuong: {
+    speciesKey: 'ngungcuong',
+    name: 'Ngung Tộc (Bắc Hải Ngung Cường)',
+    surname: 'Phong',
+    homeLoc: 'bachai',
+    homeLocName: 'Bắc Hải Băng Phong · Ngung Cường Lĩnh',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: ['conbang'],
+    desc: 'Thần gió và thần biển phương bắc, mặt người thân chim tai xỏ hai con rắn xanh đạp trên hai con rồng đỏ.',
+    treasure: {
+      name: 'Bắc Cực Huyền Hàn Phong Ba Châu',
+      envDesc: 'Đáy biển đóng băng vĩnh cửu của Bắc Hải.',
+      desc: 'Bảo châu phong ấn bão tuyết và triệu hồi cuồng phong hàn triều.',
+      effect: 'Tăng vĩnh viễn +75 Công Kích, +100 Phòng Ngự.',
+      guardian: 'Ngung Cường Thần Tướng',
+      guardianRealm: 6,
+      statBoost: { exp: 24000, val: 75 },
+    },
+  },
+  thuonghoang: {
+    speciesKey: 'thuonghoang',
+    name: 'Hoàng Tộc (Bạch Dân Thừa Hoàng)',
+    surname: 'Hoàng',
+    homeLoc: 'thapvan',
+    homeLocName: 'Bạch Dân Quốc · Thừa Hoàng Cốc',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['bachlocthanthu'],
+    desc: 'Lưng có sừng, cưỡi nó sống thọ hai ngàn năm, thụy thú mang lại trường thọ an khang.',
+    treasure: {
+      name: 'Nhị Thiên Niên Trường Thọ Linh Sừng',
+      envDesc: 'Thung lũng thanh tịnh nơi bầy Thừa Hoàng tắm ánh trăng.',
+      desc: 'Sừng tiên bổ sung vô lượng sinh cơ thọ mạng.',
+      effect: 'Tăng vĩnh viễn +250 Thọ Nguyên, +4 Khí Vận.',
+      guardian: 'Thừa Hoàng Linh Thú Trưởng Lão',
+      guardianRealm: 5,
+      statBoost: { exp: 18000, val: 250 },
+    },
+  },
+  phidi: {
+    speciesKey: 'phidi',
+    name: 'Phì Tộc (Thái Sơn Phì Di)',
+    surname: 'Hà',
+    homeLoc: 'hoadiem',
+    homeLocName: 'Thái Sơn Đỉnh · Phì Di Hỏa Quật',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['xa'],
+    desc: 'Một đầu hai thân hoặc sáu chân bốn cánh, xuất hiện ắt thiên hạ đại hạn ngàn dặm khô cằn.',
+    treasure: {
+      name: 'Thiên Hạn Liệt Viêm Châu',
+      envDesc: 'Lòng hỏa quật Thái Sơn nơi nham thạch cô đặc.',
+      desc: 'Bảo châu tỏa nhiệt lượng thiêu đốt phòng ngự kẻ thù.',
+      effect: 'Tăng vĩnh viễn +65 Công Kích, kèm thiêu đốt 15% mỗi hiệp.',
+      guardian: 'Phì Di Viêm Xà Hộ Bảo',
+      guardianRealm: 5,
+      statBoost: { exp: 16000, val: 65 },
+    },
+  },
+  vula: {
+    speciesKey: 'vula',
+    name: 'La Tộc (Thanh Yếu Vũ La)',
+    surname: 'La',
+    homeLoc: 'thapvan',
+    homeLocName: 'Thanh Yếu Sơn · Vũ La Tiên Cảnh',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['ho'],
+    desc: 'Mặt người eo báo, tai xỏ vòng ngọc, tiếng kêu như ngọc va vào nhau, sơn thần cai quản cỏ cây chim thú.',
+    treasure: {
+      name: 'Thanh Yếu U Lan Thần Thạch',
+      envDesc: 'Suối nguồn ngọc bích Thanh Yếu Sơn.',
+      desc: 'Thần thạch gia tăng mị lực và giao tiếp với vạn linh.',
+      effect: 'Tăng vĩnh viễn +8 Mị Lực, +4 Ngộ Tính, +40 Phòng Ngự.',
+      guardian: 'Vũ La Thần Nữ Hộ Sơn',
+      guardianRealm: 5,
+      statBoost: { exp: 14000, val: 8, statKey: 'mi' },
+    },
+  },
+  tranh: {
+    speciesKey: 'tranh',
+    name: 'Tranh Tộc (Chương Nga Dị Thú)',
+    surname: 'Chương',
+    homeLoc: 'thapvan',
+    homeLocName: 'Chương Nga Sơn · Tranh Tộc Nham Động',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['bao'],
+    desc: 'Hình dạng như báo đỏ năm đuôi một sừng, tiếng kêu như đá gõ vào nhau, sức mạnh kinh người.',
+    treasure: {
+      name: 'Chương Nga Xích Thạch Sừng Thần',
+      envDesc: 'Vách đá đỏ dựng đứng trên núi Chương Nga.',
+      desc: 'Sừng thần phá giáp xuyên thấu cương khí hộ thể.',
+      effect: 'Tăng vĩnh viễn +60 Công Kích, +25% Xuyên Giáp.',
+      guardian: 'Ngũ Vĩ Tranh Thú Vương',
+      guardianRealm: 5,
+      statBoost: { exp: 15000, val: 60 },
+    },
+  },
+  ngaoyet: {
+    speciesKey: 'ngaoyet',
+    name: 'Ngao Tộc (Huyết Giáp Ngao Yết)',
+    surname: 'Ân',
+    homeLoc: 'donghai',
+    homeLocName: 'Tây Hải Huyền Nham · Ngao Tộc Lãnh Địa',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['quy', 'tybadochac'],
+    desc: 'Huyết giáp cứng hơn thần thiết, kẹp đá nứt núi, phòng ngự phản đòn khét tiếng.',
+    treasure: {
+      name: 'Tây Hải Huyền Cương Giáp Tinh',
+      envDesc: 'Đáy đá ngầm Tây Hải nơi sóng biển bào mòn ngàn năm.',
+      desc: 'Mảnh giáp thần phản lại sát thương cận chiến.',
+      effect: 'Tăng vĩnh viễn +90 Phòng Ngự, phản 15% sát thương.',
+      guardian: 'Huyết Giáp Cự Ngao Tướng',
+      guardianRealm: 5,
+      statBoost: { exp: 16000, val: 90 },
+    },
+  },
+  bac: {
+    speciesKey: 'bac',
+    name: 'Bác Tộc (Trung Khúc Cự Thú)',
+    surname: 'Bạch',
+    homeLoc: 'thapvan',
+    homeLocName: 'Trung Khúc Sơn · Bác Thú Lĩnh Địa',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['ho_man'],
+    desc: 'Tựa như ngựa trắng đuôi đen một sừng, răng nanh như cọp ăn thịt hổ báo, có thể ngự binh đao.',
+    treasure: {
+      name: 'Ngự Binh Trấn Sát Nha',
+      envDesc: 'Vực sâu Trung Khúc Sơn nơi Bác Thú mài nanh.',
+      desc: 'Nanh thần áp chế sát khí và chống lại binh khí sắc bén.',
+      effect: 'Tăng vĩnh viễn +65 Công Kích, +50 Phòng Ngự.',
+      guardian: 'Trung Khúc Bác Vương',
+      guardianRealm: 5,
+      statBoost: { exp: 15000, val: 65 },
+    },
+  },
+  hoanso: {
+    speciesKey: 'hoanso',
+    name: 'Hoan Tộc (Tam Vĩ Dị Miêu)',
+    surname: 'Đoàn',
+    homeLoc: 'thapvan',
+    homeLocName: 'Dực Vọng Sơn · Hoan Tộc U Cốc',
+    defaultRealm: 3,
+    tier: 1,
+    alliedWith: ['mieu'],
+    desc: 'Tựa như mèo rừng một mắt ba đuôi, phát ra âm thanh như trăm thứ tiếng, nuôi nó trừ được tà khí.',
+    treasure: {
+      name: 'Trừ Hùng Bích Tà U Đan',
+      envDesc: 'Hốc cây rỗng ngậm sương rừng sâu Dực Vọng Sơn.',
+      desc: 'Nội đan xua đuổi tà ma và tâm ma nhập thể.',
+      effect: 'Tăng vĩnh viễn +4 Đạo Tâm, trừ sạch tâm ma.',
+      guardian: 'Tam Vĩ Dị Hoan Linh Miêu',
+      guardianRealm: 4,
+      statBoost: { exp: 9000, val: 4, statKey: 'tam' },
+    },
+  },
+  adu: {
+    speciesKey: 'adu',
+    name: 'Á Tộc (Thiếu Hàm Á Dủ)',
+    surname: 'Tiêu',
+    homeLoc: 'thapvan',
+    homeLocName: 'Thiếu Hàm Chi Sơn · Á Dủ Lĩnh Địa',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: [],
+    desc: 'Mặt người móng ngựa thân rồng, tiếng khóc như hài nhi, ăn thịt người hung ác tột cùng.',
+    treasure: {
+      name: 'Hài Nhi Khấp Ma Thần Hạch',
+      envDesc: 'Hang tối âm u sâu trong Thiếu Hàm Chi Sơn.',
+      desc: 'Ma hạch phát ra sóng âm mê hoặc làm suy giảm ý chí quân thù.',
+      effect: 'Tăng vĩnh viễn +80 Công Kích, giảm 15% phòng thủ đối thủ.',
+      guardian: 'Thái Cổ Á Dủ Hung Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 24000, val: 80 },
+    },
+  },
+  chuhoai: {
+    speciesKey: 'chuhoai',
+    name: 'Chư Tộc (Tiêu Sơn Chư Hoài)',
+    surname: 'Chư',
+    homeLoc: 'thapvan',
+    homeLocName: 'Tiêu Sơn · Chư Hoài Thạch Lĩnh',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['thanhnguu'],
+    desc: 'Tựa trâu có bốn sừng, mắt người tai heo, tiếng kêu như ngỗng hú.',
+    treasure: {
+      name: 'Tứ Giác Phá Sơn Linh Thạch',
+      envDesc: 'Bãi đá nứt Tiêu Sơn nơi bầy Chư Hoài húc sừng.',
+      desc: 'Linh thạch gia tăng sức mạnh thể phách và lực đẩy.',
+      effect: 'Tăng vĩnh viễn +700 Khí Huyết, +50 Công Kích.',
+      guardian: 'Tứ Sừng Chư Hoài Thú Tướng',
+      guardianRealm: 4,
+      statBoost: { exp: 12000, hp: 700, val: 50 },
+    },
+  },
+  thienma: {
+    speciesKey: 'thienma',
+    name: 'Mã Tộc (Côn Lôn Thiên Mã)',
+    surname: 'Mã',
+    homeLoc: 'phongson',
+    homeLocName: 'Côn Lôn Đỉnh · Thiên Mã Vân Cảnh',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['kylan'],
+    desc: 'Lưng mang đôi cánh lướt mây đạp gió, phi nước đại ngàn dặm không mỏi.',
+    treasure: {
+      name: 'Vân Lạc Thiên Mã Thần Đằng',
+      envDesc: 'Mây ngũ sắc ngưng tụ trên đỉnh Côn Lôn.',
+      desc: 'Gân thần giúp thân pháp nhẹ như lông hồng.',
+      effect: 'Tăng vĩnh viễn +50% Tốc Độ Di Chuyển, +40 Phòng Ngự.',
+      guardian: 'Bạch Dực Thiên Mã Vương',
+      guardianRealm: 5,
+      statBoost: { exp: 14000, val: 40 },
+    },
+  },
+  toandu: {
+    speciesKey: 'toandu',
+    name: 'Toan Tộc (Cảnh Sơn Toan Dư)',
+    surname: 'Vân',
+    homeLoc: 'loiminh',
+    homeLocName: 'Cảnh Sơn · Toan Dư Phong Vũ Nhai',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['ung'],
+    desc: 'Chim tựa rắn có bốn cánh sáu mắt ba chân, xuất hiện ắt người đời sợ hãi hoang mang.',
+    treasure: {
+      name: 'Lục Mục Huyễn Không Vũ',
+      envDesc: 'Tổ chim chênh vênh nơi vách đá cuồng phong Cảnh Sơn.',
+      desc: 'Lông vũ sáu mắt làm mê loạn phương hướng tấn công của kẻ địch.',
+      effect: 'Tăng vĩnh viễn +30% Tỷ Lệ Đào Thoát, +40 Công Kích.',
+      guardian: 'Toan Dư Thần Cầm',
+      guardianRealm: 5,
+      statBoost: { exp: 13000, val: 40 },
+    },
+  },
+  tinhve: {
+    speciesKey: 'tinhve',
+    name: 'Tinh Tộc (Phát Cưu Tinh Vệ)',
+    surname: 'Khương',
+    homeLoc: 'donghai',
+    homeLocName: 'Phát Cưu Sơn · Tinh Vệ Điểu Sào',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['phuong'],
+    desc: 'Đầu hoa văn mỏ trắng chân đỏ, ngậm cành cây đá lấp biển Đông, ý chí kiên định bất khuất ngàn đời.',
+    treasure: {
+      name: 'Lấp Biển Bất Khuất Thần Mộc',
+      envDesc: 'Rừng dâu cổ thụ trên núi Phát Cưu.',
+      desc: 'Thần mộc tôi rèn đạo tâm kiên cường vượt qua vạn kiếp.',
+      effect: 'Tăng vĩnh viễn +6 Đạo Tâm, +600 Khí Huyết.',
+      guardian: 'Tinh Vệ Tiên Cầm Hộ Mộc',
+      guardianRealm: 5,
+      statBoost: { exp: 15000, hp: 600, val: 6, statKey: 'tam' },
+    },
+  },
+  linhlinh: {
+    speciesKey: 'linhlinh',
+    name: 'Linh Tộc (Thứ Sơn Linh Linh)',
+    surname: 'Thủy',
+    homeLoc: 'daitrach',
+    homeLocName: 'Thứ Sơn · Linh Linh Thủy Vực',
+    defaultRealm: 3,
+    tier: 1,
+    alliedWith: ['xa'],
+    desc: 'Hình dạng tựa như bò nhưng có bốn cánh, tiếng sủa như chó, xuất hiện ắt có đại hồng thủy.',
+    treasure: {
+      name: 'Khai Hồng Định Thủy Châu',
+      envDesc: 'Đáy sông cuộn sóng dữ Thứ Sơn.',
+      desc: 'Viên ngọc ngưng tụ thủy năng tăng cường trị liệu.',
+      effect: 'Tăng vĩnh viễn +500 Khí Huyết, +10% Hồi Phục Sinh Lực.',
+      guardian: 'Tứ Dực Linh Linh Thủy Thú',
+      guardianRealm: 4,
+      statBoost: { exp: 10000, hp: 500, val: 10 },
+    },
+  },
+  hopdu: {
+    speciesKey: 'hopdu',
+    name: 'Dũ Tộc (Khoan Toái Hợp Dũ)',
+    surname: 'Cổ',
+    homeLoc: 'thapvan',
+    homeLocName: 'Khoan Toái Sơn · Hợp Dũ Lĩnh Địa',
+    defaultRealm: 3,
+    tier: 1,
+    alliedWith: ['tru'],
+    desc: 'Tựa heo nhưng đuôi cáo, tiếng kêu như người thở dài, một con gầm vạn con hưởng ứng.',
+    treasure: {
+      name: 'Vạn Chúng Đồng Tâm Thạch',
+      envDesc: 'Vách đá dội âm thanh Khoan Toái Sơn.',
+      desc: 'Đá thần gia tăng khả năng kêu gọi viện trợ đồng minh.',
+      effect: 'Tăng vĩnh viễn +40 Phòng Ngự, +4 Khí Vận.',
+      guardian: 'Hợp Dũ Thú Tướng',
+      guardianRealm: 4,
+      statBoost: { exp: 9000, val: 40 },
+    },
+  },
+  phi: {
+    speciesKey: 'phi',
+    name: 'Phỉ Tộc (Thái Sơn Nhất Mục Phỉ)',
+    surname: 'Sơn',
+    homeLoc: 'thapvan',
+    homeLocName: 'Thái Sơn · Phỉ Thú Độc Cốc',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: [],
+    desc: 'Tựa trâu đầu trắng một mắt đuôi rắn, đi qua cỏ khô sông cạn, mang dịch bệnh tai ương.',
+    treasure: {
+      name: 'Khô Hạn Ôn Dịch Châu',
+      envDesc: 'Hố độc khô cằn dưới chân núi Thái Sơn.',
+      desc: 'Bảo châu tỏa độc khí làm suy yếu nội tức đối phương.',
+      effect: 'Tăng vĩnh viễn +60 Công Kích, đòn đánh giảm 20% chân nguyên đối thủ.',
+      guardian: 'Nhất Mục Phỉ Thú',
+      guardianRealm: 5,
+      statBoost: { exp: 14000, val: 60 },
+    },
+  },
+  luongcu: {
+    speciesKey: 'luongcu',
+    name: 'Lương Tộc (Cư Ký Lương Cừ)',
+    surname: 'Lương',
+    homeLoc: 'daitrach',
+    homeLocName: 'Cư Ký Sơn · Lương Cừ Thủy Trạch',
+    defaultRealm: 3,
+    tier: 1,
+    alliedWith: ['xa'],
+    desc: 'Hình tựa rái cá bốn vuốt, mang lại điềm binh biến chiến tranh nếu xuất hiện trong thành.',
+    treasure: {
+      name: 'Lương Cừ Băng Cốt Thoa',
+      envDesc: 'Bãi đầm lầy ngập sương Cư Ký Sơn.',
+      desc: 'Xương rái cá ngưng tụ hàn thủy tăng cường bế khí.',
+      effect: 'Tăng vĩnh viễn +35 Phòng Ngự, +20 Thọ Nguyên.',
+      guardian: 'Lương Cừ Thú Trưởng',
+      guardianRealm: 4,
+      statBoost: { exp: 8000, val: 35 },
+    },
+  },
+  lungchat: {
+    speciesKey: 'lungchat',
+    name: 'Lung Tộc (Cửu Dĩ Lung Chất)',
+    surname: 'Cốc',
+    homeLoc: 'thapvan',
+    homeLocName: 'Cửu Dĩ Sơn · Lung Chất Nham Động',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: [],
+    desc: 'Chín đầu chín đuôi chân cọp vuốt khỉ, tiếng khóc như con trẻ, sức ăn thịt muôn loài.',
+    treasure: {
+      name: 'Cửu Thủ Huyết Ma Tinh',
+      envDesc: 'Hang sâu Cửu Dĩ Sơn nơi chín đầu nuốt tinh hoa nhật nguyệt.',
+      desc: 'Linh tinh tăng cường 9 lần sinh lực hồi phục.',
+      effect: 'Tăng vĩnh viễn +1,000 Khí Huyết, +75 Công Kích.',
+      guardian: 'Cửu Thủ Lung Chất Yêu Vương',
+      guardianRealm: 6,
+      statBoost: { exp: 22000, hp: 1000, val: 75 },
+    },
+  },
+  tholau: {
+    speciesKey: 'tholau',
+    name: 'Lâu Tộc (Côn Lôn Thổ Lâu)',
+    surname: 'Thạch',
+    homeLoc: 'thapvan',
+    homeLocName: 'Côn Lôn Khâu · Thổ Lâu Thần Nhai',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: [],
+    desc: 'Tựa cừu bốn sừng nhọn hoắt, ăn thịt người hung ác, sống nơi vách đá cao ngất trời.',
+    treasure: {
+      name: 'Tứ Nhọn Thổ Lâu Sừng Ngọc',
+      envDesc: 'Mỏm đá cheo leo Côn Lôn Khâu.',
+      desc: 'Sừng cừu đâm thủng khiên chắn kim cương.',
+      effect: 'Tăng vĩnh viễn +55 Công Kích, +300 Khí Huyết.',
+      guardian: 'Côn Lôn Thổ Lâu Vương',
+      guardianRealm: 4,
+      statBoost: { exp: 12000, hp: 300, val: 55 },
+    },
+  },
+  khamnguyen: {
+    speciesKey: 'khamnguyen',
+    name: 'Khâm Tộc (Khâm Nguyên Tiên Điểu)',
+    surname: 'Hoa',
+    homeLoc: 'thapvan',
+    homeLocName: 'Côn Lôn Khâu · Khâm Nguyên Tiên Hoa Lâm',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['ung'],
+    desc: 'Hình tựa ong nghệ to như chim uyên ương, đốt chim thú thì chim thú chết, chích cây cối thì cây khô héo.',
+    treasure: {
+      name: 'Vạn Cổ Độc Châm Thần Tinh',
+      envDesc: 'Rừng hoa độc Côn Lôn Khâu nơi Khâm Nguyên làm tổ.',
+      desc: 'Kim chích tẩm kịch độc chí tử phá vỡ chân khí.',
+      effect: 'Tăng vĩnh viễn +70 Công Kích, sát thương độc liên tục 20%.',
+      guardian: 'Khâm Nguyên Phong Điểu Vương',
+      guardianRealm: 5,
+      statBoost: { exp: 15000, val: 70 },
+    },
+  },
+  tre: {
+    speciesKey: 'tre',
+    name: 'Trệ Tộc (Tiêu Sơn Trệ Thú)',
+    surname: 'Hắc',
+    homeLoc: 'hacphong',
+    homeLocName: 'Tiêu Sơn · Trệ Thú Ma Quật',
+    defaultRealm: 4,
+    tier: 2,
+    alliedWith: ['tru', 'ho_man'],
+    desc: 'Tựa heo nhưng nanh hổ răng cọp, tính tình cuồng bạo hung tàn bạt núi phá rừng.',
+    treasure: {
+      name: 'Hắc Giáp Cuồng Trệ Thần Cốt',
+      envDesc: 'Bãi bùn đen chứa khoáng sắt Tiêu Sơn.',
+      desc: 'Xương thần rèn đúc giáp gai phản kích.',
+      effect: 'Tăng vĩnh viễn +600 Khí Huyết, +60 Phòng Ngự.',
+      guardian: 'Cuồng Trệ Thú Tướng',
+      guardianRealm: 4,
+      statBoost: { exp: 13000, hp: 600, val: 60 },
+    },
+  },
+  cutuong: {
+    speciesKey: 'cutuong',
+    name: 'Tượng Tộc (Cổ Cự Tượng)',
+    surname: 'Vạn',
+    homeLoc: 'namman',
+    homeLocName: 'Nam Cương Hoang Dã · Cự Tượng Lĩnh Địa',
+    defaultRealm: 5,
+    tier: 3,
+    alliedWith: ['bachngatuong'],
+    desc: 'Voi khổng lồ thời thượng cổ, một chân dẫm nứt mặt đất, cặp ngà dài vút trời đâm thủng tường thành.',
+    treasure: {
+      name: 'Cổ Tượng Thần Ngà Hóa Thạch',
+      envDesc: 'Mỏ khoáng cổ Nam Cương chôn giấu ngà voi vạn năm.',
+      desc: 'Ngà voi ngọc bích gia tăng vô lượng thần lực và thể phách.',
+      effect: 'Tăng vĩnh viễn +1,600 Khí Huyết, +90 Phòng Ngự, +50 Công Kích.',
+      guardian: 'Thái Cổ Cự Tượng Thần Thú',
+      guardianRealm: 6,
+      statBoost: { exp: 28000, hp: 1600, val: 90 },
+    },
+  },
+  thonkimthu: {
+    speciesKey: 'thonkimthu',
+    name: 'Thử Tộc (Thôn Kim Thử)',
+    surname: 'Thử',
+    homeLoc: 'thapvan',
+    homeLocName: 'Khoáng Mạch U Cốc · Kim Thử Lĩnh Địa',
+    defaultRealm: 3,
+    tier: 1,
+    alliedWith: ['hoangphongdieuthu'],
+    desc: 'Chuột vàng ăn khoáng thạch đào vàng đào ngọc, đánh hơi linh thạch ngàn dặm cực kỳ nhạy bén.',
+    treasure: {
+      name: 'Tầm Kim Hóa Thạch Thần Châu',
+      envDesc: 'Hốc đá tụ linh thạch thượng phẩm trong mỏ vàng.',
+      desc: 'Bảo châu tăng mạnh tài vận và tìm thấy kỳ trân dị bảo.',
+      effect: 'Tăng vĩnh viễn +5 Khí Vận, tăng 30% linh thạch nhận được.',
+      guardian: 'Hoàng Kim Thử Vương',
+      guardianRealm: 4,
+      statBoost: { exp: 10000, val: 5, statKey: 'van' },
+    },
+  },
+
+};
+/** Bốc một họ trong nhân tộc cho yêu thú không có họ trong truyền thuyết.
+ *  Cố định theo tên loài (hash) để đồng loại cùng 1 họ, không trùng họ Hồ hay họ Ngao/Long.
+ */
+export function extractDynamicYaoSurname(rawName: string): { surname: string; cleanName: string } {
+  const trimmed = (rawName || '').trim();
+  if (!trimmed) return { surname: 'Lâm', cleanName: 'Dị Thú' };
+
+  let s = trimmed
+    .replace(/^(Thượng Cổ|Thái Cổ|Dị Thú|Vạn Niên|Thiên Niên)\s+/i, '')
+    .replace(/^(Ấu|Tiểu|Cổ|Linh|Thần|Ma|Huyễn|U|Bạch|Hắc|Xích|Thanh|Kim|Tuyết|Tử|Hoàng|Huyết)\s+/i, '')
+    .trim();
+
+  if (!s) s = trimmed;
+
+  // Nếu là loài có tên trong truyền thuyết đã biết:
+  const low = s.toLowerCase();
+  if (low.includes('hồ') || low.includes('cáo') || low.includes('ly')) return { surname: 'Hồ', cleanName: s };
+  if (low.includes('long') || low.includes('rồng')) return { surname: 'Ngao', cleanName: s };
+  if (low.includes('phượng')) return { surname: 'Phượng', cleanName: s };
+  if (low.includes('hầu') || low.includes('viên')) return { surname: 'Tôn', cleanName: s };
+  if (low.includes('trư') || low.includes('lợn')) return { surname: 'Trư', cleanName: s };
+  if (low.includes('ngưu') || low.includes('trâu')) return { surname: 'Ngưu', cleanName: s };
+  if (low.includes('hùng') || low.includes('gấu')) return { surname: 'Hùng', cleanName: s };
+  if (low.includes('lang') || low.includes('sói')) return { surname: 'Lang', cleanName: s };
+  if (low.includes('xà') || low.includes('rắn')) return { surname: 'Bạch', cleanName: s };
+  if (low.includes('quy') || low.includes('rùa')) return { surname: 'Quy', cleanName: s };
+  if (low.includes('bằng') || low.includes('điêu')) return { surname: 'Bằng', cleanName: s };
+
+  // Các loài yêu thú không có tên họ trong truyền thuyết: LẤY 1 HỌ TRONG NHÂN TỘC (SURN)
+  // Loại trừ họ Hồ và họ Ngao để dành riêng cho truyền thuyết Hồ tộc & Long tộc
+  const humanSurnames = SURN.filter((sur) => sur !== 'Hồ' && sur !== 'Ngao');
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash << 5) - hash + s.charCodeAt(i);
+    hash |= 0;
+  }
+  const chosenSurname = humanSurnames[Math.abs(hash) % humanSurnames.length];
+
+  return { surname: chosenSurname, cleanName: s };
+}
+
+/** Nhận diện loài yêu thú và họ tộc từ tên loài (Đảm bảo 1 HỌ CHỈ DÙNG CHO 1 LOÀI) */
+export function identifyYaoSpecies(beastName?: string, ancestorName?: string): YaoSpeciesInfo {
+  const combined = `${beastName || s.beast || ''} ${ancestorName || ''}`.trim();
+  const b = combined.toLowerCase();
+
+  // 1. Thần Thú Thái Cổ tối cao & Tứ Linh
+  if (b.includes('long') || b.includes('rồng') || b.includes('mãng') || b.includes('giao')) return YAO_SPECIES_DATA.long;
+  if (b.includes('phượng') || b.includes('phuong') || b.includes('chu tước') || b.includes('thanh loan')) return YAO_SPECIES_DATA.phuong;
+  if (b.includes('kỳ lân') || b.includes('ky lan') || b.includes('linh lân')) return YAO_SPECIES_DATA.kylan;
+  if (b.includes('côn bằng') || b.includes('con bang') || b.includes('côn ngư')) return YAO_SPECIES_DATA.conbang;
+  if (b.includes('huyền vũ') || b.includes('huyen vu') || b.includes('chân vũ')) return YAO_SPECIES_DATA.huyenvu;
+  if (b.includes('bạch hổ') || b.includes('bach ho')) return YAO_SPECIES_DATA.bachho;
+  if (b.includes('bạch trạch') || b.includes('bach trach')) return YAO_SPECIES_DATA.bachtrach;
+
+  // 2. Dị thú Sơn Hải Kinh & nguyên tố
+  if (b.includes('lôi thú') || b.includes('loithu') || b.includes('lôi')) return YAO_SPECIES_DATA.loithu;
+  if (b.includes('trùng') || b.includes('côn trùng') || b.includes('ngũ độc')) return YAO_SPECIES_DATA.trung;
+  if (b.includes('thụ') || b.includes('linh mộc') || b.includes('cổ mộc') || b.includes('mộc yêu') || b.includes('mộc')) return YAO_SPECIES_DATA.thuyeu;
+  if (b.includes('kình') || b.includes('hải kình')) return YAO_SPECIES_DATA.haikinh;
+  if (b.includes('thi quỷ') || b.includes('bác thi') || b.includes('cốt quỷ') || b.includes('huyết thi') || b.includes('thi')) return YAO_SPECIES_DATA.thiquy;
+  if (b.includes('thiên cẩu') || b.includes('cẩu yêu') || b.includes('cẩu')) return YAO_SPECIES_DATA.thiencau;
+  if (b.includes('chu yếm') || b.includes('chuyem') || b.includes('yếm')) return YAO_SPECIES_DATA.chuyem;
+  if (b.includes('thôn thiên') || b.includes('thontien')) return YAO_SPECIES_DATA.thontien;
+  if (b.includes('đế giang') || b.includes('degiang')) return YAO_SPECIES_DATA.degiang;
+  if (b.includes('bào hào') || b.includes('thao thiết') || b.includes('thaothiet')) return YAO_SPECIES_DATA.baohao;
+  if (b.includes('cùng kỳ') || b.includes('cungky')) return YAO_SPECIES_DATA.cungky;
+  if (b.includes('lục ngô') || b.includes('lucngo')) return YAO_SPECIES_DATA.lucngo;
+  if (b.includes('quỳ ngưu') || b.includes('lôi quỳ') || b.includes('quỳ')) return YAO_SPECIES_DATA.quynguu;
+  if (b.includes('ngung cường') || b.includes('ngungcuong') || b.includes('ngung')) return YAO_SPECIES_DATA.ngungcuong;
+  if (b.includes('thừa hoàng') || b.includes('thuonghoang')) return YAO_SPECIES_DATA.thuonghoang;
+  if (b.includes('phì di') || b.includes('phidi') || b.includes('phì')) return YAO_SPECIES_DATA.phidi;
+  if (b.includes('vũ la') || b.includes('vula')) return YAO_SPECIES_DATA.vula;
+  if (b.includes('tranh') || b.includes('ngũ vĩ tranh')) return YAO_SPECIES_DATA.tranh;
+  if (b.includes('ngao yết') || b.includes('ngaoyet')) return YAO_SPECIES_DATA.ngaoyet;
+  if (b.includes('bác thú') || b.includes('trung khúc bác') || b.includes('bác')) return YAO_SPECIES_DATA.bac;
+  if (b.includes('hoan sơ') || b.includes('hoanso') || b.includes('hoan')) return YAO_SPECIES_DATA.hoanso;
+  if (b.includes('á dủ') || b.includes('adu') || b.includes('á')) return YAO_SPECIES_DATA.adu;
+  if (b.includes('chư hoài') || b.includes('chuhoai') || b.includes('chư')) return YAO_SPECIES_DATA.chuhoai;
+  if (b.includes('thiên mã') || b.includes('thienma')) return YAO_SPECIES_DATA.thienma;
+  if (b.includes('toan dư') || b.includes('toandu') || b.includes('toan')) return YAO_SPECIES_DATA.toandu;
+  if (b.includes('tinh vệ') || b.includes('tinhve')) return YAO_SPECIES_DATA.tinhve;
+  if (b.includes('linh linh') || b.includes('linhlinh')) return YAO_SPECIES_DATA.linhlinh;
+  if (b.includes('hợp dũ') || b.includes('hopdu') || b.includes('dũ')) return YAO_SPECIES_DATA.hopdu;
+  if (b.includes('nhất mục phỉ')) return YAO_SPECIES_DATA.phi;
+  if (b.includes('lương cừ') || b.includes('luongcu') || b.includes('lương')) return YAO_SPECIES_DATA.luongcu;
+  if (b.includes('lung chất') || b.includes('lungchat') || b.includes('lung')) return YAO_SPECIES_DATA.lungchat;
+  if (b.includes('thổ lâu') || b.includes('tholau') || b.includes('lâu')) return YAO_SPECIES_DATA.tholau;
+  if (b.includes('khâm nguyên') || b.includes('khamnguyen') || b.includes('khâm')) return YAO_SPECIES_DATA.khamnguyen;
+  if (b.includes('trệ') || b.includes('trệ thú')) return YAO_SPECIES_DATA.tre;
+  if (b.includes('cổ cự tượng') || b.includes('cự tượng') || b.includes('tượng') || b.includes('voi')) return YAO_SPECIES_DATA.cutuong;
+  if (b.includes('thôn kim thử') || b.includes('kim thử')) return YAO_SPECIES_DATA.thonkimthu;
+
+  // 3. Hỗn thế tứ hầu & thần hầu
   if (b.includes('thạch hầu') || b.includes('linh minh') || b.includes('tôn ngộ không') || b.includes('linhminhhau')) return YAO_SPECIES_DATA.linhminhhau;
   if (b.includes('mã hầu') || b.includes('xích khào') || b.includes('xichkhaomahau')) return YAO_SPECIES_DATA.xichkhaomahau;
   if (b.includes('thông tí') || b.includes('thongtivien') || b.includes('bạch viên')) return YAO_SPECIES_DATA.thongtivien;
   if (b.includes('lục nhĩ') || b.includes('lucnhimihau') || b.includes('sáu tai')) return YAO_SPECIES_DATA.lucnhimihau;
 
-  // Thần điểu & thỏ
+  // 4. Thần điểu & thỏ
   if (b.includes('kim ô') || b.includes('tam túc') || b.includes('kimo') || b.includes('quạ vàng') || b.includes('kim o')) return YAO_SPECIES_DATA.kimo;
   if (b.includes('ngọc thố') || b.includes('thỏ ngọc') || b.includes('nguyệt thố') || b.includes('ngoctho') || b.includes('thố') || b.includes('thỏ')) return YAO_SPECIES_DATA.ngoctho;
 
-  // Hắc hùng & bạch cốt
+  // 5. Hắc hùng & bạch cốt
   if (b.includes('hắc hùng') || b.includes('hachung') || b.includes('ma hùng') || b.includes('hắc phong hùng')) return YAO_SPECIES_DATA.hachung;
   if (b.includes('bạch cốt') || b.includes('bachcot') || b.includes('khô lâu') || b.includes('cốt yêu')) return YAO_SPECIES_DATA.bachcot;
 
-  // Các loài Tây Du Ký
-  if (b.includes('đại bằng') || b.includes('điêu bằng') || b.includes('kimsidieubang') || b.includes('kim sí điêu')) return YAO_SPECIES_DATA.kimsidieubang;
+  // 6. Các loài Tây Du Ký
+  if (b.includes('đại bằng') || b.includes('điêu bằng') || b.includes('kimsidieubang') || b.includes('kim sí điêu') || b.includes('cổ điêu')) return YAO_SPECIES_DATA.kimsidieubang;
   if (b.includes('thanh ngưu') || b.includes('thanhnguu') || b.includes('độc giác ngưu')) return YAO_SPECIES_DATA.thanhnguu;
-  if (b.includes('cửu linh') || b.includes('cuulinhsu') || b.includes('chín đầu sư') || b.includes('sư tử')) return YAO_SPECIES_DATA.cuulinhsu;
-  if (b.includes('bạch tượng') || b.includes('bachngatuong') || b.includes('lục nha') || b.includes('voi trắng')) return YAO_SPECIES_DATA.bachngatuong;
+  if (b.includes('cửu linh') || b.includes('cuulinhsu') || b.includes('chín đầu sư') || b.includes('sư tử') || b.includes('sư')) return YAO_SPECIES_DATA.cuulinhsu;
+  if (b.includes('bạch tượng') || b.includes('bachngatuong') || b.includes('lục nha')) return YAO_SPECIES_DATA.bachngatuong;
   if (b.includes('nhện') || b.includes('bàn ty') || b.includes('bantychu') || b.includes('chu tinh')) return YAO_SPECIES_DATA.bantychu;
   if (b.includes('ngô công') || b.includes('bachnhanngocong') || b.includes('rết') || b.includes('bách nhãn')) return YAO_SPECIES_DATA.bachnhanngocong;
-  if (b.includes('bọ cạp') || b.includes('tybadochac') || b.includes('độc hạt') || b.includes('tỳ bà')) return YAO_SPECIES_DATA.tybadochac;
-  if (b.includes('điêu thử') || b.includes('hoangphongdieuthu') || b.includes('hoàng phong') || b.includes('chuột gió')) return YAO_SPECIES_DATA.hoangphongdieuthu;
-  if (b.includes('tê ngưu') || b.includes('tichtelam') || b.includes('tịch hàn') || b.includes('tam đầu tê')) return YAO_SPECIES_DATA.tichtelam;
-  if (b.includes('cửu đầu điểu') || b.includes('bichbacuudau') || b.includes('cửu đầu trùng') || b.includes('bích ba')) return YAO_SPECIES_DATA.bichbacuudau;
-  if (b.includes('báo') || b.includes('ngaiviephoabao') || b.includes('hoa báo')) return YAO_SPECIES_DATA.ngaiviephoabao;
-  if (b.includes('bạch lộc') || b.includes('bachlocthanthu') || b.includes('hươu trắng')) return YAO_SPECIES_DATA.bachlocthanthu;
+  if (b.includes('bọ cạp') || b.includes('tybadochac') || b.includes('độc hạt') || b.includes('tỳ bà') || b.includes('sa hạt') || b.includes('hạt')) return YAO_SPECIES_DATA.tybadochac;
+  if (b.includes('điêu thử') || b.includes('hoangphongdieuthu') || b.includes('hoàng phong') || b.includes('chuột gió') || b.includes('thử') || b.includes('chuột')) return YAO_SPECIES_DATA.hoangphongdieuthu;
+  if (b.includes('tê ngưu') || b.includes('tichtelam') || b.includes('tịch hàn') || b.includes('tam đầu tê') || b.includes('tê')) return YAO_SPECIES_DATA.tichtelam;
+  if (b.includes('cửu đầu điểu') || b.includes('bichbacuudau') || b.includes('bích ba')) return YAO_SPECIES_DATA.bichbacuudau;
+  if (b.includes('báo') || b.includes('ngaiviephoabao') || b.includes('hoa báo') || b.includes('ảnh báo')) return YAO_SPECIES_DATA.bao;
+  if (b.includes('bạch lộc') || b.includes('bachlocthanthu') || b.includes('hươu trắng') || b.includes('lộc')) return YAO_SPECIES_DATA.bachlocthanthu;
 
-  // Các loài cơ bản
-  if (b.includes('hồ') || b.includes('cáo') || (b.includes('ly') && !b.includes('ly miêu'))) return YAO_SPECIES_DATA.ho;
+  // 7. Các loài cơ bản
   if (b.includes('lang') || b.includes('sói')) return YAO_SPECIES_DATA.lang;
   if (b.includes('xà') || b.includes('rắn') || b.includes('mãng') || b.includes('giao')) return YAO_SPECIES_DATA.xa;
   if (b.includes('ưng') || b.includes('điêu') || b.includes('bằng') || b.includes('loan') || b.includes('điểu')) return YAO_SPECIES_DATA.ung;
@@ -706,11 +1679,38 @@ export function identifyYaoSpecies(beastName?: string): YaoSpeciesInfo {
   if (b.includes('lân') || b.includes('kỳ lân')) return YAO_SPECIES_DATA.kylan;
   if (b.includes('quy') || b.includes('rùa')) return YAO_SPECIES_DATA.quy;
   if (b.includes('viên') || b.includes('hầu') || b.includes('khỉ')) return YAO_SPECIES_DATA.vien;
-  if (b.includes('miêu')) return YAO_SPECIES_DATA.mieu;
-  if (b.includes('trư') || b.includes('lợn')) return YAO_SPECIES_DATA.tru;
+  if (b.includes('miêu') || b.includes('mèo')) return YAO_SPECIES_DATA.mieu;
+  if (b.includes('trư') || b.includes('lợn') || b.includes('heo')) return YAO_SPECIES_DATA.tru;
 
-  // Mặc định là Hồ tộc ở Thập Vạn Đại Sơn
-  return YAO_SPECIES_DATA.ho;
+  // 8. DUY NHẤT Hồ Ly / Cửu Vĩ Hồ mới mang họ Hồ
+  if (b.includes('cửu vĩ') || b.includes('cuuviho')) return YAO_SPECIES_DATA.cuuviho;
+  if (b.includes('hồ') || b.includes('cáo') || (b.includes('ly') && !b.includes('ly miêu') && !b.includes('hóa long') && !b.includes('hoa ly') && !b.includes('cửu'))) {
+    return YAO_SPECIES_DATA.ho;
+  }
+
+  // 9. CƠ CHẾ SINH ĐỘNG THÔNG MINH: Mỗi loài có một họ tộc riêng biệt tương ứng, TUYỆT ĐỐI không dồn về họ Hồ!
+  const nameToUse = beastName || ancestorName || s.beast || 'Dị Thú';
+  const { surname, cleanName } = extractDynamicYaoSurname(nameToUse);
+  return {
+    speciesKey: `yao_${surname.toLowerCase()}`,
+    name: `${cleanName} Tộc`,
+    surname: surname,
+    homeLoc: 'thapvan',
+    homeLocName: `Thập Vạn Đại Sơn · ${surname} Tộc Lĩnh Địa`,
+    defaultRealm: 2,
+    tier: 1,
+    alliedWith: [],
+    desc: `Huyết mạch ${cleanName} độc nhất vô nhị, sinh trưởng giữa thiên địa, tự ngưng tụ yêu đan tung hoành.`,
+    treasure: {
+      name: `${surname} Tộc Linh Bảo`,
+      envDesc: `Trấn tộc chi bảo hấp thu tinh hoa trời đất của ${cleanName} tộc.`,
+      desc: `Linh bảo gia trì huyết mạch ${cleanName} hưng thịnh.`,
+      effect: `Tăng vĩnh viễn +500 Khí Huyết, +35 Công Kích.`,
+      guardian: `${cleanName} Trưởng Lão Hộ Tộc`,
+      guardianRealm: 4,
+      statBoost: { exp: 6000, hp: 500, val: 35 },
+    },
+  };
 }
 
 /** Lấy địa điểm quê hương loài của Yêu Thú */

@@ -91,7 +91,7 @@ export function openCraft(tab = -1) {
     const say = (m: string) => { out.textContent = m; draw2(); };
     const draw2 = () => { refresh(); const keep = out.textContent; draw(t); body.querySelector('.story')!.textContent = keep; };
     if (k === 'alch') {
-      const known = s.recipes.map(id => PILLS[id]).filter(Boolean).sort((a, b) => a.tier - b.tier);
+      const known = s.recipes.map(id => PILLS[id]).filter(Boolean).sort((a, b) => b.tier - a.tier);
       if (!known.length) list.append(h('div', { class: 'empty' }, 'Chưa có đan phương nào. Mua ở phường thị hoặc tìm trong kỳ ngộ.'));
       for (const p of known) {
         const err = canBrew(p.id);
@@ -100,7 +100,7 @@ export function openCraft(tab = -1) {
           h('div', { class: 'acts' }, btn('Luyện', () => say(brew(p.id)), 'small', { dis: !!err, title: err || '' }))));
       }
     } else if (k === 'talis') {
-      const known = s.recipes.map(id => TALIS[id]).filter(x => x && !x.co).sort((a, b) => a.p - b.p);
+      const known = s.recipes.map(id => TALIS[id]).filter(x => x && !x.co).sort((a, b) => b.p - a.p);
       const co = !!s.flags.coPhu || (s.flags.phapquyet && s.flags.phapquyet.includes('cophu'));
       if (co) {
         body.append(h('div', { class: 'small muted', style: { marginBottom: '6px' } }, 'Bí tịch chế phù thượng cổ: cổ phù mạnh gấp mười, nhưng phải vẽ trên giấy da yêu thú (tới Tứ phẩm) hoặc giấy linh mộc (mọi phẩm).'));

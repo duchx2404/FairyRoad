@@ -118,6 +118,7 @@ import './events/congtu';
 import './events/suitor';
 import './events/heroine';
 import './events/tienco';
+import './events/folk';
 
 // Cổng debug cho kiểm thử tự động (chỉ khi chạy dev).
 if (import.meta.env.DEV) {

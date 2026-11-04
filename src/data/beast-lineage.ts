@@ -427,3 +427,150 @@ export function isMythicBeast(name?: string): boolean {
   if (!nodes || nodes.length === 0) return false;
   return nodes.some(n => n.myth);
 }
+
+
+export interface BeastFamilyInfo {
+  ancestor: string;
+  el: El;
+  myth: boolean;
+  cat: 'taico' | 'hau' | 'dieu' | 'tu_hung' | 'son_hai';
+  catName: string;
+  tier: 1 | 2 | 3 | 4 | 5; // 5: Thần Phẩm, 4: Thiên Phẩm, 3: Địa Phẩm, 2: Huyền Phẩm, 1: Hoàng Phẩm
+  tierName: string;
+  weight: number;          // Trọng số xuất hiện (giảm dần theo phẩm cấp)
+  title: string;
+  starterName: string;
+  starterEl: El;
+  starterNodeId?: string;
+  pathDesc: string;
+}
+
+/** Danh mục các dòng dõi phả hệ thượng cổ để người chơi lựa chọn khi tạo nhân vật. */
+export function getBeastFamilies(): BeastFamilyInfo[] {
+  const customInfo: Record<string, { cat: BeastFamilyInfo['cat']; catName: string; title: string; path: string }> = {
+    'Tổ Long': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Vạn Long Chi Tổ · Thái Cổ Thần Long', path: 'Thanh Lân Mãng ➔ Giao Long / 10 Rồng Nguyên Tố / 9 Con Rồng ➔ Chân Long ➔ Tổ Long' },
+    'Chân Phượng': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Bách Điểu Chi Vương · Bất Diệt Thần Phượng', path: 'Linh Vũ Điểu ➔ Chu Tước / Thanh Loan / Khổng Tước / Kim Sí Đại Bằng ➔ Chân Phượng' },
+    'Thủy Kỳ Lân': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Vạn Thú Chi Trưởng · Tường Thụy Thần Thú', path: 'Linh Lân Thú ➔ Hỏa / Mặc / Ngọc Kỳ Lân ➔ Thủy Kỳ Lân' },
+    'Côn Bằng': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Bắc Minh Thần Thú · Thôn Hải Liệt Không', path: 'Côn Ngư ➔ Bắc Minh Kình Ngư ➔ Cự Bằng ➔ Côn Bằng' },
+    'Huyền Vũ': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Bắc Phương Chân Thần · Thác Thiên Chi Khí', path: 'Linh Quy ➔ Long Quy / Quy Xà ➔ Chân Vũ ➔ Huyền Vũ' },
+    'Bạch Hổ': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Tây Phương Sát Thần · Canh Kim Chi Tinh', path: 'Linh Hổ ➔ Liệt Viêm Hổ / Canh Kim Hổ ➔ Bạch Hổ' },
+    'Cửu Vĩ Hồ': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Thanh Khâu Hồ Tộc · Huyễn Biến Thiên Cơ', path: 'Nhất Vĩ Hồ / Tuyết Ảnh / Xích Diễm ➔ Tam Vĩ ➔ Lục Vĩ ➔ Cửu Vĩ Hồ' },
+    'Bạch Trạch': { cat: 'taico', catName: 'Thần Thú Thái Cổ', title: 'Thông Hiểu Vạn Vật · Thượng Cổ Thụy Thú', path: 'Ấu Bạch Trạch / Linh Lộc ➔ Bạch Trạch' },
+
+    'Chu Yếm': { cat: 'hau', catName: 'Hỗn Thế Thần Hầu', title: 'Bạch Thủ Xích Túc · Hỗn Thế Tứ Hầu Chi Tổ', path: 'Hoa Quả Sơn Linh Hầu [none] ➔ Linh Minh Thạch Hầu / Lục Nhĩ / Thông Tí / Xích Khào ➔ Chu Yếm' },
+    'Tam Túc Kim Ô': { cat: 'dieu', catName: 'Thần Cầm & Tiên Điểu', title: 'Thái Dương Thần Điểu · Chân Hỏa Diệt Thế', path: 'Hỏa Điểu ➔ Xích Viêm Hỏa Điểu ➔ Tam Túc Kim Ô' },
+    'Thái Âm Thần Thố': { cat: 'dieu', catName: 'Thần Cầm & Tiên Điểu', title: 'Cung Trăng Giã Dược · Thái Âm Thần Thú', path: 'Linh Thố ➔ Ngọc Thố ➔ Thái Âm Thần Thố' },
+    'Kim Sí Đại Bằng Điêu': { cat: 'dieu', catName: 'Thần Cầm & Tiên Điểu', title: 'Sư Đà Lĩnh Thần Điêu · Cửu Vạn Dặm Phi Thiên', path: 'Linh Vũ Điểu ➔ Kim Sí Điêu ➔ Kim Sí Đại Bằng Điêu' },
+
+    'Cùng Kỳ': { cat: 'tu_hung', catName: 'Tứ Hung & Cổ Ma', title: 'Thượng Cổ Tứ Hung · Hống Thiên Trục Phong', path: 'Hống Thiên Thực Nhân Thú ➔ Cùng Kỳ' },
+    'Đế Giang': { cat: 'tu_hung', catName: 'Tứ Hung & Cổ Ma', title: 'Lục Túc Tứ Dực · Hỗn Độn Không Khiếu', path: 'Hỗn Độn Nang Thú ➔ Đế Giang' },
+    'Bào Hào': { cat: 'tu_hung', catName: 'Tứ Hung & Cổ Ma', title: 'Thao Thiết Cổ Thú · Vạn Vật Giai Thôn', path: 'Phệ Hồn Ma Ảnh ➔ Bào Hào' },
+    'Thôn Thiên Cự Thú': { cat: 'tu_hung', catName: 'Tứ Hung & Cổ Ma', title: 'Thái Cổ Cự Yêu · Thôn Thiên Diệt Địa', path: 'Ấu Hải Thú ➔ Thôn Thiên Cự Thú' },
+  };
+
+  const list: BeastFamilyInfo[] = [];
+
+  for (const root of parsed.rootNodes) {
+    const leaves: { n: string; el: El; nodeId: string; depth: number }[] = [];
+    const seen = new Set<string>();
+
+    const collectLeaves = (node: LineageTreeNode) => {
+      if (node.children.length === 0) {
+        if (!seen.has(node.n + '_' + node.el)) {
+          seen.add(node.n + '_' + node.el);
+          leaves.push({ n: node.n, el: node.el, nodeId: node.id, depth: node.depthFromRoot });
+        }
+        return;
+      }
+      node.children.forEach(collectLeaves);
+    };
+
+    collectLeaves(root);
+    // Huyết mạch xa nhất của loài đó: depth lớn nhất (xa root nhất), ưu tiên loài không thuộc tính 'none'
+    leaves.sort((a, b) => {
+      if (b.depth !== a.depth) return b.depth - a.depth;
+      if (a.el === 'none' && b.el !== 'none') return -1;
+      if (b.el === 'none' && a.el !== 'none') return 1;
+      return 0;
+    });
+    const starter = leaves[0] || { n: root.n, el: root.el, nodeId: root.id, depth: 0 };
+    const custom = customInfo[root.n];
+    const cat = custom?.cat || 'son_hai';
+
+    let tier: 1 | 2 | 3 | 4 | 5 = 1;
+    let tierName = 'Hoàng Phẩm';
+    let weight = 80;
+
+    if (cat === 'taico') {
+      tier = 5; tierName = 'Thần Phẩm'; weight = 4;
+    } else if (cat === 'hau' || cat === 'dieu') {
+      tier = 4; tierName = 'Thiên Phẩm'; weight = 10;
+    } else if (cat === 'tu_hung') {
+      tier = 3; tierName = 'Địa Phẩm'; weight = 22;
+    } else if (root.myth || root.heightToLeaf >= 2) {
+      tier = 2; tierName = 'Huyền Phẩm'; weight = 45;
+    }
+
+    list.push({
+      ancestor: root.n,
+      el: root.el,
+      myth: root.myth,
+      cat,
+      catName: custom?.catName || 'Sơn Hải Dị Thú',
+      tier,
+      tierName,
+      weight,
+      title: custom?.title || `${root.n} · Dị Thú Sơn Hải Kinh`,
+      starterName: starter.n,
+      starterEl: 'none', // Tất cả loài sơ khai khởi đầu 100% là Vô Tính (không nguyên tố)
+      starterNodeId: starter.nodeId,
+      pathDesc: custom?.path || `${starter.n} [none] ➔ ... ➔ ${root.n}`,
+    });
+  }
+
+  // Danh sách thuần túy lấy trực tiếp từ các cây phả hệ Root trong XML
+
+  // Sắp xếp: Thần Thú Thái Cổ lên đầu tiên (Tổ Long, Chân Phượng, Thủy Kỳ Lân, Côn Bằng...)
+  const catOrder = { taico: 0, hau: 1, dieu: 2, tu_hung: 3, son_hai: 4 };
+  const vipPriority: Record<string, number> = {
+    'Tổ Long': 1, 'Chân Phượng': 2, 'Thủy Kỳ Lân': 3, 'Côn Bằng': 4,
+    'Huyền Vũ': 5, 'Bạch Hổ': 6, 'Cửu Vĩ Hồ': 7, 'Bạch Trạch': 8,
+    'Linh Minh Thạch Hầu': 9, 'Tam Túc Kim Ô': 10
+  };
+
+  list.sort((a, b) => {
+    const pA = vipPriority[a.ancestor] || 99;
+    const pB = vipPriority[b.ancestor] || 99;
+    if (pA !== pB) return pA - pB;
+    const cA = catOrder[a.cat] ?? 99;
+    const cB = catOrder[b.cat] ?? 99;
+    if (cA !== cB) return cA - cB;
+    return a.ancestor.localeCompare(b.ancestor, 'vi');
+  });
+
+  return list;
+}
+
+
+/** Rút ngẫu nhiên danh sách thần thú theo trọng số phẩm cấp giảm dần (không trùng lặp). */
+export function rollWeightedBeastFamilies(all: BeastFamilyInfo[], count = 3): BeastFamilyInfo[] {
+  const pool = [...all];
+  const picked: BeastFamilyInfo[] = [];
+
+  for (let i = 0; i < count && pool.length > 0; i++) {
+    const totalWeight = pool.reduce((sum, item) => sum + (item.weight || 10), 0);
+    let rand = Math.random() * totalWeight;
+    let chosenIndex = 0;
+    for (let j = 0; j < pool.length; j++) {
+      rand -= (pool[j].weight || 10);
+      if (rand <= 0) {
+        chosenIndex = j;
+        break;
+      }
+    }
+    picked.push(pool[chosenIndex]);
+    pool.splice(chosenIndex, 1);
+  }
+
+  return picked;
+}
