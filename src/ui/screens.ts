@@ -1,3 +1,5 @@
+import { openAuthModal } from './auth-modal';
+import { getCurrentUser, isLoggedIn } from '../engine/auth';
 // Màn hình toàn trang: mở đầu, đầu thai, cái chết, phi thăng.
 import { askConfirm, notice } from './dialog';
 import { glyphSvg } from './glyph';
@@ -39,6 +41,7 @@ export function titleScreen() {
       hasSave ? btn(`Tiếp tục: ${s.name}`, () => { hideScreen(); onStart(); }, 'prime') : null,
       btn(hasSave ? 'Bỏ kiếp này, đầu thai mới' : 'Đầu thai', () => (hasSave ? askConfirm('Kiếp hiện tại sẽ bị bỏ và không được tính điểm luân hồi. Chắc chứ?', creation, { title: 'Đầu thai mới', ok: 'Bỏ kiếp này', danger: true }) : creation()), hasSave ? '' : 'prime'),
       meta.lives.length ? btn('Điện Luân Hồi', karmaHall) : null,
+      btn(isLoggedIn() ? '☁️ ' + (getCurrentUser()?.displayName || 'Tài khoản') : '👤 Đăng nhập / Đăng ký', () => openAuthModal(() => titleScreen()), 'sm'),
     ),
     meta.lives.length ? h('p', { class: 'center small muted', style: { marginTop: '18px' } }, `${meta.lives.length} kiếp đã qua · điểm luân hồi ${meta.karma} · năm thế giới ${meta.worldYear}`) : null,
   );

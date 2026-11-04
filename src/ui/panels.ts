@@ -1,3 +1,7 @@
+import { openAuthModal } from './auth-modal';
+import { getCurrentUser, isLoggedIn, fetchRoster, fetchWorldChat, sendWorldChatMessage, syncSaveToCloud, loadSaveFromCloud } from '../engine/auth';
+import { isGeminiActive, DEFAULT_GEMINI_MODEL } from '../ai/gemini';
+import { fight, fightSummary, type FoeSpec } from '../engine/combat';
 import { worldDefinitions } from '../data/local-items';
 // Cửa sổ trang kéo thả được.
 import { skEff, skGradeOf } from '../engine/char';
@@ -18,7 +22,7 @@ import { isMythicBeast } from '../data/beast-lineage';
 import { save } from '../engine/state';
 import { addLog, mark } from '../engine/core';
 import { h, $, btn, bar } from './dom';
-import { s, meta } from '../engine/state';
+import { s, meta, saveMeta } from '../engine/state';
 import { daoluTitle, isPrimaryDaolu } from '../engine/relationships';
 import { REALMS, STAGES, STATS, STAT_KEYS, EL, PERKS, PHAM_N, PHAM_BONUS, DAO_CO, ORIGINS, originName, CLANS, BODIES, ROOTS, ALL_EL, VARIANT_EL, khacOf, hiddenRootKind } from '../data/core';
 import { CHAU, whereOf, ownerTxt, LOC_TYPE, EMPIRES, EMPIRE_TIER, EMPIRE_GUARD, COURT_RANKS, VUC, LOCS, LOC_LIST, SECTS, BEASTS, beastRoot, REGIONS, SECT_TIER, SECT_TIER_INFO, CRAFT_LABEL, rankLabel } from '../data/world';
@@ -64,6 +68,8 @@ export const NAV: [string, string][] = [
   ['party', 'Đồng hành'],
   ['rel', 'Nhân mạch'],
   ['tienco', 'Thiên Cơ Lâu'],
+  ['multi', 'Vạn Giới'],
+  ['chat', 'Trò chuyện'],
   ['log', 'Nhật ký'],
   // Đồ giám đã sáp nhập vào Thiên Cơ Lâu
   ['hist', 'Sử ký'],
@@ -72,7 +78,7 @@ export const NAV: [string, string][] = [
   ['help', 'Cách chơi'],
 ];
 const NAV_GLYPH: Record<string, string> = {
-  char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower',
+  char: 'navChar', bag: 'navBag', km: 'navKm', daolu: 'navDaolu', party: 'navParty', rel: 'navRel', tienco: 'navTower', multi: 'navParty', chat: 'navChat',
   log: 'navLog', hist: 'navHist', ach: 'navAch', set: 'navSet', help: 'navHelp',
 };
 export const npcTagName = (n: NPC) => n.spouseRole ? daoluTitle(n) : (n.id === s.flags.heroineId || (n as any).heroine ? 'Nữ chính' : TAG_N[n.tag]);
@@ -172,6 +178,8 @@ function build(id: string): HTMLElement[] {
     case 'log': return logPanel();
     case 'hist': return histPanel();
     case 'ach': return achPanel();
+    case 'multi': return multiPanel();
+    case 'chat': return chatPanel();
     case 'set': return setPanel();
     case 'help': return helpPanel();
   }
@@ -1232,68 +1240,560 @@ function achPanel(): HTMLElement[] {
 }
 
 // ---------- Cài đặt ----------
-function setPanel(): HTMLElement[] {
-  const st = meta.settings;
-  const status = h('div', { class: 'small muted' });
-  // AI bật mà game không gọi được (vd. đang chơi bản web): báo rõ lý do ngay trong Cài đặt
-  const blocked = h('div', { class: 'small ai-blocked', style: { color: 'var(--seal)', margin: '4px 0' } });
-  const showBlocked = () => { const r = aiBlockReason(); blocked.textContent = r ? `AI không hoạt động: ${r}` : ''; blocked.hidden = !r; };
-  showBlocked();
-  const modelSel = h('select', { onchange: (e: Event) => setAi({ model: (e.target as HTMLSelectElement).value }) }, h('option', { value: st.model }, st.model));
-  const check = async () => {
-    showBlocked();
-    const r = aiBlockReason();
-    if (r) { status.textContent = ''; return; }
-    status.textContent = 'Đang kiểm tra...';
-    try {
-      const ms = await listModels();
-      modelSel.innerHTML = '';
-      for (const m of ms) modelSel.append(h('option', { value: m, selected: m === st.model }, m));
-      if (!ms.includes(st.model) && ms[0]) setAi({ model: ms[0] });
-      status.textContent = `Kết nối được Ollama, có ${ms.length} model.`;
-    } catch (e) {
-      status.textContent = 'Không kết nối được Ollama tại ' + st.url + '. Hãy bật Ollama (ollama serve).';
+
+// ---------- Vạn Giới Liên Minh (Multi-player & Bảng Thiên Kiêu & Lôi Đài) ----------
+function multiPanel(): HTMLElement[] {
+  const user = getCurrentUser();
+  const root = h('div', { class: 'multi-panel' });
+
+  // 1. Header trạng thái tài khoản & đồng bộ Cloud
+  const topBar = h('div', { class: 'card', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', padding: '10px 14px' } });
+  if (user && isLoggedIn()) {
+    topBar.append(
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+        h('span', { class: 'badge gold', style: { fontSize: '16px' } }, '仙'),
+        h('div', {},
+          h('div', { style: { fontWeight: 'bold' } }, user.displayName || user.username),
+          h('div', { class: 'small muted' }, `@${user.username} · ${user.authProvider === 'google' ? 'Google · Gemini AI' : 'Tài khoản thường'}`)
+        )
+      ),
+      h('div', { style: { display: 'flex', gap: '6px' } },
+        btn('☁️ Lưu Cloud', async () => {
+          const ok = await syncSaveToCloud();
+          notice(ok ? '✓ Đã đồng bộ Save lên Đám Mây thành công!' : '✕ Lỗi đồng bộ. Hãy kiểm tra máy chủ.');
+        }, 'sm prime'),
+        btn('Tài khoản', () => openAuthModal(() => renderNav()), 'sm')
+      )
+    );
+  } else {
+    topBar.append(
+      h('div', {},
+        h('div', { style: { fontWeight: 'bold' } }, 'Chưa đăng nhập tài khoản'),
+        h('div', { class: 'small muted' }, 'Đăng ký nhanh không cần xác minh để lưu cloud và tranh tài Thiên Bảng')
+      ),
+      btn('Đăng nhập / Đăng ký', () => openAuthModal(() => renderNav()), 'sm prime')
+    );
+  }
+  root.append(topBar);
+
+  // 2. Tab con: [Thiên Kiêu Bảng] [Lôi Đài Huyễn Ảnh] [Truyền Âm Vạn Giới]
+  const tabHeader = h('div', { style: { display: 'flex', gap: '6px', margin: '8px 0 12px 0', borderBottom: '1px solid var(--border)', paddingBottom: '6px' } });
+  let subTab: 'board' | 'pvp' | 'chat' = 'board';
+
+  const btnBoard = h('button', { class: 'btn sm prime', onclick: () => { subTab = 'board'; switchSub(); } }, '🏆 Thiên Kiêu Bảng');
+  const btnPvp = h('button', { class: 'btn sm', onclick: () => { subTab = 'pvp'; switchSub(); } }, '⚔️ Lôi Đài Huyễn Ảnh');
+  const btnChat = h('button', { class: 'btn sm', onclick: () => { subTab = 'chat'; switchSub(); } }, '💬 Truyền Âm Vạn Giới');
+  tabHeader.append(btnBoard, btnPvp, btnChat);
+  root.append(tabHeader);
+
+  const subBody = h('div', {});
+  root.append(subBody);
+
+  async function switchSub() {
+    btnBoard.className = subTab === 'board' ? 'btn sm prime' : 'btn sm';
+    btnPvp.className = subTab === 'pvp' ? 'btn sm prime' : 'btn sm';
+    btnChat.className = subTab === 'chat' ? 'btn sm prime' : 'btn sm';
+    subBody.innerHTML = '<div class="small muted">Đang tải dữ liệu từ máy chủ Vạn Giới...</div>';
+
+    if (subTab === 'board') {
+      // TAB 1: BẢNG THIÊN KIÊU
+      const roster = await fetchRoster();
+      subBody.innerHTML = '';
+      if (!roster.length) {
+        subBody.append(h('div', { class: 'card', style: { padding: '16px', textAlign: 'center' } },
+          h('p', {}, 'Chưa có dữ liệu tu sĩ nào trên Thiên Kiêu Bảng.'),
+          h('p', { class: 'small muted' }, 'Hãy đăng nhập và bấm "Lưu Cloud" để đưa tên mình lên bảng vàng!')
+        ));
+        return;
+      }
+
+      const table = h('div', { class: 'list' });
+      roster.forEach((p, idx) => {
+        const row = h('div', { class: 'card', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '6px 0', padding: '10px' } },
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: '10px' } },
+            h('span', { class: 'badge ' + (idx === 0 ? 'gold' : idx === 1 ? 'silver' : idx === 2 ? 'bronze' : ''), style: { fontWeight: 'bold' } }, `#${idx + 1}`),
+            h('div', {},
+              h('div', { style: { fontWeight: 'bold' } }, p.displayName),
+              h('div', { class: 'small muted' }, `${p.realm} · Tuổi: ${Math.floor(p.life)} · Linh thạch: ${p.score || 0}`)
+            )
+          ),
+          h('span', { class: 'badge purple small' }, p.realm)
+        );
+        table.append(row);
+      });
+      subBody.append(table);
+
+    } else if (subTab === 'pvp') {
+      // TAB 2: LÔI ĐÀI HUYỄN ẢNH (PVP)
+      const roster = await fetchRoster();
+      subBody.innerHTML = '';
+      const intro = h('div', { class: 'small muted', style: { marginBottom: '10px' } },
+        'Nơi các đạo hữu lưu lại huyễn ảnh chiến hồn để luận đạo so tài. Đánh bại chiến hồn nhận 500 linh thạch và 25 điểm danh vọng!'
+      );
+      subBody.append(intro);
+
+      if (!roster.length) {
+        subBody.append(h('div', { class: 'card', style: { padding: '16px', textAlign: 'center' } }, 'Chưa có đối thủ nào lưu lại huyễn ảnh trên lôi đài.'));
+        return;
+      }
+
+      const list = h('div', { class: 'list' });
+      roster.forEach((p) => {
+        const item = h('div', { class: 'card', style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '6px 0', padding: '10px' } },
+          h('div', {},
+            h('div', { style: { fontWeight: 'bold' } }, p.displayName),
+            h('div', { class: 'small muted' }, `Cảnh giới: ${p.realm} · Chiến lực ngũ hành`)
+          ),
+          btn('⚔️ Khiêu chiến', () => {
+            if (!s) { notice('Cần vào một kiếp nhân vật mới có thể bước lên lôi đài!'); return; }
+            const foe: FoeSpec = {
+              name: p.displayName + ' (Huyễn Ảnh)',
+              r: Math.max(0, p.realmIdx || 0),
+              mult: 1.15,
+              kind: 'cultivator',
+              el: p.spec?.el || null,
+            };
+            const r = fight(foe);
+            const sum = fightSummary(r);
+            if (r.win) {
+              s.money = (s.money || 0) + 500;
+              s.fame = (s.fame || 0) + 25;
+              save();
+              notice(sum + '\n\n🎉 Ngươi xuất sắc đánh bại huyễn ảnh của ' + p.displayName + ' trên lôi đài, vang danh thiên hạ, nhận thưởng 500 linh thạch!');
+            } else {
+              notice(sum + '\n\nĐối thủ xuất chiêu quá biến ảo, ngươi bại trận lui xuống lôi đài đúc rút kinh nghiệm.');
+            }
+          }, 'sm prime')
+        );
+        list.append(item);
+      });
+      subBody.append(list);
+
+    } else {
+      // TAB 3: TRUYỀN ÂM VẠN GIỚI (CHAT)
+      subBody.innerHTML = '';
+      const chatBox = h('div', { class: 'chat-container', style: { maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '6px', padding: '8px', marginBottom: '8px', background: 'rgba(0,0,0,0.02)' } });
+      subBody.append(chatBox);
+
+      async function loadChat() {
+        const msgs = await fetchWorldChat();
+        chatBox.innerHTML = '';
+        if (!msgs.length) {
+          chatBox.innerHTML = '<div class="small muted center" style="padding: 16px;">Chưa có lời truyền âm nào. Hãy là người đầu tiên lên tiếng!</div>';
+          return;
+        }
+        msgs.forEach((m) => {
+          const row = h('div', { style: { margin: '4px 0', fontSize: '13px' } },
+            h('span', { class: 'badge small purple', style: { marginRight: '6px', fontSize: '11px' } }, m.realm || 'Tu sĩ'),
+            h('strong', {}, (m.display_name || 'Đạo Hữu') + ': '),
+            h('span', {}, m.message)
+          );
+          chatBox.append(row);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      loadChat();
+
+      const inputRow = h('div', { style: { display: 'flex', gap: '6px' } });
+      const msgInput = h('input', { type: 'text', placeholder: 'Nhập lời truyền âm khắp thiên hạ...', style: { flex: 1, padding: '6px 8px' } });
+      const sendBtn = btn('Gửi', async () => {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        if (!isLoggedIn()) { notice('Cần đăng nhập tài khoản để truyền âm!'); openAuthModal(); return; }
+        sendBtn.textContent = '...';
+        const userRealm = s ? REALMS[s.r]?.n : 'Phàm nhân';
+        const ok = await sendWorldChatMessage(text, userRealm);
+        sendBtn.textContent = 'Gửi';
+        if (ok) {
+          msgInput.value = '';
+          loadChat();
+        } else {
+          notice('Không thể gửi tin nhắn. Kiểm tra kết nối máy chủ.');
+        }
+      }, 'prime');
+
+      inputRow.append(msgInput, sendBtn);
+      subBody.append(inputRow);
     }
-  };
-  const cb = (label: string, k: 'ai' | 'aiBio', sub?: string) => h('label', { style: { display: 'block', margin: '4px 0' } }, h('input', { type: 'checkbox', checked: st[k], onchange: (e: Event) => { setAi({ [k]: (e.target as HTMLInputElement).checked }); showBlocked(); } }), ' ', label, sub ? h('div', { class: 'small muted', style: { marginLeft: '22px' } }, sub) : null);
-  return [
-    h('h4', {}, 'AI kể chuyện (Ollama, chạy trên máy)'),
-    cb('Bật AI', 'ai', 'Khi bật, AI kể lại phần mở đầu và kết quả của mọi sự kiện. Khi tắt, dùng lời kể cố định. Số liệu và phần thưởng không đổi.'),
-    cb('Viết tiểu sử khi một kiếp kết thúc', 'aiBio'),
-    h('div', { style: { margin: '8px 0' } }, 'Địa chỉ: ', h('input', { type: 'text', value: st.url, style: { width: '220px' }, onchange: (e: Event) => { setAi({ url: (e.target as HTMLInputElement).value.trim() }); showBlocked(); } })),
-    h('div', { style: { margin: '8px 0' } }, 'Model: ', modelSel, ' ', btn('Kiểm tra', check, 'small')),
-    status,
-    blocked,
-    h('h4', {}, 'Chế độ tự do'),
-    h('label', { style: { display: 'block', margin: '4px 0' } }, h('input', { type: 'checkbox', checked: st.free, onchange: (e: Event) => setAi({ free: (e.target as HTMLInputElement).checked }) }), ' Mở hết xuất thân, nâng cấp luân hồi, gieo mệnh không giới hạn, tự chọn linh căn / thể chất / thiên phú',
-      h('div', { class: 'small muted', style: { marginLeft: '22px' } }, 'Áp dụng từ lần đầu thai tới.')),
-    h('h4', {}, 'Dữ liệu'),
-    h('div', { class: 'small muted' }, 'Tiến trình tự lưu trong trình duyệt sau mỗi hành động.'),
-    h('div', { style: { display: 'flex', gap: '6px', marginTop: '6px', flexWrap: 'wrap' } },
-      btn('Xuất dữ liệu', () => {
-        const blob = new Blob([JSON.stringify({ meta, save: localStorage.getItem('tienlo.save.v1') })], { type: 'application/json' });
-        const a = h('a', { href: URL.createObjectURL(blob), download: `tienlo-${Date.now()}.json` });
-        a.click();
-      }, 'small'),
-      btn('Nhập dữ liệu', () => {
-        const inp = h('input', { type: 'file', accept: '.json' }) as HTMLInputElement;
-        inp.onchange = async () => {
-          const f = inp.files?.[0];
-          if (!f) return;
-          const j = JSON.parse(await f.text());
-          localStorage.setItem('tienlo.meta.v1', JSON.stringify(j.meta));
-          if (j.save) localStorage.setItem('tienlo.save.v1', j.save);
-          location.reload();
-        };
-        inp.click();
-      }, 'small'),
-      btn('Xóa toàn bộ (bắt đầu lại từ đầu)', () => {
-        askConfirm('Xóa toàn bộ kiếp hiện tại, sử ký, điểm luân hồi và thành tựu? Không thể hoàn tác.', () => { localStorage.removeItem('tienlo.meta.v1'); localStorage.removeItem('tienlo.save.v1'); location.reload(); }, { title: 'Xóa dữ liệu', ok: 'Xóa hết', danger: true });
-      }, 'small danger')),
-  ];
+  }
+
+  switchSub();
+  return [root];
 }
 
-// ---------- Cách chơi ----------
+
+// ---------- Cửa sổ Trò chuyện (Chat Thế Giới & Đàm Đạo AI) ----------
+let aiChatHistory: { role: 'user' | 'ai'; text: string }[] = [
+  { role: 'ai', text: 'Vô lượng thiên tôn! Ta là Khí Linh Thiên Đạo của Thương Lan Giới. Đạo hữu tìm ta muốn thỉnh giáo điều gì về con đường tu tiên?' }
+];
+
+function chatPanel(): HTMLElement[] {
+  const root = h('div', { class: 'chat-panel' });
+  const tabs = h('div', { style: { display: 'flex', gap: '8px', marginBottom: '12px', borderBottom: '1px solid var(--border)', paddingBottom: '6px' } });
+
+  let tabMode: 'ai' | 'world' = 'ai'; // Mặc định mở đàm đạo AI
+  const btnAi = h('button', { class: 'btn sm prime', onclick: () => { tabMode = 'ai'; switchTab(); } }, '🤖 Đàm Đạo Với Tiên Giới AI');
+  const btnWorld = h('button', { class: 'btn sm', onclick: () => { tabMode = 'world'; switchTab(); } }, '💬 Truyền Âm Thế Giới');
+  tabs.append(btnAi, btnWorld);
+  root.append(tabs);
+
+  const body = h('div', {});
+  root.append(body);
+
+  function switchTab() {
+    btnAi.className = tabMode === 'ai' ? 'btn sm prime' : 'btn sm';
+    btnWorld.className = tabMode === 'world' ? 'btn sm prime' : 'btn sm';
+    body.innerHTML = '';
+
+    if (tabMode === 'ai') {
+      // TAB 1: ĐÀM ĐẠO TRỰC TIẾP VỚI GEMINI AI
+      const isGemini = isGeminiActive();
+      const aiBadge = isGemini
+        ? h('div', { class: 'badge green small', style: { marginBottom: '8px', display: 'inline-block' } }, '✨ Đang kết nối: Google Gemini AI (gemini-2.5-flash)')
+        : h('div', { class: 'badge small', style: { marginBottom: '8px', display: 'inline-block' } }, '💻 Đang kết nối: Ollama Local');
+
+      const chatContainer = h('div', {
+        class: 'ai-chat-box',
+        style: {
+          height: '320px',
+          overflowY: 'auto',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+          padding: '12px',
+          background: 'rgba(0,0,0,0.02)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }
+      });
+
+      function renderAiMessages() {
+        chatContainer.innerHTML = '';
+        aiChatHistory.forEach((msg) => {
+          const isUser = msg.role === 'user';
+          const msgBubble = h('div', {
+            style: {
+              alignSelf: isUser ? 'flex-end' : 'flex-start',
+              maxWidth: '82%',
+              padding: '8px 12px',
+              borderRadius: isUser ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+              background: isUser ? 'var(--accent)' : 'var(--card-bg, #f4ecd8)',
+              color: isUser ? '#fff' : 'inherit',
+              border: isUser ? 'none' : '1px solid var(--border)',
+              fontSize: '13.5px',
+              lineHeight: '1.5'
+            }
+          }, msg.text);
+          chatContainer.append(msgBubble);
+        });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      renderAiMessages();
+
+      const inputRow = h('div', { style: { display: 'flex', gap: '8px', marginTop: '10px' } });
+      const promptInput = h('input', {
+        type: 'text',
+        placeholder: 'Hỏi về công pháp, bí cảnh, hoặc tâm sự tu tiên...',
+        style: { flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border)', boxSizing: 'border-box' }
+      });
+
+      const sendBtn = btn('Gửi', async () => {
+        const query = promptInput.value.trim();
+        if (!query) return;
+        promptInput.value = '';
+        aiChatHistory.push({ role: 'user', text: query });
+        renderAiMessages();
+
+        sendBtn.textContent = '...';
+        sendBtn.setAttribute('disabled', 'true');
+
+        const systemPrompt = `Bạn là Khí Linh Thiên Đạo của Thương Lan Giới trong game Tiên Lộ Mạn Mạn. Người chơi (tên: ${s?.name || 'Đạo hữu'}, cảnh giới: ${s ? REALMS[s.r]?.n : 'Phàm nhân'}) đang đàm đạo cùng ngươi.
+Quy tắc:
+- Xưng "Ta", gọi người chơi là "Đạo hữu" hoặc "Ngươi".
+- Văn phong tiên hiệp cổ phong uyên bác, trang nhã, thấu triệt thiên địa, có chất huyền huyễn.
+- Trả lời ngắn gọn, súc tích (dưới 150 chữ).`;
+
+        try {
+          let reply = '';
+          if (isGeminiActive()) {
+            const { callGemini } = await import('../ai/gemini');
+            reply = await callGemini(systemPrompt, query, 300, 0.85);
+          } else {
+            const { chatAi } = await import('../ai/ollama');
+            reply = await chatAi(`${systemPrompt}\n\nĐạo hữu hỏi: ${query}`);
+          }
+          aiChatHistory.push({ role: 'ai', text: reply || 'Thiên đạo mịt mờ, chốc lát chưa thấu triệt ý niệm...' });
+        } catch (err: any) {
+          aiChatHistory.push({ role: 'ai', text: 'Hư không dao động, chưa thể kết nối thần thức lúc này. (' + (err.message || 'Lỗi mạng') + ')' });
+        } finally {
+          sendBtn.textContent = 'Gửi';
+          sendBtn.removeAttribute('disabled');
+          renderAiMessages();
+        }
+      }, 'prime');
+
+      promptInput.onkeydown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter') sendBtn.click();
+      };
+
+      inputRow.append(promptInput, sendBtn);
+      body.append(aiBadge, chatContainer, inputRow);
+
+    } else {
+      // TAB 2: TRUYỀN ÂM THẾ GIỚI
+      const chatContainer = h('div', {
+        style: {
+          height: '320px',
+          overflowY: 'auto',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+          padding: '10px',
+          background: 'rgba(0,0,0,0.02)',
+          marginBottom: '10px'
+        }
+      });
+      body.append(chatContainer);
+
+      async function loadWorldChat() {
+        chatContainer.innerHTML = '<div class="small muted center">Đang tải truyền âm...</div>';
+        const msgs = await fetchWorldChat();
+        chatContainer.innerHTML = '';
+        if (!msgs.length) {
+          chatContainer.innerHTML = '<div class="small muted center" style="padding: 24px;">Chưa có ai truyền âm. Hãy là người đầu tiên lên tiếng!</div>';
+          return;
+        }
+        msgs.forEach((m) => {
+          const row = h('div', { style: { margin: '6px 0', fontSize: '13px' } },
+            h('span', { class: 'badge small purple', style: { marginRight: '6px', fontSize: '11px' } }, m.realm || 'Tu sĩ'),
+            h('strong', {}, (m.display_name || 'Đạo Hữu') + ': '),
+            h('span', {}, m.message)
+          );
+          chatContainer.append(row);
+        });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }
+
+      loadWorldChat();
+
+      const inputRow = h('div', { style: { display: 'flex', gap: '8px' } });
+      const msgInput = h('input', {
+        type: 'text',
+        placeholder: 'Nhập lời truyền âm khắp thiên hạ...',
+        style: { flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border)' }
+      });
+      const sendBtn = btn('Truyền âm', async () => {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        if (!isLoggedIn()) { notice('Cần đăng nhập tài khoản để truyền âm!'); openAuthModal(); return; }
+        sendBtn.textContent = '...';
+        const userRealm = s ? REALMS[s.r]?.n : 'Phàm nhân';
+        const ok = await sendWorldChatMessage(text, userRealm);
+        sendBtn.textContent = 'Truyền âm';
+        if (ok) {
+          msgInput.value = '';
+          loadWorldChat();
+        } else {
+          notice('Không thể gửi tin nhắn. Hãy kiểm tra kết nối server.');
+        }
+      }, 'prime');
+
+      msgInput.onkeydown = (e: KeyboardEvent) => {
+        if (e.key === 'Enter') sendBtn.click();
+      };
+
+      inputRow.append(msgInput, sendBtn);
+      body.append(inputRow);
+    }
+  }
+
+  switchTab();
+  return [root];
+}
+
+function setPanel(): HTMLElement[] {
+  const st = meta.settings;
+  const user = getCurrentUser();
+  const root = h('div', { class: 'set-panel' });
+
+  // 1. Tài khoản & Đám mây
+  root.append(h('h4', { style: { marginTop: 0 } }, '👤 Tài Khoản & Đám Mây'));
+  const userBox = h('div', { class: 'card', style: { padding: '10px 14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' } });
+  if (user && isLoggedIn()) {
+    userBox.append(
+      h('div', {},
+        h('div', { style: { fontWeight: 'bold' } }, user.displayName || user.username),
+        h('div', { class: 'small muted' }, `${user.authProvider === 'google' ? 'Đã liên kết Google' : 'Tài khoản thường'} · @${user.username}`)
+      ),
+      h('div', { style: { display: 'flex', gap: '6px' } },
+        btn('☁️ Lưu Cloud', async () => {
+          const ok = await syncSaveToCloud();
+          notice(ok ? 'Đã lưu Save lên Đám Mây thành công!' : 'Lỗi đồng bộ.');
+        }, 'sm prime'),
+        btn('Quản lý', () => openAuthModal(() => renderNav()), 'sm')
+      )
+    );
+  } else {
+    userBox.append(
+      h('div', {},
+        h('div', { style: { fontWeight: 'bold' } }, 'Chưa đăng nhập'),
+        h('div', { class: 'small muted' }, 'Đăng nhập để đồng bộ save và kích hoạt Gemini AI')
+      ),
+      btn('Đăng nhập / Đăng ký', () => openAuthModal(() => renderNav()), 'sm prime')
+    );
+  }
+  root.append(userBox);
+
+  // 2. Bộ máy AI Kể Chuyện
+  root.append(h('h4', {}, '🤖 Bộ Máy AI Kể Chuyện'));
+  const cb = (label: string, k: 'ai' | 'aiBio', sub?: string) =>
+    h('label', { style: { display: 'block', margin: '6px 0' } },
+      h('input', {
+        type: 'checkbox',
+        checked: st[k],
+        onchange: (e: Event) => {
+          setAi({ [k]: (e.target as HTMLInputElement).checked });
+          renderPanels();
+        }
+      }),
+      ' ', label,
+      sub ? h('div', { class: 'small muted', style: { marginLeft: '22px' } }, sub) : null
+    );
+
+  root.append(
+    cb('Bật AI kể chuyện', 'ai', 'Khi bật, AI sẽ viết lại kết quả các lựa chọn và biến cố kiếp người.'),
+    cb('Viết tiểu sử khi kiếp người kết thúc', 'aiBio')
+  );
+
+  // Chọn Provider: Google Gemini vs Ollama
+  const isGem = isGeminiActive();
+  const providerRow = h('div', { style: { margin: '10px 0', padding: '10px', background: 'rgba(0,0,0,0.03)', borderRadius: '6px' } });
+  providerRow.append(h('div', { style: { fontWeight: 'bold', marginBottom: '8px' } }, 'Chọn Bộ Máy AI:'));
+
+  const radioGemini = h('label', { style: { display: 'block', margin: '4px 0', cursor: 'pointer' } },
+    h('input', {
+      type: 'radio',
+      name: 'ai_provider',
+      checked: st.aiProvider === 'gemini' || isGem,
+      onchange: () => {
+        setAi({ aiProvider: 'gemini' });
+        renderPanels();
+      }
+    }),
+    ' ✨ ', h('strong', {}, 'Google Gemini AI (Cloud - Khuyên dùng)'),
+    h('div', { class: 'small muted', style: { marginLeft: '24px' } }, 'Chạy trên máy chủ đám mây của Google. Nhanh (1s), văn phong xuất sắc, không cần GPU.')
+  );
+
+  const radioOllama = h('label', { style: { display: 'block', margin: '8px 0 4px 0', cursor: 'pointer' } },
+    h('input', {
+      type: 'radio',
+      name: 'ai_provider',
+      checked: st.aiProvider === 'ollama' && !isGem,
+      onchange: () => {
+        setAi({ aiProvider: 'ollama' });
+        renderPanels();
+      }
+    }),
+    ' 💻 ', h('strong', {}, 'Ollama AI (Local - Chạy trên máy)'),
+    h('div', { class: 'small muted', style: { marginLeft: '24px' } }, 'Yêu cầu mở phần mềm Ollama trên máy tính.')
+  );
+
+  providerRow.append(radioGemini, radioOllama);
+  root.append(providerRow);
+
+  // Chi tiết cấu hình theo Provider đã chọn
+  if (st.aiProvider === 'gemini' || isGem) {
+    const gemBox = h('div', { class: 'card small', style: { padding: '12px', margin: '10px 0', border: '1px solid rgba(52, 168, 83, 0.4)' } });
+    gemBox.append(
+      h('div', { style: { color: '#2e7d32', fontWeight: 'bold', marginBottom: '6px' } }, '✨ Đang Dùng: Google Gemini 2.5 Flash'),
+      h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Model Gemini 2.5 Flash trên đám mây để viết sự kiện & đàm đạo.')
+    );
+
+    const currentKey = meta.settings.geminiKey || '';
+    const keyInput = h('input', {
+      type: 'password',
+      placeholder: 'Dán Gemini API Key của bạn (AIzaSy...)...',
+      value: currentKey,
+      style: { width: '100%', padding: '6px 8px', marginBottom: '6px', boxSizing: 'border-box' }
+    });
+
+    const keyRow = h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' } });
+    const saveKeyBtn = btn('Lưu Key', async () => {
+      const val = keyInput.value.trim();
+      setAi({ geminiKey: val, aiProvider: 'gemini' });
+      const { updateAccountGeminiKey } = await import('../engine/auth');
+      await updateAccountGeminiKey(val);
+      notice('Đã lưu Gemini API Key vào tài khoản!');
+      renderPanels();
+    }, 'sm prime');
+
+    const testGeminiBtn = btn('Kiểm tra kết nối Gemini AI', async () => {
+      testGeminiBtn.textContent = 'Đang gọi Gemini...';
+      try {
+        const { callGemini } = await import('../ai/gemini');
+        const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu phong cách tiên hiệp ngắn gọn.', 60, 0.7);
+        notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
+      } catch (err: any) {
+        notice('✕ ' + (err.message || 'Lỗi kết nối Gemini.'));
+      } finally {
+        testGeminiBtn.textContent = 'Kiểm tra kết nối Gemini AI';
+      }
+    }, 'sm');
+
+    keyRow.append(saveKeyBtn, testGeminiBtn);
+    gemBox.append(
+      h('div', { class: 'small muted', style: { marginBottom: '4px' } }, 'Gemini API Key riêng của bạn (lưu 1 lần dùng mãi mãi):'),
+      keyInput,
+      keyRow,
+      h('div', { class: 'small', style: { marginTop: '4px' } },
+        '👉 Lấy mã miễn phí tại: ',
+        h('a', {
+          href: 'https://aistudio.google.com/app/apikey',
+          target: '_blank',
+          style: { color: 'var(--prime)', textDecoration: 'underline' }
+        }, 'Google AI Studio (Bấm Create API key)'),
+        h('div', { class: 'muted', style: { fontSize: '11px', marginTop: '2px' } }, 'Đăng nhập Gmail, bấm "Create API key" để lấy mã miễn phí 100%.')
+      )
+    );
+
+    root.append(gemBox);
+
+  } else {
+    // Cấu hình Ollama
+    const status = h('div', { class: 'small muted', style: { margin: '4px 0' } });
+    const modelSel = h('select', { onchange: (e: Event) => setAi({ model: (e.target as HTMLSelectElement).value }) }, h('option', { value: st.model }, st.model));
+    const checkBtn = btn('Kiểm tra Ollama', async () => {
+      status.textContent = 'Đang kiểm tra Ollama...';
+      try {
+        const ms = await listModels();
+        modelSel.innerHTML = '';
+        for (const m of ms) modelSel.append(h('option', { value: m, selected: m === st.model }, m));
+        status.textContent = `Kết nối thành công, có ${ms.length} model.`;
+      } catch {
+        status.textContent = 'Không kết nối được Ollama tại ' + st.url;
+      }
+    }, 'sm');
+
+    root.append(
+      h('div', { style: { margin: '8px 0' } }, 'Địa chỉ Ollama: ', h('input', { type: 'text', value: st.url, style: { width: '220px' }, onchange: (e: Event) => setAi({ url: (e.target as HTMLInputElement).value.trim() }) })),
+      h('div', { style: { margin: '8px 0' } }, 'Model: ', modelSel, ' ', checkBtn),
+      status
+    );
+  }
+
+  // 3. Chế độ tự do
+  root.append(h('h4', { style: { marginTop: '16px' } }, 'Chế độ tự do'));
+  root.append(
+    h('label', { style: { display: 'block', margin: '4px 0' } },
+      h('input', { type: 'checkbox', checked: st.free, onchange: (e: Event) => setAi({ free: (e.target as HTMLInputElement).checked }) }),
+      ' Mở hết xuất thân, nâng cấp luân hồi, tự chọn linh căn / thể chất'
+    )
+  );
+
+  return [root];
+}
+
 function helpPanel(): HTMLElement[] {
   const P = (t: string, d: string) => h('p', { class: 'small' }, h('b', {}, t + '. '), d);
   return [
