@@ -130,49 +130,64 @@ export function openAuthModal(onSuccess?: () => void) {
       loadBtn.style.margin = '4px 0';
       box.append(loadBtn);
 
-      // THÔNG BÁO GEMINI AI CHO GOOGLE:
-      if (isGoogle) {
-        const googleAiCard = h(
-          'div',
-          {
-            class: 'card small',
-            style: {
-              margin: '12px 0',
-              padding: '10px',
-              background: 'rgba(52, 168, 83, 0.08)',
-              border: '1px solid rgba(52, 168, 83, 0.3)',
-            },
-          },
-          h('div', { style: { color: '#2e7d32', fontWeight: 'bold', marginBottom: '4px' } }, '✨ Tự động dùng Gemini AI'),
-          h(
-            'div',
-            { class: 'small muted' },
-            'Tài khoản Google đã tự động kích hoạt model Gemini 2.5 Flash để viết sự kiện và tiểu sử kiếp người. Bạn không cần nhập mã API nào cả!'
-          )
-        );
-        box.append(googleAiCard);
-      } else {
-        // Chỉ tài khoản thường mới cần ô nhập API Key nếu muốn dùng Gemini
-        const keyBox = h('div', { style: { margin: '12px 0', borderTop: '1px solid var(--border)', paddingTop: '10px' } });
-        keyBox.append(h('div', { class: 'small muted', style: { marginBottom: '4px' } }, 'Gemini API Key (Tùy chọn cho tài khoản thường):'));
-        const keyInput = h('input', {
-          type: 'password',
-          placeholder: 'Dán API Key (AI Studio)...',
-          value: meta.settings.geminiKey || user.geminiKey || '',
-          style: { width: '100%', padding: '6px 8px', marginBottom: '6px', boxSizing: 'border-box' },
-        });
-        const saveKeyBtn = btn('Lưu Gemini Key', async () => {
-          const val = keyInput.value.trim();
-          meta.settings.geminiKey = val;
-          meta.settings.aiProvider = 'gemini';
-          saveMeta();
-          await updateAccountGeminiKey(val);
-          notice('Đã lưu Gemini API Key! Game sẽ dùng Gemini AI để kể sự kiện.');
-          render();
-        }, 'sm');
-        keyBox.append(keyInput, saveKeyBtn);
-        box.append(keyBox);
-      }
+      // CẤU HÌNH GEMINI API CHO TÀI KHOẢN:
+      const currentKey = meta.settings.geminiKey || user.geminiKey || '';
+      const keyBox = h('div', { style: { margin: '12px 0', borderTop: '1px solid var(--border)', paddingTop: '10px' } });
+
+      keyBox.append(
+        h('div', { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '4px', color: '#2e7d32' } }, '✨ Thiết lập Google Gemini AI:'),
+        h('div', { class: 'small muted', style: { marginBottom: '6px' } },
+          isGoogle
+            ? 'Tài khoản Google đã kết nối model Gemini 2.5 Flash. Nếu máy chủ của bạn chưa thiết lập key chung, bạn có thể dán mã API cá nhân vào đây:'
+            : 'Dán API Key cá nhân để sử dụng Gemini 2.5 Flash trên đám mây thay cho Ollama local:'
+        )
+      );
+
+      const keyInput = h('input', {
+        type: 'password',
+        placeholder: 'Dán mã API Key (AIzaSy...)...',
+        value: currentKey,
+        style: { width: '100%', padding: '6px 8px', marginBottom: '6px', boxSizing: 'border-box' },
+      });
+
+      const keyRow = h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' } });
+      const saveKeyBtn = btn('Lưu Gemini Key', async () => {
+        const val = keyInput.value.trim();
+        meta.settings.geminiKey = val;
+        meta.settings.aiProvider = 'gemini';
+        saveMeta();
+        await updateAccountGeminiKey(val);
+        notice('Đã lưu Gemini API Key! Game sẽ sử dụng Gemini AI.');
+        render();
+      }, 'prime sm');
+
+      const testBtn = btn('Kiểm tra', async () => {
+        testBtn.textContent = '...';
+        try {
+          const { callGemini } = await import('../ai/gemini');
+          const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu ngắn gọn phong cách tiên hiệp.', 60, 0.7);
+          notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
+        } catch (err: any) {
+          notice('✕ Lỗi: ' + (err.message || 'Kiểm tra key hoặc mạng.'));
+        } finally {
+          testBtn.textContent = 'Kiểm tra';
+        }
+      }, 'sm');
+
+      keyRow.append(saveKeyBtn, testBtn);
+      keyBox.append(keyInput, keyRow);
+
+      const linkGuide = h('div', { class: 'small', style: { marginTop: '4px' } },
+        '👉 Lấy mã miễn phí 100% tại: ',
+        h('a', {
+          href: 'https://aistudio.google.com/app/apikey',
+          target: '_blank',
+          style: { color: 'var(--prime)', textDecoration: 'underline' }
+        }, 'Google AI Studio (Bấm Tạo API Key)'),
+        h('div', { class: 'muted', style: { fontSize: '11px', marginTop: '2px' } }, 'Chỉ cần đăng nhập bằng Gmail của bạn, bấm 1 nút là có mã miễn phí ngay.')
+      );
+      keyBox.append(linkGuide);
+      box.append(keyBox);
 
       // Nút Đăng xuất
       const logoutBtn = btn('Đăng xuất tài khoản', () => {

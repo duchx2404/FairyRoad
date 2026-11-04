@@ -64,9 +64,17 @@ export async function callGemini(
         if (text && typeof text === 'string') {
           return text.trim();
         }
+      } else {
+        const errJson = await res.json().catch(() => null);
+        const errMsg = errJson?.error?.message || `Lỗi HTTP ${res.status}`;
+        console.warn('Gemini direct API error:', errMsg);
+        throw new Error(`Google API: ${errMsg}`);
       }
-    } catch (err) {
-      console.warn('Lỗi gọi trực tiếp Gemini API, thử qua máy chủ proxy:', err);
+    } catch (err: any) {
+      console.warn('Lỗi gọi trực tiếp Gemini API, thử qua máy chủ proxy:', err.message);
+      if (err.message && err.message.startsWith('Google API:')) {
+        throw err;
+      }
     }
   }
 
@@ -88,15 +96,17 @@ export async function callGemini(
       }),
     });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok && data.text) {
-        return data.text.trim();
-      }
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.ok && data?.text) {
+      return data.text.trim();
     }
-  } catch (err) {
+    if (data?.error) {
+      throw new Error(data.error);
+    }
+  } catch (err: any) {
     console.warn('Proxy Gemini server không phản hồi:', err);
+    throw err;
   }
 
-  throw new Error('Không thể kết nối Gemini AI. Hãy kiểm tra API Key hoặc máy chủ server.');
+  throw new Error('Chưa có Gemini API Key. Bạn có thể lấy mã miễn phí tại aistudio.google.com và dán vào Cài đặt.');
 }

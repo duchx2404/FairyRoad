@@ -10,6 +10,22 @@ import { fileURLToPath } from 'node:url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Nạp file .env nếu có ở thư mục server hoặc thư mục gốc
+const envPaths = [path.join(__dirname, '.env'), path.join(__dirname, '..', '.env')];
+for (const p of envPaths) {
+  if (fs.existsSync(p)) {
+    try {
+      if (typeof process.loadEnvFile === 'function') {
+        process.loadEnvFile(p);
+        console.log(`[FairyRoad Server] Đã nạp cấu hình từ ${p}`);
+        break;
+      }
+    } catch (e) {
+      console.warn(`Lỗi nạp ${p}:`, e.message);
+    }
+  }
+}
+
 // Tạo thư mục data nếu chưa có
 const dataDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
@@ -359,7 +375,10 @@ app.post('/api/ai/gemini-proxy', async (req, res) => {
     const key = apiKey || req.user?.gemini_key || process.env.GEMINI_API_KEY;
 
     if (!key) {
-      return res.status(400).json({ ok: false, error: 'Chưa có Gemini API Key.' });
+      return res.status(400).json({
+        ok: false,
+        error: 'Chưa có Gemini API Key. Vui lòng nhập API Key từ Google AI Studio (aistudio.google.com) hoặc thiết lập GEMINI_API_KEY trong file .env của server.'
+      });
     }
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;

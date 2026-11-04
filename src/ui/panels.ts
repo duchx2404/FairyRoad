@@ -1707,8 +1707,26 @@ function setPanel(): HTMLElement[] {
     const gemBox = h('div', { class: 'card small', style: { padding: '12px', margin: '10px 0', border: '1px solid rgba(52, 168, 83, 0.4)' } });
     gemBox.append(
       h('div', { style: { color: '#2e7d32', fontWeight: 'bold', marginBottom: '6px' } }, '✨ Đang Dùng: Google Gemini 2.5 Flash'),
-      h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Tài khoản Google đã tự động liên kết model Gemini 2.5 Flash để viết sự kiện.')
+      h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Model Gemini 2.5 Flash trên đám mây để viết sự kiện & đàm đạo.')
     );
+
+    const currentKey = meta.settings.geminiKey || '';
+    const keyInput = h('input', {
+      type: 'password',
+      placeholder: 'Dán Gemini API Key (AIzaSy...)...',
+      value: currentKey,
+      style: { width: '100%', padding: '6px 8px', marginBottom: '6px', boxSizing: 'border-box' }
+    });
+
+    const keyRow = h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' } });
+    const saveKeyBtn = btn('Lưu Key', async () => {
+      const val = keyInput.value.trim();
+      setAi({ geminiKey: val, aiProvider: 'gemini' });
+      const { updateAccountGeminiKey } = await import('../engine/auth');
+      await updateAccountGeminiKey(val);
+      notice('Đã lưu Gemini API Key!');
+      renderPanels();
+    }, 'sm prime');
 
     const testGeminiBtn = btn('Kiểm tra kết nối Gemini AI', async () => {
       testGeminiBtn.textContent = 'Đang gọi Gemini...';
@@ -1717,13 +1735,28 @@ function setPanel(): HTMLElement[] {
         const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu phong cách tiên hiệp ngắn gọn.', 60, 0.7);
         notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
       } catch (err: any) {
-        notice('✕ Lỗi kết nối Gemini: ' + (err.message || 'Kiểm tra server hoặc mạng.'));
+        notice('✕ ' + (err.message || 'Lỗi kết nối Gemini.'));
       } finally {
         testGeminiBtn.textContent = 'Kiểm tra kết nối Gemini AI';
       }
-    }, 'sm prime');
+    }, 'sm');
 
-    gemBox.append(testGeminiBtn);
+    keyRow.append(saveKeyBtn, testGeminiBtn);
+    gemBox.append(
+      h('div', { class: 'small muted', style: { marginBottom: '4px' } }, 'Gemini API Key (Tùy chọn nếu server đã có key chung, hoặc dùng key riêng):'),
+      keyInput,
+      keyRow,
+      h('div', { class: 'small', style: { marginTop: '4px' } },
+        '👉 Lấy mã miễn phí tại: ',
+        h('a', {
+          href: 'https://aistudio.google.com/app/apikey',
+          target: '_blank',
+          style: { color: 'var(--prime)', textDecoration: 'underline' }
+        }, 'Google AI Studio (aistudio.google.com)'),
+        h('div', { class: 'muted', style: { fontSize: '11px', marginTop: '2px' } }, 'Đăng nhập Google, bấm "Create API key" để lấy mã miễn phí 100%.')
+      )
+    );
+
     root.append(gemBox);
 
   } else {
