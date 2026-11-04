@@ -1710,54 +1710,10 @@ function setPanel(): HTMLElement[] {
       h('div', { class: 'small muted', style: { marginBottom: '8px' } }, 'Model Gemini 2.5 Flash trên đám mây để viết sự kiện & đàm đạo.')
     );
 
-    const hasToken = !!meta.settings.geminiToken;
-    const isGoogle = getCurrentUser()?.authProvider === 'google';
-
-    if (hasToken) {
-      gemBox.append(
-        h('div', { class: 'badge green small', style: { margin: '4px 0 8px 0', display: 'inline-block' } }, '✓ Đang dùng Token Google OAuth tự động (Không cần Key)')
-      );
-    } else if (isGoogle) {
-      const oauthQuickBtn = btn('⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)', () => {
-        oauthQuickBtn.textContent = 'Đang mở Google...';
-        const clientId = meta.settings.googleClientId || '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com';
-        if (!window.google?.accounts?.oauth2) {
-          notice('Đang tải thư viện Google, vui lòng thử lại sau 2 giây.');
-          oauthQuickBtn.textContent = '⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)';
-          return;
-        }
-        try {
-          const client = window.google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: 'openid email profile https://www.googleapis.com/auth/generative-language',
-            callback: async (tokenResp: any) => {
-              if (tokenResp.error) {
-                oauthQuickBtn.textContent = '⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)';
-                notice('Google OAuth: ' + tokenResp.error);
-                return;
-              }
-              meta.settings.geminiToken = tokenResp.access_token;
-              meta.settings.aiProvider = 'gemini';
-              saveMeta();
-              notice('✓ Đã cấp quyền Google Gemini OAuth thành công! Không cần API Key.');
-              renderPanels();
-            },
-          });
-          client.requestAccessToken();
-        } catch (e: any) {
-          oauthQuickBtn.textContent = '⚡ Cấp quyền Gemini Tự Động (Google OAuth - Không cần Key)';
-          notice('Lỗi: ' + e.message);
-        }
-      }, 'sm prime');
-      oauthQuickBtn.style.marginBottom = '8px';
-      oauthQuickBtn.style.display = 'block';
-      gemBox.append(oauthQuickBtn);
-    }
-
     const currentKey = meta.settings.geminiKey || '';
     const keyInput = h('input', {
       type: 'password',
-      placeholder: 'Dán Gemini API Key (AIzaSy...)...',
+      placeholder: 'Dán Gemini API Key của bạn (AIzaSy...)...',
       value: currentKey,
       style: { width: '100%', padding: '6px 8px', marginBottom: '6px', boxSizing: 'border-box' }
     });
@@ -1768,54 +1724,13 @@ function setPanel(): HTMLElement[] {
       setAi({ geminiKey: val, aiProvider: 'gemini' });
       const { updateAccountGeminiKey } = await import('../engine/auth');
       await updateAccountGeminiKey(val);
-      notice('Đã lưu Gemini API Key!');
+      notice('Đã lưu Gemini API Key vào tài khoản!');
       renderPanels();
     }, 'sm prime');
 
     const testGeminiBtn = btn('Kiểm tra kết nối Gemini AI', async () => {
       testGeminiBtn.textContent = 'Đang gọi Gemini...';
       try {
-        const { getActiveGeminiAuth } = await import('../ai/gemini');
-        const auth = getActiveGeminiAuth();
-
-        // Nếu là tài khoản Google và chưa có token hay key: Tự động kích hoạt OAuth ngay!
-        if (!auth.accessToken && !auth.apiKey && isGoogle) {
-          testGeminiBtn.textContent = 'Đang mở Google OAuth...';
-          const clientId = meta.settings.googleClientId || '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com';
-          if (!window.google?.accounts?.oauth2) {
-            notice('Đang tải thư viện Google, vui lòng thử lại sau 2 giây.');
-            testGeminiBtn.textContent = 'Kiểm tra kết nối Gemini AI';
-            return;
-          }
-          const client = window.google.accounts.oauth2.initTokenClient({
-            client_id: clientId,
-            scope: 'openid email profile https://www.googleapis.com/auth/generative-language',
-            callback: async (tokenResp: any) => {
-              if (tokenResp.error) {
-                notice('Google OAuth: ' + tokenResp.error);
-                testGeminiBtn.textContent = 'Kiểm tra kết nối Gemini AI';
-                return;
-              }
-              meta.settings.geminiToken = tokenResp.access_token;
-              meta.settings.aiProvider = 'gemini';
-              saveMeta();
-              testGeminiBtn.textContent = 'Đang gọi Gemini...';
-              try {
-                const { callGemini } = await import('../ai/gemini');
-                const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu phong cách tiên hiệp ngắn gọn.', 60, 0.7);
-                notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
-                renderPanels();
-              } catch (err: any) {
-                notice('✕ ' + (err.message || 'Lỗi kết nối Gemini.'));
-              } finally {
-                testGeminiBtn.textContent = 'Kiểm tra kết nối Gemini AI';
-              }
-            },
-          });
-          client.requestAccessToken();
-          return;
-        }
-
         const { callGemini } = await import('../ai/gemini');
         const res = await callGemini('Bạn là ai?', 'Hãy chào 1 câu phong cách tiên hiệp ngắn gọn.', 60, 0.7);
         notice('✓ Kết nối Gemini AI thành công! Phản hồi: ' + res);
@@ -1828,7 +1743,7 @@ function setPanel(): HTMLElement[] {
 
     keyRow.append(saveKeyBtn, testGeminiBtn);
     gemBox.append(
-      h('div', { class: 'small muted', style: { marginBottom: '4px' } }, 'Gemini API Key (Tùy chọn nếu server đã có key chung, hoặc dùng key riêng):'),
+      h('div', { class: 'small muted', style: { marginBottom: '4px' } }, 'Gemini API Key riêng của bạn (lưu 1 lần dùng mãi mãi):'),
       keyInput,
       keyRow,
       h('div', { class: 'small', style: { marginTop: '4px' } },
@@ -1837,8 +1752,8 @@ function setPanel(): HTMLElement[] {
           href: 'https://aistudio.google.com/app/apikey',
           target: '_blank',
           style: { color: 'var(--prime)', textDecoration: 'underline' }
-        }, 'Google AI Studio (aistudio.google.com)'),
-        h('div', { class: 'muted', style: { fontSize: '11px', marginTop: '2px' } }, 'Đăng nhập Google, bấm "Create API key" để lấy mã miễn phí 100%.')
+        }, 'Google AI Studio (Bấm Create API key)'),
+        h('div', { class: 'muted', style: { fontSize: '11px', marginTop: '2px' } }, 'Đăng nhập Gmail, bấm "Create API key" để lấy mã miễn phí 100%.')
       )
     );
 

@@ -132,56 +132,14 @@ export function openAuthModal(onSuccess?: () => void) {
 
       // CẤU HÌNH GEMINI API CHO TÀI KHOẢN:
       const currentKey = meta.settings.geminiKey || user.geminiKey || '';
-      const hasOAuthToken = !!(meta.settings.geminiToken || user.geminiToken);
       const keyBox = h('div', { style: { margin: '12px 0', borderTop: '1px solid var(--border)', paddingTop: '10px' } });
 
       keyBox.append(
         h('div', { style: { fontWeight: 'bold', fontSize: '13px', marginBottom: '4px', color: '#2e7d32' } }, '✨ Thiết lập Google Gemini AI:'),
         h('div', { class: 'small muted', style: { marginBottom: '8px' } },
-          hasOAuthToken
-            ? '✓ Tài khoản Google đã được cấp quyền OAuth trực tiếp. Gemini AI hoạt động tự động không cần API Key!'
-            : isGoogle
-              ? 'Tài khoản đã liên kết Google OAuth. Bạn có thể bấm nút dưới để kích hoạt Gemini trực tiếp mà KHÔNG CẦN DÁN KEY:'
-              : 'Dán API Key cá nhân để sử dụng Gemini 2.5 Flash trên đám mây:'
+          'Dán mã Gemini API Key riêng của bạn để AI kể chuyện và đàm đạo (chỉ cần nhập 1 lần, máy chủ lưu vĩnh viễn):'
         )
       );
-
-      if (isGoogle) {
-        const oauthAuthBtn = btn(hasOAuthToken ? '🔄 Cập nhật lại quyền Gemini OAuth' : '⚡ Kích hoạt Gemini Tự Động (Google OAuth - Không cần Key)', () => {
-          oauthAuthBtn.textContent = 'Đang mở Google...';
-          const clientId = meta.settings.googleClientId || '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com';
-          if (!window.google?.accounts?.oauth2) {
-            notice('Đang tải thư viện Google, vui lòng thử lại sau vài giây.');
-            oauthAuthBtn.textContent = '⚡ Kích hoạt Gemini Tự Động (Google OAuth - Không cần Key)';
-            return;
-          }
-          try {
-            const client = window.google.accounts.oauth2.initTokenClient({
-              client_id: clientId,
-              scope: 'openid email profile https://www.googleapis.com/auth/generative-language',
-              callback: async (tokenResp: any) => {
-                if (tokenResp.error) {
-                  oauthAuthBtn.textContent = '⚡ Kích hoạt Gemini Tự Động (Google OAuth - Không cần Key)';
-                  notice('Google OAuth: ' + tokenResp.error);
-                  return;
-                }
-                meta.settings.geminiToken = tokenResp.access_token;
-                meta.settings.aiProvider = 'gemini';
-                saveMeta();
-                notice('✓ Đã cấp quyền Google Gemini OAuth thành công! Không cần API Key.');
-                render();
-              },
-            });
-            client.requestAccessToken();
-          } catch (e: any) {
-            oauthAuthBtn.textContent = '⚡ Kích hoạt Gemini Tự Động (Google OAuth - Không cần Key)';
-            notice('Lỗi: ' + e.message);
-          }
-        }, 'prime sm');
-        oauthAuthBtn.style.width = '100%';
-        oauthAuthBtn.style.marginBottom = '8px';
-        keyBox.append(oauthAuthBtn);
-      }
 
       const keyInput = h('input', {
         type: 'password',
@@ -322,63 +280,6 @@ export function openAuthModal(onSuccess?: () => void) {
               console.warn('Lỗi init GIS:', err);
             }
           }
-
-          const oauthLoginBtn = btn('🚀 Đăng nhập Google & Cấp quyền Gemini (Tự động)', () => {
-            if (!window.google?.accounts?.oauth2) {
-              notice('Thư viện Google đang tải, vui lòng thử lại sau 2 giây.');
-              return;
-            }
-            oauthLoginBtn.textContent = 'Đang mở Google...';
-            try {
-              const client = window.google.accounts.oauth2.initTokenClient({
-                client_id: clientId,
-                scope: 'openid email profile https://www.googleapis.com/auth/generative-language',
-                callback: async (tokenResp: any) => {
-                  if (tokenResp.error) {
-                    oauthLoginBtn.textContent = '🚀 Đăng nhập Google & Cấp quyền Gemini (Tự động)';
-                    notice('Google OAuth: ' + tokenResp.error);
-                    return;
-                  }
-                  oauthLoginBtn.textContent = 'Đang đăng nhập...';
-                  try {
-                    const uRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                      headers: { Authorization: `Bearer ${tokenResp.access_token}` },
-                    });
-                    const profile = await uRes.json();
-                    meta.settings.geminiToken = tokenResp.access_token;
-                    meta.settings.aiProvider = 'gemini';
-                    saveMeta();
-
-                    const res = await loginWithGoogle({
-                      googleId: profile.sub,
-                      email: profile.email,
-                      name: profile.name,
-                      picture: profile.picture,
-                      geminiToken: tokenResp.access_token,
-                    });
-                    if (res.ok) {
-                      notice(`✓ Đăng nhập Google thành công! Đã tự động kết nối Gemini AI cho ${profile.name}. Không cần API Key!`);
-                      render();
-                      onSuccess?.();
-                    } else {
-                      notice(res.error || 'Lỗi đăng nhập.');
-                    }
-                  } catch (err: any) {
-                    notice('Lỗi lấy thông tin Google: ' + err.message);
-                  } finally {
-                    oauthLoginBtn.textContent = '🚀 Đăng nhập Google & Cấp quyền Gemini (Tự động)';
-                  }
-                },
-              });
-              client.requestAccessToken();
-            } catch (err: any) {
-              oauthLoginBtn.textContent = '🚀 Đăng nhập Google & Cấp quyền Gemini (Tự động)';
-              notice('Lỗi: ' + err.message);
-            }
-          }, 'prime');
-          oauthLoginBtn.style.width = '100%';
-          oauthLoginBtn.style.margin = '8px 0';
-          officialBox.append(oauthLoginBtn);
 
           tabBody.append(officialBox);
 
