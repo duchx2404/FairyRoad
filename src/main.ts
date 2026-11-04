@@ -28,6 +28,7 @@ import { openSectRoster } from './ui/place';
 (window as any).openSectRoster = openSectRoster;
 (window as any).setState = setState;
 (window as any).s = s;
+(window as any).deathScreen = deathScreen;
 import { WORLD, EL, type El } from './data/core';
 import { resize, draw, centerOn, zoom, setMapHandlers, startAnim, fitWorldView } from './ui/map';
 import { h, $ } from './ui/dom';

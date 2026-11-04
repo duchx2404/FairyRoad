@@ -6,8 +6,8 @@ import { glyphSvg } from './glyph';
 import { h, $, btn } from './dom';
 import { s, meta, saveMeta, load, getActiveSlot, setActiveSlot, getAllSlotsInfo, MAX_SAVE_SLOTS } from '../engine/state';
 import { openSaveSlotsModal } from './save-slots-modal';
-import { setSurname, ORIGINS, originName, originDesc, RACE_GROUPS, RACE_INFO, originRace, PERKS, BEAST_PERKS, ROOTS, BODIES, BEAST_BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, hiddenRootKind, rootKindOf, type El, type StatKey } from '../data/core';
-import { LOCS, beastLeafNodes, getBeastFamilies, rollWeightedBeastFamilies, type BeastFamilyInfo } from '../data/world';
+import { WORLD, setSurname, ORIGINS, originName, originDesc, RACE_GROUPS, RACE_INFO, originRace, PERKS, BEAST_PERKS, ROOTS, BODIES, BEAST_BODIES, STATS, STAT_KEYS, EL, REALMS, BASIC_EL, ALL_EL, YINYANG_EL, EVERY_EL, hiddenRootKind, rootKindOf, type El, type StatKey } from '../data/core';
+import { LOCS, applyWorld, beastLeafNodes, getBeastFamilies, rollWeightedBeastFamilies, type BeastFamilyInfo } from '../data/world';
 import { rollFate, rollRoot, fitRoot, newLife, rerolls, freeMode, UPGRADES, upLv, buyUpgrade, originUnlocked, unlockOrigin, scoreParts, lastLife, perkAllowed, getOriginTier, rollWeightedRaceOrigins, getHumanOriginTier, rollWeightedHumanOrigins, type Fate } from '../engine/life';
 import { mkName } from '../engine/core';
 import { mkRaceName, applyRaceSurname } from '../engine/race-names';
@@ -47,7 +47,7 @@ export function titleScreen() {
       hasSave ? btn(`Tiếp tục: ${s.name} (Bản lưu ${activeSlot})`, () => { hideScreen(); onStart(); }, 'prime') : null,
       btn(`📂 Chọn bản lưu (${usedCount}/${MAX_SAVE_SLOTS})`, () => openSaveSlotsModal(() => titleScreen()), 'prime'),
       btn(hasSave ? 'Bỏ kiếp này, đầu thai mới' : 'Đầu thai', () => (hasSave ? askConfirm('Kiếp hiện tại sẽ bị bỏ và không được tính điểm luân hồi. Chắc chứ?', creation, { title: 'Đầu thai mới', ok: 'Bỏ kiếp này', danger: true }) : creation()), hasSave ? '' : 'prime'),
-      meta.lives.length ? btn('Điện Luân Hồi', karmaHall) : null,
+      meta.lives.length ? btn('Điện Luân Hồi', () => karmaHall(titleScreen)) : null,
       btn(isLoggedIn() ? '☁️ ' + (getCurrentUser()?.displayName || 'Tài khoản') : '👤 Đăng nhập / Đăng ký', () => openAuthModal(() => titleScreen()), 'sm'),
     ),
     h('div', { class: 'slot-bar center', style: { display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px', flexWrap: 'wrap' } },
@@ -66,27 +66,31 @@ export function titleScreen() {
 }
 
 // ---------- Điện luân hồi ----------
-export function karmaHall(back: () => void = titleScreen) {
+export function karmaHall(back?: (() => void) | any) {
+  const returnFn = typeof back === 'function' ? back : titleScreen;
 
-
-  const draw = () => {
+  const draw = (keepScroll = false) => {
+    if (keepScroll) scr.dataset.keep = '1';
     showScreen(
       h('h2', { class: 'center' }, 'Điện Luân Hồi'),
-      h('p', { class: 'center muted' }, `Điểm luân hồi: `, h('b', {}, String(meta.karma))),
+      h('p', { class: 'center muted' }, 'Điểm luân hồi: ', h('b', {}, String(meta.karma))),
       h('div', { class: 'opts' }, ...UPGRADES.map((u) => {
         const lv = upLv(u.id);
         const max = lv >= u.max;
         const cost = u.cost(lv);
-        return h('button', { class: 'opt', disabled: max || meta.karma < cost, onclick: () => { buyUpgrade(u.id); draw(); } },
+        return h('button', { class: 'opt', disabled: max || meta.karma < cost, onclick: () => { buyUpgrade(u.id); draw(true); } },
           h('b', {}, `${u.n} (${lv}/${u.max})`), h('small', {}, u.d), h('small', {}, max ? 'Đã tối đa' : `Giá: ${cost} điểm`));
       })),
       h('h3', {}, 'Xuất thân hiếm'),
-      h('div', { class: 'opts' }, ...ORIGINS.filter((o) => o.karma).sort((a, b) => getOriginTier(b).tier - getOriginTier(a).tier || (b.money ?? 0) - (a.money ?? 0)).map((o) => h('button', { class: 'opt', disabled: originUnlocked(o.id) || meta.karma < (o.karma || 0), onclick: () => { unlockOrigin(o.id); draw(); } },
+      h('div', { class: 'opts' }, ...ORIGINS.filter((o) => o.karma).sort((a, b) => getOriginTier(b).tier - getOriginTier(a).tier || (b.money ?? 0) - (a.money ?? 0)).map((o) => h('button', { class: 'opt', disabled: originUnlocked(o.id) || meta.karma < (o.karma || 0), onclick: () => { unlockOrigin(o.id); draw(true); } },
         h('b', {}, originName(o)), h('small', {}, originDesc(o)), h('small', {}, originUnlocked(o.id) ? 'Đã mở' : `Mở khóa: ${o.karma} điểm`)))),
-      h('div', { class: 'center', style: { marginTop: '18px' } }, btn('Trở lại', back, 'prime')),
+      h('div', { class: 'center', style: { marginTop: '18px' } }, btn('Trở lại', () => {
+        scr.scrollTop = 0;
+        returnFn();
+      }, 'prime')),
     );
   };
-  draw();
+  draw(false);
 }
 
 export const getTierStyle = (tier: number) => {
@@ -191,6 +195,8 @@ const getPerkTier = (p?: (typeof PERKS)[number] | (typeof BEAST_PERKS)[number]) 
 
 // ---------- Đầu thai ----------
 export function creation() {
+  WORLD.lv = 0;
+  applyWorld(0);
   let g: 'm' | 'f' = Math.random() < 0.5 ? 'm' : 'f';
   let name = mkRaceName('Nhân tộc', g);
   let race: string = 'Nhân tộc';
@@ -960,7 +966,7 @@ export function creation() {
                 `${tierStyle.icon}${info.tierName}`
               )
             ),
-            h('span', { class: 'small muted', style: { fontSize: '11px' } }, `📍 ${LOCS[o.loc].n}`)
+            h('span', { class: 'small muted', style: { fontSize: '11px' } }, `📍 ${LOCS[o.loc]?.n ?? o.loc}`)
           ),
           h('div', { style: { marginTop: '2px' } },
             h('b', { style: { fontSize: '16px', color: tierStyle.color } }, originName(o, g) + (o.karma ? ' ★' : '')),
@@ -992,7 +998,7 @@ export function creation() {
               ),
               h('div', { style: { margin: '6px 0', padding: '6px 10px', background: 'rgba(0,0,0,0.02)', borderRadius: '4px', borderLeft: `3px solid ${orgTierStyle.color}` } },
                 h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12.5px' } },
-                  h('span', {}, `📍 Nơi sinh: `, h('b', {}, LOCS[org.loc].n)),
+                  h('span', {}, `📍 Nơi sinh: `, h('b', {}, LOCS[org.loc]?.n ?? org.loc)),
                   h('span', {}, `💰 Ngân lượng: `, h('b', {}, `${org.money} linh thạch`)),
                   org.clan ? h('span', {}, `🐾 Gia tộc: `, h('b', {}, `Họ ${org.clan}`)) : null,
                   org.craft ? h('span', { style: { color: '#059669', fontWeight: 'bold' } }, '🔨 Biết thủ nghệ') : null,
@@ -1066,7 +1072,7 @@ export function creation() {
                   if (query) {
                     return originName(o, g).toLowerCase().includes(query) ||
                            o.d.toLowerCase().includes(query) ||
-                           LOCS[o.loc].n.toLowerCase().includes(query);
+                           (LOCS[o.loc]?.n ?? o.loc).toLowerCase().includes(query);
                   }
                   return true;
                 }).sort((a, b) => getOriginTier(b).tier - getOriginTier(a).tier || (b.money ?? 0) - (a.money ?? 0));
@@ -1098,7 +1104,7 @@ export function creation() {
                       h('b', { style: { color: ts.color } }, originName(o, g) + (o.karma ? ' ★' : '')),
                       h('span', { style: { fontSize: '10.5px', color: ts.color, fontWeight: 'bold' } }, `${ts.icon}${info.tierName}`)
                     ),
-                    h('small', { style: { color: 'var(--muted)', fontSize: '10.5px' } }, locked ? `Mở ở Điện Luân Hồi (${o.karma} điểm)` : `${LOCS[o.loc].n} · ${o.money} linh thạch · ${originDesc(o, g)}`)
+                    h('small', { style: { color: 'var(--muted)', fontSize: '10.5px' } }, locked ? `Mở ở Điện Luân Hồi (${o.karma} điểm)` : `${LOCS[o.loc]?.n ?? o.loc} · ${o.money} linh thạch · ${originDesc(o, g)}`)
                     );
                     listContainer.append(b);
                   });
@@ -1523,7 +1529,7 @@ export function creation() {
 export function deathScreen() {
   const rec = lastLife();
   if (!rec) return titleScreen();
-  const parts = scoreParts();
+  const parts = rec.parts || scoreParts();
   const bio = h('div', { class: 'card small' }, rec.bio || (meta.settings.ai && meta.settings.aiBio ? h('span', { class: 'ai-wait' }, 'AI đang viết tiểu sử…') : null));
   const asc = !!rec.ascended;
   showScreen(
@@ -1539,7 +1545,7 @@ export function deathScreen() {
       h('div', { class: 'score-row', style: { fontSize: '17px' } }, h('b', {}, 'Tổng điểm'), h('b', {}, String(rec.score))),
       h('p', { class: 'center' }, `Nhận `, h('b', {}, `${rec.karma}`), ` điểm luân hồi (hiện có ${meta.karma}).`),
     ),
-    h('details', { class: 'card' }, h('summary', { style: { cursor: 'pointer' } }, 'Các mốc đời người'), ...rec.marks.map((m) => h('div', { class: 'logline' }, m))),
+    h('details', { class: 'card' }, h('summary', { style: { cursor: 'pointer' } }, 'Các mốc đời người'), ...(rec.marks || []).map((m) => h('div', { class: 'logline' }, m))),
     h('div', { class: 'center', style: { display: 'flex', gap: '10px', justifyContent: 'center' } },
       btn('Điện Luân Hồi', () => karmaHall(deathScreen)),
       btn('Đầu thai kiếp mới', creation, 'prime'),

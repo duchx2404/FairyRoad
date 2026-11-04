@@ -599,17 +599,19 @@ export function newLife(o: NewLifeOpts) {
 
 // ---------- Điểm số ----------
 const REALM_PTS = [0, 10, 35, 90, 220, 520, 1200, 2700, 6000, 13000, ...Array.from({ length: 12 }, (_, i) => Math.round(13000 * Math.pow(2.2, i + 1)))];
-export function scoreParts() {
+export function scoreParts(): [string, number][] {
   const parts: [string, number][] = [];
-  parts.push([`Cảnh giới ${stageName()}`, REALM_PTS[s.r] + Math.round((REALM_PTS[s.r] * s.st) / 6)]);
+  if (!s) return parts;
+  const rPts = REALM_PTS[s.r] ?? 0;
+  parts.push([`Cảnh giới ${stageName()}`, rPts + Math.round((rPts * (s.st ?? 0)) / 6)]);
   parts.push([`Hưởng thọ ${Math.floor(age())} tuổi`, Math.round(age() / 8)]);
   if (s.fame) parts.push(['Danh vọng', Math.round(s.fame / 4)]);
   if (s.kills) parts.push([`Hạ ${s.kills} đối thủ`, s.kills]);
   if (s.meridians) parts.push([`Thông ${s.meridians} kinh mạch`, s.meridians * 4]);
   const fr = friends().length;
   if (fr) parts.push([`${fr} tri kỷ`, fr * 3]);
-  if (s.sect) parts.push([`Thân phận tông môn`, (s.sect.rank + 1) * SECTS[s.sect.id].tier * 5]);
-  const craft = s.craft.alch + s.craft.talis + s.craft.forge;
+  if (s.sect && SECTS[s.sect.id]) parts.push([`Thân phận tông môn`, (s.sect.rank + 1) * SECTS[s.sect.id].tier * 5]);
+  const craft = (s.craft?.alch ?? 0) + (s.craft?.talis ?? 0) + (s.craft?.forge ?? 0);
   if (craft) parts.push(['Tay nghề luyện chế', craft * 6]);
   if (s.ascended) parts.push(['Hợp nhất Đại Đạo', 2000000]);
   if (s.world) parts.push([`Phi thăng ${s.world} lần, tới ${worldName(s.world)}`, 20000 * s.world]);
@@ -698,7 +700,7 @@ export function ascend(): string {
 }
 
 let lastRec: LifeRec | null = null;
-export const lastLife = () => lastRec;
+export const lastLife = () => lastRec || meta.lives?.[0] || null;
 
 function finish(cause: string) {
   checkAch();
@@ -723,7 +725,8 @@ function finish(cause: string) {
     marks: s.marks.map((m) => `Năm ${Math.floor(m.y)} (${Math.floor(m.y - s.born)} tuổi): ${m.t}`),
     epitaph: epitaph(),
     ascended: s.ascended,
-    sect: s.sect ? SECTS[s.sect.id].n : undefined,
+    sect: s.sect && SECTS[s.sect.id] ? SECTS[s.sect.id].n : undefined,
+    parts: scoreParts(),
   };
   lastRec = rec;
   meta.lives.unshift(rec);

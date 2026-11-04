@@ -143,6 +143,7 @@ export interface LifeRec {
   bio?: string;
   ascended?: boolean;
   sect?: string;
+  parts?: [string, number][];
 }
 
 export interface Meta {

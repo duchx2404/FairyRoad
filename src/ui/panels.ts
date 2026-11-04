@@ -40,7 +40,7 @@ import { bioDesc } from '../engine/bride';
 import { npcPow } from '../engine/char';
 import { myLinh as linhOf } from '../engine/char';
 import { npcAge, npcRealm, relLabel, MERIDIANS, merMax, openMeridian, dateStr } from '../engine/core';
-import { toggleTam, releaseLinh, toggleLinhRide, usePill, useSpecial, readScroll, toggleSkill, stowSkill, knownByGrade, isChaosBroken, canUpgradeChaosSword, CHAOS_FORGE_MATS, repairChaosSword, startRefine, equip, unequip, gearLine, discard, discardGear } from '../engine/items';
+import { toggleTam, releaseLinh, toggleLinhRide, usePill, useSpecial, readScroll, toggleSkill, stowSkill, knownByGrade, isChaosBroken, canUpgradeChaosSword, CHAOS_FORGE_MATS, repairChaosSword, startRefine, equip, unequip, gearLine, gearGrade, discard, discardGear } from '../engine/items';
 import { npcActions, songTuWith } from '../engine/actions';
 import { ACH } from '../engine/life';
 import { icon } from './menus';
@@ -662,19 +662,43 @@ function repairBtn(g: Gear, act: (m: string) => void) {
   if (isChaosBroken(g)) {
     const atCap = g.g >= 11 && (g.q ?? 0) >= 3;
     const hasStone = count('m:hondonthach') > 0;
-    const ok = atCap && hasStone;
-    const title = !atCap
-      ? 'Cần trưởng thành tới Hỗn Độn Linh Bảo cực phẩm mới có thể dùng Hỗn Độn Thạch'
-      : hasStone ? 'Dùng một Hỗn Độn Thạch để thăng lên Hỗn Độn Chí Bảo hạ phẩm' : 'Cần Hỗn Độn Thạch, chỉ tìm được ở Hỗn Độn giới';
-    return btn('Sửa', () => act(repairChaosSword(g.uid)), 'small prime', { dis: !ok, title });
+    const isSword = g.n.includes('Kiếm');
+    const itemName = isSword ? 'Hỗn Độn Kiếm' : 'Nửa ngọc bội đôi';
+    return btn('Sửa', () => {
+      if (!atCap) {
+        showScene({
+          title: "Sửa " + itemName + " (Tàn khuyết)",
+          text: g.n + " chưa tích tụ đủ đạo vận và linh lực bản nguyên.\n\n• Yêu cầu: Cần trưởng thành đạt phẩm cấp Hỗn Độn Linh Bảo cực phẩm.\n• Hiện tại: " + gearGrade(g) + ".\n\nHãy tiếp tục nâng cao tu vi cảnh giới để bảo vật hấp thu thiên địa linh khí trưởng thành.",
+        });
+        return;
+      }
+      if (!hasStone) {
+        showScene({
+          title: "Manh mối sửa " + itemName,
+          text: "Những vết nứt nẻ trên " + (isSword ? "thân kiếm" : "ngọc bội") + " đang tỏa ra khí tức bản nguyên cổ xưa, cần một khối Hỗn Độn Thạch ngưng tụ thuở khai thiên để liền lại.\n\n• Vật phẩm cần: 1x Hỗn Độn Thạch\n• Nơi tìm: Chỉ có tại Hỗn Độn Giới. Hãy tới các vùng hiểm địa dã ngoại (sơn cốc, hang động, đầm lầy...) hoặc chu du trên đường tại Hỗn Độn Giới và bấm \"Thám hiểm\". " + (isSword ? "Thanh kiếm tàn khuyết" : "Ngọc bội") + " sẽ tự phát ra kiếm ý dẫn đường tới nơi Hỗn Độn Thú đang canh giữ đá.\n\nĐánh bại Hỗn Độn Thú sẽ đoạt được Hỗn Độn Thạch để tiến hành tu sửa!",
+        });
+        return;
+      }
+      act(repairChaosSword(g.uid));
+    }, 'small prime' + (hasStone && atCap ? '' : ' ghost'), {
+      title: hasStone && atCap ? 'Dùng Hỗn Độn Thạch để khôi phục thành Hỗn Độn Chí Bảo' : 'Xem manh mối tìm Hỗn Độn Thạch để sửa',
+    });
   }
   const q = g.q ?? 0;
   const matKey = CHAOS_FORGE_MATS[q];
   const matName = MATS[matKey]?.n || matKey;
-  const ok = count('m:' + matKey) > 0;
-  return btn('Rèn', () => act(repairChaosSword(g.uid)), 'small prime', {
-    dis: !ok,
-    title: ok ? `Dùng ${matName} để rèn ${g.n} lên phẩm kế tiếp` : `Cần ${matName} (nguyên liệu luyện khí cấp bậc Hỗn Độn ở Hỗn Độn giới)`,
+  const hasMat = count('m:' + matKey) > 0;
+  return btn('Rèn', () => {
+    if (!hasMat) {
+      showScene({
+        title: "Rèn " + g.n,
+        text: "Để thăng phẩm " + g.n + " lên bậc kế tiếp, ngươi cần nguyên liệu luyện khí cấp Hỗn Độn.\n\n• Nguyên liệu cần: 1x " + matName + "\n• Nơi tìm: Đến các hiểm địa dã ngoại tại Hỗn Độn Giới và bấm \"Thám hiểm\" để cộng hưởng kiếm ý đoạt lấy bảo vật từ Hỗn Độn Thú.",
+      });
+      return;
+    }
+    act(repairChaosSword(g.uid));
+  }, 'small prime' + (hasMat ? '' : ' ghost'), {
+    title: hasMat ? ("Dùng " + matName + " để rèn " + g.n + " lên phẩm kế tiếp") : ("Cần " + matName + " (xem manh mối)"),
   });
 }
 /** Dòng phẩm chất các cảnh giới đã đột phá: "Cực phẩm Trúc Cơ · Trung phẩm Kết Đan · … (khí huyết +x%, công phạt +y%)". */
