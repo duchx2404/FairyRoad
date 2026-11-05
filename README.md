@@ -12,6 +12,12 @@ npx tsx tools/sim.ts 150          # bot chơi 150 kiếp: bắt lỗi sự kiệ
 CAREFUL=1 npx tsx tools/sim.ts 150 # bot né lựa chọn nguy hiểm
 ```
 
+## Tài khoản và Gemini API Key
+
+Chạy `npm run server` để bật máy chủ tài khoản (Node.js 24 trở lên). Trong game, mở **Tài khoản**, nhập tên tài khoản và mật khẩu; tài khoản mới được tạo tự động, không cần email. Có thể thêm Gemini API Key ngay lúc tạo hoặc lưu sau trong **Tài khoản → Lưu Key**. Key được lưu theo từng tài khoản và được nạp lại khi đăng nhập trên máy khác. Đăng xuất sẽ xóa Key đang dùng khỏi máy; không xóa Key đã lưu trên tài khoản.
+
+Chọn **Ollama AI** trong Cài đặt để dùng model trên máy. Game tự kiểm tra và chạy `ollama serve` ẩn nếu Ollama chưa mở; các lần tạo nội dung cũng kiểm tra lại trước khi gọi. Cần cài Ollama và tải model trước. Tự khởi động hoạt động khi chơi trên localhost bằng `npm run dev`, Vite preview hoặc máy chủ local `npm run server`; bản web tĩnh trên máy chủ khác không thể mở phần mềm trên máy người chơi.
+
 ## Cấu trúc
 
 - `src/data/` — dữ liệu: cảnh giới, linh căn, thể chất, thiên phú, xuất thân (`core.ts`), bản đồ/tông môn/yêu thú (`world.ts`), công pháp/thuật pháp/đan/thảo/phù/trang bị (`items.ts`).

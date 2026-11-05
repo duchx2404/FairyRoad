@@ -13,6 +13,9 @@ import { BEASTS, LOCS, beastRoot, isMythicBeast } from '../data/world';
 import { SKILLS, TALIS, PILLS, TECHS, GRADE_MULT, MATS, mkGear, type Skill } from '../data/items';
 import { s, codexAdd } from './state';
 import { atkOf, defOf, maxHp, has, stat, npcPow, count, removeItem, addItem, addGear, itemName, root, pqSum, clSum, myLinh, age, maxLife, effRi, stageName } from './char';
+import { beastsOfNpc, ensureNpcBeasts, type NpcBeast } from '../data/npc-beasts';
+import { beastDoctrine } from '../data/beast-sects';
+import type { TcPerson } from './tienco';
 import { CHANLINH } from '../data/spirit';
 import { STAGE_NAMES, type BeastStage } from './beast-companion';
 import { activeNpcs, compMul, kitSum, kitSkills } from './party';
@@ -22,6 +25,7 @@ import { addLog, killPlayer } from './core';
 import { ch, clamp, pick, rf, ri } from '../core/util';
 
 export interface Fighter {
+  sect?: string | null;
   name: string;
   r: number;
   st: number;
@@ -38,6 +42,11 @@ export interface Fighter {
   player?: boolean;
   /** Đồng hành: id NPC hoặc 'cl' (chân linh); địch không có. */
   id?: string;
+  ownerId?: string;
+  beastId?: string;
+  species?: string;
+  beasts?: NpcBeast[];
+  npcId?: string;
   g?: 'm' | 'f';
   /** Khoá chân dung riêng của NPC (thánh nữ 'sn_…') để chọn sprite riêng trong trận. */
   pic?: string;
@@ -50,6 +59,9 @@ export interface Fighter {
 }
 
 export interface FoeSpec {
+  sect?: string | null;
+  npcId?: string;
+  beasts?: NpcBeast[];
   name: string;
   r: number;
   st?: number;
@@ -121,6 +133,9 @@ export function mkFoe(spec: FoeSpec, rng: Rng = Math.random): Fighter {
   const st = spec.st ?? Math.floor(R(0, 4));
   const el: El | null = spec.el === undefined ? P((Object.keys(EL) as El[]).filter((e) => e !== 'hondon')) : spec.el; // hệ Hỗn Độn chỉ có ở chiêu Hỗn Nguyên Kinh
   const kind = spec.kind || 'cultivator';
+  const knownNpc = kind === 'cultivator' ? s.npcs.find(n => spec.npcId ? n.id === spec.npcId : n.name === spec.name) : undefined;
+  const knownPerson = kind === 'cultivator' ? (s.flags.tienco?.people as TcPerson[] | undefined)?.find(n => n.world === (s.world ?? 0) && (spec.npcId ? n.id === spec.npcId || n.npc === spec.npcId : n.name === spec.name)) : undefined;
+  const sect = spec.sect ?? knownPerson?.sect ?? knownNpc?.sect;
   const rr = spec.dao ? spec.r : Math.min(spec.r, npcCap()); // Đại Đạo chỉ có một
   let p = npcPow(rr, st) * (spec.mult ?? 1) * R(0.9, 1.1);
   if (kind === 'mortal') p = Math.max(3, p * 0.6);
@@ -157,7 +172,7 @@ export function mkFoe(spec: FoeSpec, rng: Rng = Math.random): Fighter {
     if (rng() < 0.08 * (rr - R_CHUANTHANH + 1)) lw.push(rng() < 0.5 ? 'khonggian' : 'thoigian');
   }
   if (spec.dao) { lw.push('hondon', 'thoigian', 'khonggian'); dw.push('hondon', 'thoigian', 'khonggian'); } // kẻ giữ Đại Đạo
-  return { name: spec.name, r: rr, st, el, hp, maxHp: hp, atk: Math.round(p), def: Math.round(p * 0.35), skills, shield: 0, dot: [], kind, laws: lw, daos: dw };
+  return { name: spec.name, sect, npcId: spec.npcId, beasts: spec.beasts, r: rr, st, el, hp, maxHp: hp, atk: Math.round(p * (beastDoctrine(sect) ? 0.6 : 1)), def: Math.round(p * 0.35), skills, shield: 0, dot: [], kind, laws: lw, daos: dw };
 }
 
 /** Yêu thú ngẫu nhiên phù hợp cấp và vùng. */
@@ -262,6 +277,9 @@ export class Battle {
     this.opts = opts;
     this.allies = allyFighters(this.p, this.rng);
     this.foes = (opts.group || []).slice(0, 9).map((g) => mkFoe(g, this.rng));
+    for (const owner of [this.foe, ...this.foes]) {
+      this.foes.push(...npcBeastFighters(owner, this.rng));
+    }
     this.lethal = opts.lethal ?? true;
     this.uyDiff = this.foe.r - effRi();
     const ngo = stat('ngo');
@@ -827,6 +845,21 @@ export class Battle {
     if (died) addLog(`Tử trận dưới tay ${f.name}.`, 'bad');
     const lost: string[] = [], injured: string[] = [];
     for (const al of this.allies) {
+      if (al.ownerId && al.beastId) {
+        const owner = findNpc(al.ownerId) ?? (s.flags.tienco?.people as TcPerson[] | undefined)?.find(p => p.id === al.ownerId);
+        if (owner) {
+          const status = (owner.beastStatus ||= {});
+          if (al.hp <= 0 && !al.fled) {
+            status[al.beastId] = { dead: true };
+            lost.push(al.name);
+            addLog(`Linh thú ${al.name} của ${owner.name} tử trận.`, 'bad');
+          } else if (al.fled) {
+            status[al.beastId] = { injuredUntil: s.year + 1 };
+            injured.push(al.name);
+          }
+        }
+        continue;
+      }
       if (al.id === 'cl') {
         if (al.hp <= 0 && !al.fled) { lost.push(al.name); addLog(`Chân linh ${al.name} chết trong trận với ${f.name}.`, 'bad'); delete s.flags.chanlinh; }
         continue;
@@ -835,6 +868,11 @@ export class Battle {
       if (!n) continue;
       if (al.hp <= 0 && !al.fled) { lost.push(n.name); n.alive = false; n.died = s.year; n.cause = `Tử trận cùng ${s.name} dưới tay ${f.name}`; addLog(`${n.name} tử trận dưới tay ${f.name}.`, 'bad'); }
       else if (al.fled) { injured.push(n.name); n.injuredUntil = s.year + 1; addLog(`${n.name} trọng thương, cần một năm dưỡng thương.`); }
+    }
+    if (this.lethal) for (const pet of this.foes) {
+      if (!pet.beastId || !pet.ownerId || pet.hp > 0) continue;
+      const owner = findNpc(pet.ownerId) ?? (s.flags.tienco?.people as TcPerson[] | undefined)?.find(p => p.id === pet.ownerId);
+      if (owner) (owner.beastStatus ||= {})[pet.beastId] = { dead: true };
     }
     if (!died && age() >= maxLife()) killPlayer('Thiêu đốt thọ nguyên đến cạn kiệt, vũ hóa giữa trận');
     const res: FightResult = { win, fled, died, rounds: this.round, log: this.log, foe: f, hpLeft: Math.max(0, p.hp) / p.maxHp, loot, lootMoney, lootDesc, lost, injured };
@@ -907,12 +945,36 @@ function allyFighters(p: Fighter, rng: Rng): Fighter[] {
     });
   }
   for (const n of activeNpcs()) {
-    const f = mkFoe({ name: n.name, r: n.r, st: n.st, el: n.el, kind: 'cultivator', mult: compMul(n) }, rng);
+    const f = mkFoe({ name: n.name, sect: n.sect, npcId: n.id, beasts: ensureNpcBeasts(n, s.world ?? 0), r: n.r, st: n.st, el: n.el, kind: 'cultivator', mult: compMul(n) }, rng);
     const ks = kitSum(n), sk = kitSkills(n).map((k) => SKILLS[k]);
     const hp = f.maxHp + ks.hp;
     out.push({ ...f, id: n.id, g: n.g, pic: n.pic, atk: f.atk + ks.atk, def: f.def + ks.def, hp, maxHp: hp, skills: sk.length ? sk : f.skills });
+    out.push(...npcBeastFighters(f, rng, n.id).filter(b => {
+      const status = n.beastStatus?.[b.beastId!];
+      return !status?.dead && !(status?.injuredUntil && status.injuredUntil > s.year);
+    }));
   }
   return out;
+}
+
+/** Linh thú đi cùng chủ; tên riêng và chủng loài luôn là hai trường riêng. */
+export function npcBeastFighters(owner: Fighter, rng: Rng, ownerId?: string): Fighter[] {
+  if (owner.kind === 'beast' || owner.kind === 'mortal' || owner.beastId || owner.player) return [];
+  const npc = s.npcs.find(n => n.id === (ownerId ?? owner.npcId) || (!ownerId && !owner.npcId && n.name === owner.name));
+  const person = (s.flags.tienco?.people as TcPerson[] | undefined)?.find(p => p.world === (s.world ?? 0) && (p.id === owner.npcId || (!!npc && p.npc === npc.id) || p.name === owner.name));
+  const record = person ?? npc;
+  const doctrine = beastDoctrine(owner.sect ?? record?.sect);
+  const beasts = owner.beasts ?? (record ? ensureNpcBeasts(record, s.world ?? 0) : (owner.kind === 'cultivator' || doctrine) ? ensureNpcBeasts({ name: owner.name, r: owner.r, sect: owner.sect }, s.world ?? 0) : beastsOfNpc(owner.name));
+  const petOwnerId = ownerId ?? npc?.id ?? person?.id;
+  return beasts.filter(b => {
+    const status = record?.beastStatus?.[b.id];
+    return !status?.dead && !(status?.injuredUntil && status.injuredUntil > s.year);
+  }).map(b => ({
+    ...mkFoe({ name: b.species, r: Math.max(1, owner.r - (doctrine ? 0 : 1)), st: owner.st, el: b.el, kind: 'beast', mult: doctrine ? 1.15 : 1 }, rng),
+    name: `${b.name} (loài ${b.species} · linh thú của ${owner.name})`,
+    species: b.species, beastId: b.id, ownerId: petOwnerId,
+    id: petOwnerId ? `pet:${petOwnerId}:${b.id}` : undefined,
+  }));
 }
 
 /** So tương quan sức mạnh: >1 là người chơi mạnh hơn. */

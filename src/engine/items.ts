@@ -1,3 +1,4 @@
+import { canRideBeast } from '../data/spirit';
 import { worldDefinitions } from '../data/local-items';
 import { kmPlaceOne, kmRemove } from './kinhmach';
 import { kmFillNew } from './kinhmach';
@@ -347,6 +348,8 @@ export function toggleLinhRide(maxActive: number, activeNow: number): string {
     c.ride = false;
     return `${c.name} sẽ cùng ngươi xuất chiến.`;
   }
+  const d = CHANLINH[c.id];
+  if (!d || !canRideBeast(d, c.r ?? d.minR)) return 'Linh thú này chưa thể cưỡi; loài nhỏ cần đạt Kim Đan để phóng to chở chủ.';
   c.ride = true;
   return `${c.name} chỉ làm tọa kỵ, không vào trận nữa (vẫn chở ngươi đi đường).`;
 }

@@ -1,3 +1,4 @@
+import { ensureNpcBeasts, type NpcBeast } from '../data/npc-beasts';
 // Thiên Cơ Lâu — tổ chức tình báo trải khắp các giới, không thuộc tông môn hay hoàng triều nào.
 // Mỗi giới một phân lâu, mỗi phân lâu giữ hai bảng: Thiên Kiêu Bảng (người trẻ theo tuổi thân thể) và Cường Giả Bảng
 // (kẻ mạnh nhất giới). Bảng chỉ ghi người đang ở trong giới ấy: phi thăng là tên bị gạch khỏi bảng hạ giới.
@@ -25,6 +26,8 @@ import { FENGSHEN_ROSTER } from '../data/fengshen';
 import { CELESTIAL, celestialOffices, type CelestialId } from '../data/celestial';
 
 export interface TcPerson {
+  beasts?: NpcBeast[];
+  beastStatus?: NPC['beastStatus'];
   legacyRole?: string;
   legacyWorld?: number;
   treasures?: string[];
@@ -208,6 +211,7 @@ export const tc = (): TcState => {
   }
   maintainLegacyHolders(T.people);
   ensureWorldNames(T.people);
+  for (const p of T.people) ensureNpcBeasts(p);
   return T;
 };
 export const tcPeople = () => tc().people;
@@ -959,6 +963,7 @@ export function recruitPerson(w: number, young = false): TcPerson {
   }
   T.people.push(p);
   ensureWorldNames(T.people);
+  for (const p of T.people) ensureNpcBeasts(p);
   return p;
 }
 /** Chức vụ của một người do Thiên Cơ Lâu ghi chép, suy từ lai lịch. */
@@ -1020,6 +1025,8 @@ function checkRank() {
 /** Người chơi gặp một hồi hạ giả: biến thành NPC trong nhân mạch và gắn với mục trên bảng. */
 export function linkNpc(p: TcPerson, n: NPC) {
   p.npc = n.id;
+  n.beasts = ensureNpcBeasts(p);
+  n.beastStatus = p.beastStatus ||= n.beastStatus ?? {};
   n.talent = Math.max(n.talent, p.talent);
   n.craft ??= p.craft ? { ...p.craft } : undefined;
   n.beast ??= p.beast;

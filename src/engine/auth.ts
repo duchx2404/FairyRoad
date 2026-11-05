@@ -7,10 +7,7 @@ export interface AuthUser {
   username: string;
   displayName: string;
   avatar: string | null;
-  authProvider: 'local' | 'google';
-  googleEmail?: string | null;
   geminiKey?: string | null;
-  geminiToken?: string | null;
   token: string;
 }
 
@@ -25,7 +22,10 @@ export function getCurrentUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(AUTH_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const user = JSON.parse(raw);
+    if (!user?.id || !user.username || !user.token) return null;
+    return { id: user.id, username: user.username, displayName: user.displayName || user.username,
+      avatar: user.avatar || null, geminiKey: user.geminiKey || null, token: user.token };
   } catch {
     return null;
   }
@@ -37,24 +37,16 @@ export function isLoggedIn(): boolean {
 
 export function saveSession(user: AuthUser) {
   localStorage.setItem(AUTH_KEY, JSON.stringify(user));
-  // Nếu user có Gemini Token hoặc Key, tự động cập nhật vào meta.settings
-  if (user.geminiToken) {
-    meta.settings.geminiToken = user.geminiToken;
-    meta.settings.aiProvider = 'gemini';
-    saveMeta();
-  } else if (user.geminiKey) {
-    meta.settings.geminiKey = user.geminiKey;
-    meta.settings.aiProvider = 'gemini';
-    saveMeta();
-  } else if (user.authProvider === 'google') {
-    // Đăng nhập bằng Google: tự động ưu tiên chế độ Gemini AI
-    meta.settings.aiProvider = 'gemini';
-    saveMeta();
-  }
+  // Key của tài khoản hiện tại thay thế hoàn toàn Key của phiên trước.
+  meta.settings.geminiKey = user.geminiKey || '';
+  if (user.geminiKey) meta.settings.aiProvider = 'gemini';
+  saveMeta();
 }
 
 export function logout() {
   localStorage.removeItem(AUTH_KEY);
+  meta.settings.geminiKey = '';
+  saveMeta();
 }
 
 /** Đăng nhập hoặc Tự động đăng ký nhanh với Username & Password */
@@ -81,49 +73,24 @@ export async function loginOrRegister(username: string, password: string, displa
   }
 }
 
-/** Đăng nhập thông qua Google */
-export async function loginWithGoogle(googleData: { googleId: string; email?: string; name?: string; picture?: string; geminiKey?: string; geminiToken?: string }): Promise<{ ok: boolean; error?: string; user?: AuthUser }> {
-  try {
-    const url = `${getServerUrl()}/api/auth/google`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(googleData),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      return { ok: false, error: data.error || 'Đăng nhập Google thất bại.' };
-    }
-    const authUser: AuthUser = {
-      ...data.user,
-      token: data.token,
-    };
-    saveSession(authUser);
-    return { ok: true, user: authUser };
-  } catch (err: any) {
-    return { ok: false, error: 'Không thể kết nối đến máy chủ: ' + err.message };
-  }
-}
-
 /** Cập nhật Gemini API Key cho tài khoản */
 export async function updateAccountGeminiKey(apiKey: string): Promise<boolean> {
   const user = getCurrentUser();
   if (!user) return false;
-  user.geminiKey = apiKey;
-  saveSession(user);
-
   try {
-    await fetch(`${getServerUrl()}/api/user/gemini-key`, {
+    const res = await fetch(`${getServerUrl()}/api/user/gemini-key`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: JSON.stringify({ geminiKey: apiKey }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.token}` },
+      body: JSON.stringify({ geminiKey: apiKey.trim() }),
     });
+    const data = await res.json();
+    if (!res.ok || !data.ok) return false;
+    // Không ghi Key của tài khoản cũ nếu người chơi đổi tài khoản trong lúc chờ.
+    if (getCurrentUser()?.id !== user.id) return false;
+    saveSession({ ...user, geminiKey: data.geminiKey || null });
     return true;
   } catch {
-    return true; // Lưu local thành công
+    return false;
   }
 }
 

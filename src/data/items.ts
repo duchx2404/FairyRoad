@@ -121,7 +121,7 @@ export const TECHS: Record<string, Tech> = {
   liemtucthuat: { id: 'liemtucthuat', n: 'Ám Ảnh Liễm Tức Thuật', el: ['am'], tier: 1, skills: ['uanhthich'], d: 'Giấu khí tức vào bóng tối. Tu chậm, nhưng kẻ địch khó phát hiện.' },
   thanquangquyet: { id: 'thanquangquyet', n: 'Thần Quang Dẫn Khí Quyết', el: ['quang'], tier: 1, skills: ['quangkiem'], d: 'Hấp thụ ánh bình minh. Ngày âm u thì tu chẳng được bao nhiêu.' },
   trongsonquyet: { id: 'trongsonquyet', n: 'Trọng Sơn Quyết', el: ['tho'], tier: 2, skills: ['thothuan', 'diachan'], def: 1.15, hp: 1.1, d: 'Lấy thân làm núi, chân nguyên nặng như đá tảng.' },
-  ngulinhquyet: { id: 'ngulinhquyet', n: 'Ngự Linh Bách Thú Công', el: ['tho', 'moc', 'phong'], tier: 2, skills: ['thuvuong'], pw: 1.08, d: 'Học dáng hổ báo, tiếng sói vượn. Tu sĩ Ngự Thú Sơn Trang đánh như dã thú.' },
+  ngulinhquyet: { id: 'ngulinhquyet', n: 'Ngự Linh Bách Thú Công', el: ['tho', 'moc', 'phong'], tier: 2, skills: ['thuvuong'], pw: 1.08, d: 'Tu luyện thần thức, ký khế ước và điều khiển nhiều linh thú. Lấy linh thú làm lực chiến chủ đạo, người thú đồng tu, phối hợp công phạt.' },
   uamquyet: { id: 'uamquyet', n: 'U Ám Hóa Ảnh Quyết', el: ['am'], tier: 2, skills: ['uanhthich', 'phehon'], d: 'Thân hóa bóng, chân nguyên lạnh như đêm không trăng.' },
   luuquangquyet: { id: 'luuquangquyet', n: 'Lưu Quang Quyết', el: ['quang'], tier: 2, skills: ['quangkiem', 'thanhquang'], d: 'Chân nguyên sáng như sao băng, chữa thương rất nhanh.' },
   dieunhatkinh: { id: 'dieunhatkinh', n: 'Diệu Nhật Thần Kinh', el: ['quang', 'hoa'], tier: 3, skills: ['thanhquang', 'dieunhat'], pw: 1.1, d: 'Chân kinh Diệu Nhật Thần Cung: luyện mặt trời vào đan điền.' },

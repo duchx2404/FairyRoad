@@ -6,6 +6,9 @@ import { s } from './state';
 import { powerScore } from './char';
 import type { TcRow } from './tienco';
 import { hashStr, seeded } from '../core/util';
+import { ensureNpcBeasts } from '../data/npc-beasts';
+import { beastDoctrine } from '../data/beast-sects';
+import { isMythicBeast } from '../data/beast-lineage';
 
 const artsBonus = (known: string[]) => 1 + known.map(id => SKILLS[id]?.m ?? 0).sort((a, b) => b - a).slice(0, 4).reduce((a, b) => a + b, 0) * 0.025;
 /** ATK + 1.2 DEF + HP/8, plus combat arts; no age bonus or automatic faction precedence. */
@@ -32,7 +35,17 @@ export function rankingPower(row: TcRow, world: number): number {
   }
   const arts = n?.kit ? artsBonus(n.kit.known) : 1 + Math.min(4, 1 + Math.floor(row.r / 2)) * 0.04 * heritage;
   const relic = p ? treasureBonus(p) : 0;
-  return Math.round((atk + def * 1.2 + hp / 8) * arts * (1 + relic));
+  const owner = p ?? n;
+  const doctrine = beastDoctrine(owner?.sect);
+  if (doctrine) atk *= 0.6;
+  const beasts = owner ? ensureNpcBeasts(owner, world).filter(b => {
+    const status = owner.beastStatus?.[b.id];
+    return !status?.dead && !(status?.injuredUntil && status.injuredUntil > s.year);
+  }) : [];
+  const petRealm = Math.max(1, row.r - (doctrine ? 0 : 1));
+  const petBase = REALMS[petRealm].pow * (1 + row.st * 0.3) * (1 + Math.max(0, petRealm - 1) * 0.08) * worldMult(world);
+  const petPower = beasts.reduce((total, b) => total + petBase * (doctrine ? 1.15 : 1) * (isMythicBeast(b.species) ? 1.25 : 1) * (1 + 0.35 * 1.2 + 1.25), 0);
+  return Math.round((atk + def * 1.2 + hp / 8) * arts * (1 + relic) + petPower);
 }
 export const isBeastRow = (r: TcRow) => !!(r.person?.beast || r.npc?.beast || (r.npc as any)?.race === 'yeu' || (r.person as any)?.race === 'yeu' || (r.mine && ((s as any).beast || (s as any).race === 'yeu')));
 export const eqAge = (r: TcRow) => (isBeastRow(r) ? r.age / 4 : r.age);

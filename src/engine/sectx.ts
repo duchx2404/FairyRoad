@@ -985,7 +985,7 @@ function tourney(rounds: number, label: string, big: boolean): Scene {
   const lines: string[] = [];
   let wins = 0;
   for (let i = 0; i < rounds; i++) {
-    const r = fight({ name: `${pick(['Sư huynh', 'Sư tỷ', 'Sư đệ', 'Sư muội'])} ${pick(['họ Tô', 'họ Lạc', 'họ Mạnh', 'họ Hàn', 'họ Thẩm', 'họ Bạch', 'họ Tần'])}`, r: s.r, st: Math.min(3, i), kind: 'cultivator', mult: 0.85 + i * (big ? 0.08 : 0.07) }, { lethal: false, noLoot: true });
+    const r = fight({ name: `${pick(['Sư huynh', 'Sư tỷ', 'Sư đệ', 'Sư muội'])} ${pick(['họ Tô', 'họ Lạc', 'họ Mạnh', 'họ Hàn', 'họ Thẩm', 'họ Bạch', 'họ Tần'])}`, r: s.r, st: Math.min(3, i), kind: 'cultivator', sect: s.sect!.id, mult: 0.85 + i * (big ? 0.08 : 0.07) }, { lethal: false, noLoot: true });
     s.wins -= r.win ? 1 : 0;
     s.kills = Math.max(0, s.kills - (r.win ? 1 : 0));
     lines.push(`Vòng ${i + 1}: ${fightSummary(r)}`);
@@ -1037,7 +1037,7 @@ export function sectWarScene(): Scene {
   lines.push(`Hộ sơn đại trận khởi động, chuông lệnh triệu tập đệ tử toàn môn. ${me.n} cùng ${foe.n} giao tranh quyết liệt tranh đoạt linh mạch và truyền thừa đại đạo!`);
 
   // Trận 1: Tiên phong đệ tử địch
-  const r1 = fight({ name: `Đội tiên phong ${foe.n}`, r: Math.max(1, s.r), st: 1, kind: 'cultivator', mult: 0.95, el: foe.el[0] }, { lethal: false });
+  const r1 = fight({ name: `Đội tiên phong ${foe.n}`, sect: foe.id, r: Math.max(1, s.r), st: 1, kind: 'cultivator', mult: 0.95, el: foe.el[0] }, { lethal: false });
   lines.push(`Tiên phong giao tranh: ${fightSummary(r1)}`);
 
   if (!r1.win) {
@@ -1047,7 +1047,7 @@ export function sectWarScene(): Scene {
   }
 
   // Trận 2: Trưởng lão / Chiến tướng địch
-  const r2 = fight({ name: `Trưởng lão hộ tông ${foe.n}`, r: Math.min(RMAX(), s.r + 1), st: 2, kind: 'boss', mult: 1.05, el: foe.el[0] }, { lethal: false });
+  const r2 = fight({ name: `Trưởng lão hộ tông ${foe.n}`, sect: foe.id, r: Math.min(RMAX(), s.r + 1), st: 2, kind: 'boss', mult: 1.05, el: foe.el[0] }, { lethal: false });
   lines.push(`Quyết chiến chủ lực: ${fightSummary(r2)}`);
 
   if (!r2.win) {

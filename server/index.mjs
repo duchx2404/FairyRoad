@@ -1,4 +1,4 @@
-// Server FairyRoad: Hỗ trợ Multi-player, Tài khoản không cần xác minh, Đăng nhập Google, Đồng bộ Save Cloud và Gemini AI Proxy.
+// Server FairyRoad: Hỗ trợ Multi-player, Tài khoản thường không cần xác minh, Đồng bộ Save Cloud và Gemini AI Proxy.
 import express from 'express';
 import cors from 'cors';
 import { DatabaseSync } from 'node:sqlite';
@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { ollamaStartHandler } from './ollama.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,7 +28,7 @@ for (const p of envPaths) {
 }
 
 // Tạo thư mục data nếu chưa có
-const dataDir = path.join(__dirname, 'data');
+const dataDir = process.env.FAIRYROAD_DATA_DIR || path.join(__dirname, 'data');
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir, { recursive: true });
 }
@@ -43,13 +44,10 @@ db.exec(`
     username TEXT UNIQUE,
     password_hash TEXT,
     password_salt TEXT,
-    google_id TEXT UNIQUE,
-    google_email TEXT,
     display_name TEXT,
     avatar TEXT,
     auth_provider TEXT DEFAULT 'local',
     gemini_key TEXT,
-    gemini_token TEXT,
     save_data TEXT,
     character_preview TEXT,
     created_at INTEGER,
@@ -73,11 +71,11 @@ db.exec(`
   );
 `);
 
-try { db.exec('ALTER TABLE users ADD COLUMN gemini_token TEXT'); } catch {}
 
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '15mb' }));
+app.post('/api/ai/ollama/start', ollamaStartHandler());
 
 // Helper băm mật khẩu bảo mật
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -117,7 +115,7 @@ function authMiddleware(req, res, next) {
     req.user = null;
     return next();
   }
-  const user = db.prepare('SELECT id, username, google_id, google_email, display_name, avatar, auth_provider, gemini_key, character_preview, created_at FROM users WHERE id = ?').get(session.user_id);
+  const user = db.prepare('SELECT id, username, display_name, avatar, gemini_key, character_preview, created_at FROM users WHERE id = ?').get(session.user_id);
   req.user = user || null;
   next();
 }
@@ -135,7 +133,7 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/login-or-register', (req, res) => {
   try {
     const { username, password, displayName, geminiKey } = req.body;
-    if (!username || !password) {
+    if (typeof username !== 'string' || !username.trim() || username.trim().length > 64 || typeof password !== 'string' || !password || password.length > 256 || (geminiKey !== undefined && (typeof geminiKey !== 'string' || geminiKey.length > 512)) || (displayName !== undefined && typeof displayName !== 'string')) {
       return res.status(400).json({ ok: false, error: 'Vui lòng nhập tên tài khoản và mật khẩu.' });
     }
 
@@ -166,7 +164,7 @@ app.post('/api/auth/login-or-register', (req, res) => {
           username: existing.username,
           displayName: existing.display_name || existing.username,
           avatar: existing.avatar,
-          authProvider: existing.auth_provider,
+          authProvider: 'local',
           geminiKey: existing.gemini_key,
         },
       });
@@ -174,7 +172,7 @@ app.post('/api/auth/login-or-register', (req, res) => {
       // Chưa có tài khoản: TỰ ĐỘNG TẠO MỚI ngay lập tức (không cần xác minh)
       const userId = 'usr_' + crypto.randomUUID();
       const { hash, salt } = hashPassword(password);
-      const name = displayName?.trim() || cleanUsername;
+      const name = displayName?.trim().slice(0, 80) || cleanUsername;
       const now = Date.now();
 
       db.prepare(`
@@ -204,62 +202,6 @@ app.post('/api/auth/login-or-register', (req, res) => {
   }
 });
 
-// 3. Đăng nhập bằng Google
-app.post('/api/auth/google', (req, res) => {
-  try {
-    const { googleId, email, name, picture, geminiKey, geminiToken } = req.body;
-    if (!googleId) {
-      return res.status(400).json({ ok: false, error: 'Thiếu thông tin Google ID.' });
-    }
-
-    let user = db.prepare('SELECT * FROM users WHERE google_id = ?').get(googleId);
-
-    if (user) {
-      // Đã từng đăng nhập Google
-      db.prepare(`
-        UPDATE users 
-        SET last_login = ?, display_name = ?, avatar = ?, 
-            gemini_key = COALESCE(?, gemini_key), 
-            gemini_token = COALESCE(?, gemini_token) 
-        WHERE id = ?
-      `).run(Date.now(), name || user.display_name, picture || user.avatar, geminiKey || null, geminiToken || null, user.id);
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(user.id);
-    } else {
-      // Người dùng Google lần đầu vào game
-      const userId = 'usr_g_' + crypto.randomUUID();
-      const now = Date.now();
-      const fallbackUser = 'g_' + googleId.slice(-8);
-
-      db.prepare(`
-        INSERT INTO users (id, username, google_id, google_email, display_name, avatar, auth_provider, gemini_key, gemini_token, created_at, last_login)
-        VALUES (?, ?, ?, ?, ?, ?, 'google', ?, ?, ?, ?)
-      `).run(userId, fallbackUser, googleId, email || null, name || fallbackUser, picture || null, geminiKey || null, geminiToken || null, now, now);
-
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
-    }
-
-    const token = createSession(user.id);
-
-    res.json({
-      ok: true,
-      token,
-      user: {
-        id: user.id,
-        username: user.username,
-        googleEmail: user.google_email,
-        displayName: user.display_name,
-        avatar: user.avatar,
-        authProvider: 'google',
-        geminiKey: user.gemini_key,
-        geminiToken: user.gemini_token,
-      },
-    });
-  } catch (err) {
-    console.error('Lỗi Google Auth:', err);
-    res.status(500).json({ ok: false, error: 'Lỗi đăng nhập Google.' });
-  }
-});
-
 // 4. Lấy thông tin tài khoản hiện tại
 app.get('/api/user/me', (req, res) => {
   if (!req.user) return res.status(401).json({ ok: false, error: 'Chưa đăng nhập.' });
@@ -269,7 +211,8 @@ app.get('/api/user/me', (req, res) => {
 // 5. Cập nhật Gemini API Key cho tài khoản
 app.post('/api/user/gemini-key', (req, res) => {
   if (!req.user) return res.status(401).json({ ok: false, error: 'Chưa đăng nhập.' });
-  const { geminiKey } = req.body;
+  if (typeof req.body.geminiKey !== 'string' || req.body.geminiKey.length > 512) return res.status(400).json({ ok: false, error: 'API Key không hợp lệ.' });
+  const geminiKey = req.body.geminiKey.trim();
   db.prepare('UPDATE users SET gemini_key = ? WHERE id = ?').run(geminiKey || null, req.user.id);
   res.json({ ok: true, geminiKey: geminiKey || null });
 });
@@ -381,26 +324,28 @@ app.post('/api/multiplayer/chat', (req, res) => {
 
 // 10. Gemini AI Proxy (gọi qua server nếu client không muốn lộ key hoặc gặp hạn chế mạng)
 app.post('/api/ai/gemini-proxy', async (req, res) => {
+  if (!req.user) return res.status(401).json({ ok: false, error: 'Đăng nhập tài khoản để dùng API Key đã lưu.' });
   try {
-    const { prompt, model = 'gemini-2.5-flash', apiKey } = req.body;
-    const key = apiKey || req.user?.gemini_key || process.env.GEMINI_API_KEY;
+    const { prompt, model = 'gemini-2.5-flash', maxTokens = 600, temperature = 0.85 } = req.body;
+    const key = req.user.gemini_key;
+    if (typeof prompt !== 'string' || !prompt.trim() || typeof model !== 'string' || !/^[a-zA-Z0-9._-]+$/.test(model)) return res.status(400).json({ ok: false, error: 'Yêu cầu Gemini không hợp lệ.' });
 
     if (!key) {
       return res.status(400).json({
         ok: false,
-        error: 'Chưa có Gemini API Key. Vui lòng nhập API Key từ Google AI Studio (aistudio.google.com) hoặc thiết lập GEMINI_API_KEY trong file .env của server.'
+        error: 'Tài khoản chưa có Gemini API Key. Hãy mở Tài khoản và lưu API Key của bạn.'
       });
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
     const resp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 600,
+          temperature: Number.isFinite(temperature) ? Math.max(0, Math.min(2, temperature)) : 0.85,
+          maxOutputTokens: Number.isFinite(maxTokens) ? Math.max(1, Math.min(8192, Math.round(maxTokens))) : 600,
         },
       }),
     });
@@ -420,6 +365,6 @@ app.post('/api/ai/gemini-proxy', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`[FairyRoad Server] Máy chủ chạy tại http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`[FairyRoad Server] Máy chủ chạy tại http://localhost:${server.address().port}`);
 });

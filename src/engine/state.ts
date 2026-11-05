@@ -11,6 +11,8 @@ export interface BagItem {
 
 export type NpcTag = 'friend' | 'enemy' | 'master' | 'disciple' | 'daolu' | 'rival' | 'kin' | 'acq' | 'senior' | 'peer';
 export interface NPC {
+  beasts?: import('../data/npc-beasts').NpcBeast[];
+  beastStatus?: Record<string, { dead?: boolean; injuredUntil?: number }>;
   evolution?: { from: string; milestone: number };
   blood?: string;
   craft?: import('./craft-proficiency').ArtisanCraft;
@@ -156,10 +158,7 @@ export interface Meta {
     ai: boolean;
     aiProvider?: 'ollama' | 'gemini';
     geminiKey?: string;
-    geminiToken?: string;
     geminiModel?: string;
-    googleClientId?: string;
-    lastGoogleEmail?: string;
     serverUrl?: string;
     url: string;
     model: string;
@@ -207,7 +206,6 @@ function loadMeta(): Meta {
       ai: true,
       aiProvider: 'gemini',
       geminiModel: 'gemini-2.5-flash',
-      googleClientId: '744884064365-0lt381v4e24g1ihe6botta6tf4dripuv.apps.googleusercontent.com',
       serverUrl: 'http://localhost:3001',
       url: 'http://127.0.0.1:11434',
       model: 'huihui_ai/qwen3-abliterated:14b',
@@ -225,9 +223,9 @@ function loadMeta(): Meta {
     const karma = Math.max(m.karma ?? 0, 9999999);
     const karmaTotal = Math.max(m.karmaTotal ?? 0, 9999999);
     const settings = { ...base.settings, ...(m.settings || {}) };
-    if (!settings.googleClientId || !settings.googleClientId.includes('.apps.googleusercontent.com')) {
-      settings.googleClientId = base.settings.googleClientId;
-    }
+    delete settings.geminiToken;
+    delete settings.googleClientId;
+    delete settings.lastGoogleEmail;
     return { ...base, ...m, karma, karmaTotal, codex: { ...base.codex, ...(m.codex || {}) }, settings };
   } catch {
     return base;

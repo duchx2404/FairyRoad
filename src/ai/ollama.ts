@@ -1,4 +1,5 @@
 import { serviceAvailable, serviceBlockReason } from './service-access';
+import { ensureOllamaReady } from './ollama-runtime';
 // AI kể chuyện chạy qua Google Gemini hoặc Ollama (tùy chọn). Không có AI thì game vẫn chạy với văn bản soạn sẵn.
 import { isGeminiActive, callGemini } from './gemini';
 import { meta, saveMeta, s } from '../engine/state';
@@ -12,10 +13,7 @@ export const aiOn = () => meta.settings.ai && (isGeminiActive() || serviceAvaila
 export const aiBlockReason = () => { if (!meta.settings.ai) return null; if (isGeminiActive()) return null; return serviceBlockReason(meta.settings.url); };
 
 export async function listModels(): Promise<string[]> {
-  const r = await fetch(`${meta.settings.url}/api/tags`, { signal: AbortSignal.timeout(4000) });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  const j = await r.json();
-  return (j.models || []).map((m: { name: string }) => m.name);
+  return ensureOllamaReady();
 }
 
 const SYSTEM = `Bạn là người kể chuyện cho một game tu tiên tiếng Việt.
@@ -85,6 +83,7 @@ async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
     }
   }
   let r: Response;
+  await ensureOllamaReady();
   try {
     r = await fetch(`${meta.settings.url}/api/chat`, {
       method: 'POST',

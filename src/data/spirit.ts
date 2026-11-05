@@ -87,6 +87,7 @@ export interface ChanLinh {
   flee?: number;
   /** Phẩm tọa kỵ 1..5 (Hoàng → Tiên giai): càng cao đi đường càng nhanh. Nếu bỏ trống: không phải thú cưỡi, chỉ là linh sủng chiến đấu. */
   mount?: number;
+  resizeR?: number; // Cảnh giới mở thần thông biến đổi kích thước để chở chủ
 }
 export const CHANLINH: Record<string, ChanLinh> = {
   hoaly: { id: 'hoaly', n: 'Hỏa Ly', el: 'hoa', ic: 'cat', minR: 1, d: 'Mèo rừng lông đỏ, đuôi cháy như ngọn đuốc. Tham ăn, nhưng trung thành.', atk: 8, luck: 1, mount: 1 },
@@ -121,11 +122,11 @@ export const CHANLINH: Record<string, ChanLinh> = {
   // Ngư yêu và Rồng (Thủy tộc cưỡi sóng vượt biển)
   ngaclong: { id: 'ngaclong', n: 'Hắc Thủy Cự Ngạc', el: 'thuy', ic: 'snake', minR: 4, d: 'Ngư yêu cá sấu khổng lồ Hắc Thủy Hà, lưng bọc lân giáp rộng như thuyền rồng, cưỡi sóng rẽ nước.', def: 25, hp: 20, mount: 4 },
   thanhgiao: { id: 'thanhgiao', n: 'Thanh Hải Thần Long', el: 'thuy', ic: 'qilin', minR: 6, d: 'Chân Long viễn cổ thân dài vạn trượng, chở chủ cưỡi mây đạp sóng tung hoành tứ hải.', atk: 35, def: 25, mount: 5 },
-  // Côn trùng / chuột nhỏ (Linh sủng chiến đấu, không phải thú cưỡi)
-  bantychu: { id: 'bantychu', n: 'Bàn Ty Thất Sắc Chu', el: 'am', ic: 'demon', minR: 3, d: 'Nhện tinh Bàn Ty Động, nhả tơ bảy màu dệt thiên la địa võng độc sát sinh linh (Chiến sủng hộ pháp).', flee: 0.25, def: 20 },
-  bachnhanngocong: { id: 'bachnhanngocong', n: 'Bách Nhãn Ngô Công', el: 'quang', ic: 'demon', minR: 4, d: 'Rết độc ngàn mắt dưới sườn phóng hoàng quang thiêu đốt hồn phách (Chiến sủng hộ pháp).', atk: 30, def: 20 },
-  tybadochac: { id: 'tybadochac', n: 'Tỳ Bà Độc Hạt', el: 'hoa', ic: 'demon', minR: 4, d: 'Bọ cạp độc đuôi châm Đảo Mã chích thủng kim thân bất hoại (Chiến sủng hộ pháp).', atk: 35, flee: 0.2 },
-  hoangphongdieuthu: { id: 'hoangphongdieuthu', n: 'Hoàng Phong Điêu Thử', el: 'phong', ic: 'paw', minR: 3, d: 'Chuột gió vàng thổi Tam Muội Thần Phong mù trời mù đất (Chiến sủng hộ pháp).', flee: 0.3, luck: 4 },
+  // Côn trùng / chuột nhỏ: Kim Đan mở thần thông phóng to, thu nhỏ để chở chủ
+  bantychu: { id: 'bantychu', n: 'Bàn Ty Thất Sắc Chu', el: 'am', ic: 'demon', minR: 3, d: 'Nhện tinh Bàn Ty Động, nhả tơ bảy màu dệt thiên la địa võng độc sát sinh linh (Kim Đan có thể phóng to chở chủ).', flee: 0.25, def: 20, mount: 3, resizeR: 3 },
+  bachnhanngocong: { id: 'bachnhanngocong', n: 'Bách Nhãn Ngô Công', el: 'quang', ic: 'demon', minR: 4, d: 'Rết độc ngàn mắt dưới sườn phóng hoàng quang thiêu đốt hồn phách (Kim Đan có thể phóng to chở chủ).', atk: 30, def: 20, mount: 3, resizeR: 3 },
+  tybadochac: { id: 'tybadochac', n: 'Tỳ Bà Độc Hạt', el: 'hoa', ic: 'demon', minR: 4, d: 'Bọ cạp độc đuôi châm Đảo Mã chích thủng kim thân bất hoại (Kim Đan có thể phóng to chở chủ).', atk: 35, flee: 0.2, mount: 3, resizeR: 3 },
+  hoangphongdieuthu: { id: 'hoangphongdieuthu', n: 'Hoàng Phong Điêu Thử', el: 'phong', ic: 'paw', minR: 3, d: 'Chuột gió vàng thổi Tam Muội Thần Phong mù trời mù đất (Kim Đan có thể phóng to chở chủ).', flee: 0.3, luck: 4, mount: 3, resizeR: 3 },
 };
 // Lồng linh thú ('x:trung_<id>'): đăng ký sẵn để bảo khố, túi đồ, save cũ luôn có tên/mô tả.
 for (const b of Object.values(CHANLINH)) registerSpecial({
@@ -154,3 +155,8 @@ export const clEffect = (c: ChanLinh) => {
   if (c.flee) p.push(`thoát thân +${Math.round(c.flee * 100)}%`);
   return p.join(', ') + ', cùng chiến đấu';
 };
+
+/** Yêu thú Kim Đan có thể chủ động phóng to hoặc thu nhỏ bản thể. */
+export const BEAST_RESIZE_REALM = 3;
+export const canResizeBeast = (r: number) => r >= BEAST_RESIZE_REALM;
+export const canRideBeast = (d: ChanLinh, r: number) => !!d.mount && r >= (d.resizeR ?? 0);

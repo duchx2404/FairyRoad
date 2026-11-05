@@ -22,11 +22,12 @@ let root: HTMLElement | null = null;
 
 /** Dựng các ô đội hình một bên (tối đa 10 chiến binh): ô 0 là thủ lĩnh, cự nhân Pháp Thiên Tượng Địa đứng sau ô 0. Có thanh máu nhỏ. */
 function slots(side: 'me' | 'foe', list: Fighter[], giant: { giant: string | null; col: string; glow: string } | null): HTMLElement[] {
-  return list.slice(0, 10).map((f, i) => {
-    const ps = slotPos(i);
+  return list.map((f, i) => {
+    const ps = slotPos(i, list.length);
     const sl = fighterSlot(f, side);
     const style: Record<string, string> = { bottom: `${ps.bottom}%`, zIndex: String(Math.round(10 - ps.depth * 2)) };
     style[side === 'me' ? 'right' : 'left'] = `${100 - ps.x - 22}%`;
+    if (list.length > 10) style.width = `${Math.min(22, 60 / Math.ceil((list.length - 1) / 3))}%`;
     const dead = f.hp <= 0 && !f.fled;
     return h('div', { class: 'fa-slot' + (ps.depth >= 1 ? ' back' : '') + (ps.depth >= 2.4 ? ' far' : '') + (i === 0 ? ' lead' : '') + (dead ? ' dead' : '') + (f.fled ? ' fled' : ''), style, title: `${f.name} · ${Math.max(0, Math.round(f.hp))}/${f.maxHp}` },
       i === 0 && giant?.giant ? h('div', { class: 'fa-giant', style: { maskImage: `url(${giant.giant})`, webkitMaskImage: `url(${giant.giant})`, background: giant.col, filter: `drop-shadow(0 0 10px ${giant.glow}) drop-shadow(0 0 28px ${giant.glow})` } }) : null,

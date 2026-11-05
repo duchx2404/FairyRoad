@@ -428,6 +428,8 @@
 
     <Thủy Kỳ Lân el="thuy" myth="1">
         <Kỳ Lân el="thuy" myth="1">
+            <Tứ Bất Tượng el="tho" myth="1"></Tứ Bất Tượng>
+            <Ngọc Kỳ Lân el="quang" myth="1"></Ngọc Kỳ Lân>
             <Bích Thủy Kỳ Lân el="thuy">
                 <Hải Kỳ Lân el="thuy">
                     <Thủy Lân Thú el="thuy">
@@ -552,6 +554,7 @@
 
     <Bạch Hổ el="kim" myth="1">
         <Bạch Hổ Vương el="kim" myth="1">
+            <Hắc Hổ el="am" myth="1"></Hắc Hổ>
             <Cương Thiết Hổ el="kim">
                 <Thiết Trảo Hổ el="kim">
                     <Linh Hổ el="none"></Linh Hổ>
@@ -601,6 +604,8 @@
     </Bạch Trạch>
 
     <Thiên Cẩu el="kim" myth="1">
+            <Đế Thính Thú el="am" myth="1"></Đế Thính Thú>
+        <Thần Khuyển el="kim" myth="1"></Thần Khuyển>
         <Ngân Nguyệt Lang Vương el="kim" myth="1">
             <Thanh Phong Lang el="phong">
                 <Tật Phong Lang el="phong">
@@ -735,6 +740,8 @@
     </Sa Hạt>
 
     <Sư Tử el="hoa">
+            <Thanh Mao Sư el="phong" myth="1"></Thanh Mao Sư>
+            <Kim Mao Hống el="kim" myth="1"></Kim Mao Hống>
         <Liệt Diễm Sư el="hoa">
             <Xích Diễm Sư el="hoa">
                 <Linh Sư el="none"></Linh Sư>
@@ -774,6 +781,7 @@
 
     <Thôn Kim Thử el="kim">
         <Hoàng Phong Điêu Thử el="phong" myth="1">
+            <Hoa Hồ Điêu el="phong" myth="1"></Hoa Hồ Điêu>
             <Tam Muội Phong Thử el="phong">
                 <Linh Thử el="none"></Linh Thử>
             </Tam Muội Phong Thử>
@@ -881,6 +889,7 @@
 
     <Quỳ el="loi" myth="1">
         <Độc Giác Thanh Ngưu el="kim" myth="1">
+            <Ngũ Sắc Thần Ngưu el="tho" myth="1"></Ngũ Sắc Thần Ngưu>
             <Kim Đới Ma Ngưu el="kim">
                 <Thanh Thân Độc Túc Lôi Ngưu el="none"></Thanh Thân Độc Túc Lôi Ngưu>
             </Kim Đới Ma Ngưu>

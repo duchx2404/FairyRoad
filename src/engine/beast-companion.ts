@@ -5,6 +5,7 @@ import { HERBS, MATS } from '../data/items';
 import { addLog } from './core';
 import { clamp } from '../core/util';
 import { count, removeItem, itemName } from './char';
+import { canResizeBeast } from '../data/spirit';
 
 export type BeastStage = 'aunen' | 'truongthanh' | 'gia';
 
@@ -13,6 +14,7 @@ export interface ChanLinhState {
   name: string;
   bond: number;
   ride?: boolean;
+  bodySize?: 'small' | 'normal' | 'large';
   r: number;        // Cảnh giới yêu thú (1: Nhất giai/Luyện Khí, 2: Nhị giai/Trúc Cơ...)
   st: number;       // Tiểu cảnh giới (0: Sơ kỳ, 1: Trung kỳ, 2: Hậu kỳ, 3: Viên mãn)
   p: number;        // Tiến độ tu vi (0..100%)
@@ -27,6 +29,14 @@ export const STAGE_NAMES: Record<BeastStage, string> = {
   truongthanh: 'Trưởng thành',
   gia: 'Lão niên (Già)',
 };
+
+export function setLinhSize(size: 'small' | 'normal' | 'large'): string {
+  const cl = getLinh();
+  if (!cl) return 'Chưa có linh thú đồng hành.';
+  if (size !== 'normal' && !canResizeBeast(cl.r)) return 'Cần đạt Kim Đan để phóng to, thu nhỏ bản thể.';
+  cl.bodySize = size;
+  return `${cl.name} ${size === 'large' ? 'phóng to bản thể để chở chủ' : size === 'small' ? 'thu nhỏ bản thể' : 'trở về kích thước tự nhiên'}.`;
+}
 
 /** Lấy chân linh đồng hành và tự động chuẩn hóa cấu trúc dữ liệu nếu là bản lưu cũ */
 export function getLinh(): ChanLinhState | null {

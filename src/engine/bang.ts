@@ -14,6 +14,7 @@ import { craftTitle, XP_K, type CraftK } from './craft';
 import { craftProficiency, trainArtisan, type ArtisanCraft } from './craft-proficiency';
 import { board, worldOf, worldResidents, recruitPerson, tcPeople } from './tienco';
 import { rankedHundred } from './ranking';
+import { beastDoctrine } from '../data/beast-sects';
 import { CELESTIAL, CELESTIAL_CRAFT, celestialTop, celestialOffices, type CelestialId } from '../data/celestial';
 import { tbdbOf, TB_KIND_N, type Tbdb } from '../data/tbdb';
 
@@ -43,12 +44,13 @@ export const FORCE_KIND_N: Record<ForceKind, string> = { sect: 'Tông môn', emp
 export function forceBoard(kind?: ForceKind): ForceRow[] {
   const rows: ForceRow[] = [];
   for (const sc of Object.values(SECTS)) {
+    const beastSchool = beastDoctrine(sc.id);
     const l = LOCS[sc.loc];
     const top = SECT_TOP[sc.tier];
     rows.push({
-      id: 's:' + sc.id, kind: 'sect', name: sc.n, top, score: top * 1000 + sc.tier * 100 + (l?.qi || 1) * 10 + (sc.evil ? 5 : 0), rank: 0,
+      id: 's:' + sc.id, kind: 'sect', name: sc.n, top, score: top * 1000 + sc.tier * 100 + (l?.qi || 1) * 10 + (sc.evil ? 5 : 0) + (beastSchool?.count ?? 0) * 75, rank: 0,
       mine: s.sect?.id === sc.id, mineTxt: 'tông môn của ngươi', where: l ? whereOf(l) : '', els: sc.el, tier: sc.tier, evil: sc.evil,
-      sub: `${SECT_TIER[sc.tier]}${sc.leader ? ' · chủ: ' + sc.leader : ''} · lão tổ ${REALMS[top].n} · ${CRAFT_LABEL[sc.craft]}`, d: `${sc.d} “${sc.motto}”`,
+      sub: `${SECT_TIER[sc.tier]}${sc.leader ? ' · chủ: ' + sc.leader : ''} · lão tổ ${REALMS[top].n} · ${CRAFT_LABEL[sc.craft]}${beastSchool ? ` · Ngự thú chủ chiến (${beastSchool.count} linh thú/người)` : ''}`, d: `${sc.d} “${sc.motto}”`,
     });
   }
   for (const e of Object.values(EMPIRES)) {

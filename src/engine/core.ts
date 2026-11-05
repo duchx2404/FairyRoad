@@ -1,3 +1,4 @@
+import { ensureNpcBeasts } from '../data/npc-beasts';
 import { phams, phamSum, perfectBody } from './char';
 import { BREAK_PILL, PHAM_N, PHAM_T, holySur, GIVEN_F, GIVEN_M, hiddenRootKind } from '../data/core';
 import { slots } from './slots';
@@ -13,7 +14,7 @@ import { primaryDaolu } from './relationships';
 import { moneyScale, effRi, tamSum, pqSum, myLinh, cultRate, atBottleneck, stat, age, maxLife, placeQi, has, pillMult, removeItem, count, body, thienMenh, daoCoInfo, thienDo, tang, turnLen, realmAt, effR, stageName } from './char';
 import { hooks } from './bus';
 import { ch, clamp, pick, ri, rf, uid, yearsTxt } from '../core/util';
-import { CHANLINH, MOUNT_SPEED, MOUNT_BLINK } from '../data/spirit';
+import { CHANLINH, MOUNT_SPEED, MOUNT_BLINK, canRideBeast } from '../data/spirit';
 import { tickLinh } from './beast-companion';
 
 // ---------- Nhật ký ----------
@@ -82,6 +83,7 @@ export function mkNpc(o: NpcOpts = {}): NPC {
     met: s.year,
   };
   if (!o.name && n.sect && !doctrineAccepts({ ...n, sect: SECTS[n.sect]?.n ?? n.sect })) n.sect = null;
+  ensureNpcBeasts(n, s.world ?? 0);
   return n;
 }
 /** Thêm NPC vào nhân mạch (tối đa 40, bỏ người quen sơ đã mất). */
@@ -506,7 +508,8 @@ export function travelYears(to: { x: number; y: number }) {
 export function mountYears(base: number): number {
   const c = myLinh();
   const d = c ? CHANLINH[c.id] : null;
-  if (!d?.mount) return base;
+  if (!d?.mount || !canRideBeast(d, c?.r ?? d.minR)) return base;
+  if (d.resizeR && c) c.bodySize = 'large';
   const sp = MOUNT_SPEED[d.mount];
   if (!isFinite(sp)) return base <= MOUNT_BLINK ? 0 : clamp(base * 0.08, 1 / 12, 0.25);
   return Math.max(1 / 12, base / sp);

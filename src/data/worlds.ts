@@ -1,3 +1,4 @@
+import { BEAST_SECTS, beastDoctrine, BEAST_DOCTRINE_TEXT } from './beast-sects';
 import { localItemId } from './local-items';
 import { installDecliningSchools } from './declining-schools';
 // Các giới phía trên Thương Lan: Linh Giới, Tiên Giới, Thần Giới, Hồng Hoang, Hỗn Độn.
@@ -73,6 +74,8 @@ function pickTech(els: El[], tier: number, evil = false): string {
 }
 
 function build(w: number, T: Theme): WorldPack {
+  const beastSchool = BEAST_SECTS.find(d => d.world === w);
+  if (beastSchool && !T.sects.some(sc => sc[0] === beastSchool.name)) T.sects.push([beastSchool.name, 'nam', 3, ['tho', 'moc', 'phong'], BEAST_DOCTRINE_TEXT, 'Người thú đồng tâm, cùng tiến đại đạo.', 'alch']);
   const cap = WORLD_CAP[w];
   const P = `w${w}_`;
   const used = new Set<string>();
@@ -122,6 +125,12 @@ function build(w: number, T: Theme): WorldPack {
     push({ id: sid, n, type: 'sect', reg: isle ? seaReg[v as Outer] : reg(v, i), x: 0, y: 0, qi: +((1.2 + tier * 0.25) * qiMul).toFixed(2), sect: sid, d, ...(isle ? { island: true } : {}) });
     sects[sid] = { id: sid, n, loc: sid, tier, el, minQ: [0, 1, 2, 3, 5][tier], tech: pickTech(el, tier, !!evil), craft, ...(evil ? { evil: true } : {}), ...(fem ? { fem: true } : {}), d, motto };
   });
+  for (const sc of Object.values(sects)) if (beastDoctrine(sc.n)) {
+    sc.tech = 'ngulinhquyet';
+    sc.d += ' ' + BEAST_DOCTRINE_TEXT;
+    const place = locs.find(l => l.id === sc.loc);
+    if (place) place.d = sc.d;
+  }
   // ---- hoàng triều ----
   const empires: Record<string, Empire> = {};
   for (const [n, cap0, tier, ruler, d] of T.empires) {

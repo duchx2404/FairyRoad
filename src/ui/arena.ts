@@ -68,12 +68,13 @@ export interface Slot { src: string; beast: boolean; mirror?: boolean; name: str
 export interface ArenaScene { bg: string | null; me: string | null; giant: string | null; foe: string | null; beast: boolean; col: string; glow: string; allies: Slot[]; foes: Slot[] }
 /** Vị trí ô đội hình i (0..9), tính từ mép trong của mỗi bên: hàng 1 là thủ lĩnh đứng một mình,
     ba hàng sau mỗi hàng 3 người (trận hình 3×3); trong một hàng, người đứng cao hơn là ở xa hơn (chiều sâu). */
-export function slotPos(i: number): { x: number; bottom: number; depth: number } {
+export function slotPos(i: number, total = 10): { x: number; bottom: number; depth: number } {
   if (i === 0) return { x: 70, bottom: 3, depth: 0 };
   const line = Math.floor((i - 1) / 3) + 1; // 1..3: hàng 2,3,4
   const k = (i - 1) % 3;                    // 0 giữa, 1 trước-thấp, 2 sau-cao
   const bottom = [12, 1, 24][k];
-  const x = 70 - line * 19 - [0, 3, -3][k];
+  const spacing = 57 / Math.max(3, Math.ceil((total - 1) / 3));
+  const x = 70 - line * spacing - [0, 3, -3][k];
   return { x, bottom, depth: line + (k === 2 ? 0.5 : k === 1 ? -0.3 : 0) };
 }
 /** Hệ dùng để chọn tạo hình đồng hành (âm/dương quy về ám/quang). */

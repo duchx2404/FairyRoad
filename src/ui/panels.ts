@@ -1,3 +1,4 @@
+import { NPC_BEASTS, ensureNpcBeasts } from '../data/npc-beasts';
 import { openAuthModal } from './auth-modal';
 import { getCurrentUser, isLoggedIn, fetchRoster, fetchWorldChat, sendWorldChatMessage, syncSaveToCloud, loadSaveFromCloud } from '../engine/auth';
 import { isGeminiActive, DEFAULT_GEMINI_MODEL } from '../ai/gemini';
@@ -6,7 +7,7 @@ import { worldDefinitions } from '../data/local-items';
 // Cửa sổ trang kéo thả được.
 import { skEff, skGradeOf } from '../engine/char';
 import { glyphSvg, SLOT_GLYPH, SECT_GLYPH } from './glyph';
-import { board, myRank, retPeople, realmTxt, TK_AGE, TC_INTRO, MYTHIC_RACES, type TcRow } from '../engine/tienco';
+import { board, myRank, retPeople, realmTxt, TK_AGE, TC_INTRO, MYTHIC_RACES, type TcRow, type TcPerson } from '../engine/tienco';
 import { soulAge, lifeLived } from '../engine/char';
 import { skSource, skSrcMul, count } from '../engine/char';
 import { kmCalc } from '../engine/kinhmach';
@@ -54,7 +55,7 @@ import { fengshenData, FENGSHEN_TOTAL } from '../events/fengshen';
 import { skCost } from '../engine/combat';
 import { TAMPHAP, tamGrade, tamEffect } from '../data/items';
 import { turnLen, tamList, tamActive, tamSlots, pqList, myLinh } from '../engine/char';
-import { getLinh, feedLinh, STAGE_NAMES } from '../engine/beast-companion';
+import { getLinh, feedLinh, STAGE_NAMES, setLinhSize } from '../engine/beast-companion';
 import { formatStonesDetail, formatStonesShort } from '../engine/stones';
 import { showScene, toast, refresh, openModal, closeModal } from './modal';
 import { listModels, setAi, aiBlockReason } from '../ai/ollama';
@@ -551,9 +552,10 @@ function charPanel(): HTMLElement[] {
       h('div', { class: 'cp-ic', html: linhIconSvg(d.ic, d.el, 36, 'cl_' + cl.id) }),
       h('div', { class: 'cp-rt' },
         h('b', {}, `${cl.name} [${stageStr}]`),
-        h('small', {}, `${realmStr} · ${EL[d.el].n} hệ · ${lifeStr} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · ${d.mount ? `tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}` : 'linh sủng trợ chiến (không phải thú cưỡi)'}`),
+        h('small', {}, `${realmStr} · Chủng loài: ${d.n} · ${cl.r >= 3 ? 'Có thể phóng to, thu nhỏ' : 'Kim Đan mở phóng to, thu nhỏ'} · ${EL[d.el].n} hệ · ${lifeStr} · gắn bó ${Math.round(cl.bond)}/100 · ${clEffect(d)} · ${d.mount ? `tọa kỵ ${MOUNT_GRADE[d.mount]}: ${mountEffect(d)}${cl.ride ? ' · đang chỉ để cưỡi' : ''}` : 'linh sủng trợ chiến (không phải thú cưỡi)'}`),
       ),
       h('div', { class: 'acts', style: { display: 'flex', gap: '4px' } },
+        cl.r >= 3 ? btn(cl.bodySize === 'small' ? 'Phóng to' : 'Thu nhỏ', () => act(setLinhSize(cl.bodySize === 'small' ? 'large' : 'small')), 'small') : null,
         btn('Nuôi dưỡng', openFeedModal, 'small prime', { title: 'Cho ăn linh thảo, yêu đan, tinh huyết để tăng tu vi và trưởng thành' }),
         btn('Thả đi', () => askConfirm(`Thả ${cl.name} về rừng? Chân linh đã đi sẽ không quay lại.`, () => act(releaseLinh()), { title: 'Thả chân linh', ok: 'Thả đi' }), 'small ghost'),
       ),
@@ -972,6 +974,8 @@ function openCompanion(id: string) {
   draw();
 }
 function npcRow(n: NPC, acts: (HTMLElement | null)[], note = ''): HTMLElement {
+  const pets = ensureNpcBeasts(n, s.world ?? 0);
+  if (pets.length) note = [note, ...pets.map(p => `Linh thú: ${p.name} · Chủng loài: ${p.species}${n.beastStatus?.[p.id]?.dead ? ' · đã tử trận' : ''}`)].filter(Boolean).join(' · ');
   const c = n.rel >= 40 ? '#4f7a55' : n.rel <= -40 ? '#9b2a1f' : '#6e6253';
   const validActs = acts.filter(Boolean) as HTMLElement[];
   const actsCls = validActs.length >= 3 ? 'acts acts-2col' : 'acts';
@@ -1069,7 +1073,7 @@ function codexBody(t: 'root' | 'loc' | 'beast' | 'item', query = ''): HTMLElemen
       }
     }
   } else if (t === 'beast') {
-    list.append(h('div', { class: 'small muted' }, 'Yêu thú đủ đạo hạnh đều hóa hình được. Kẻ hóa hình có thể giữ lại một đặc trưng (long giác ngắn, tai hồ ly, đuôi…) hoặc giống hệt người thường — vì thế Thiên Kiêu Bảng và Cường Giả Bảng đều có yêu tu.'));
+    list.append(h('div', { class: 'small muted' }, 'Từ Kim Đan, yêu thú có thể phóng to hoặc thu nhỏ bản thể; các loài nhỏ có thể phóng to chở chủ. Yêu thú đủ đạo hạnh đều hóa hình được. Kẻ hóa hình có thể giữ lại một đặc trưng (long giác ngắn, tai hồ ly, đuôi…) hoặc giống hệt người thường — vì thế Thiên Kiêu Bảng và Cường Giả Bảng đều có yêu tu.'));
     // yêu tu cùng loài đang có tên trên bảng → ghi thực lực
     const onBoard = (species: string) => {
       const hits: string[] = [];
@@ -1079,6 +1083,10 @@ function codexBody(t: 'root' | 'loc' | 'beast' | 'item', query = ''): HTMLElemen
       }
       return hits;
     };
+    const knownPets = [...NPC_BEASTS,
+      ...s.npcs.flatMap(n => ensureNpcBeasts(n, s.world ?? 0).map(p => ({ ...p, owner: n.name }))),
+      ...((s.flags.tienco?.people ?? []) as TcPerson[]).flatMap(n => ensureNpcBeasts(n).map(p => ({ ...p, owner: n.name })))];
+    const petEntries = [...new Map(knownPets.map(p => [p.id, p])).values()];
     const BLOOD = ['thuần huyết', 'huyết mạch đậm', 'huyết mạch loãng'];
     const regN = (b: typeof BEASTS[number]) => (b.reg || []).map((r) => REGIONS[r]?.n).filter(Boolean);
     const beastRow = (b: typeof BEASTS[number], expandable = false, expanded = false, key = '') => {
@@ -1108,7 +1116,8 @@ function codexBody(t: 'root' | 'loc' | 'beast' | 'item', query = ''): HTMLElemen
       },
         h('div', { class: 'ic', style: { background: known ? EL[b.el].c : '#c9b994' }, html: glyphSvg('paw', 18) }),
         h('div', { class: 'nm' }, h('b', {}, expandable ? h('span', { class: 'tc-beast-caret', 'aria-hidden': 'true' }, expanded ? '▾ ' : '▸ ') : null, b.n), ' ', h('span', { class: 'pill' }, EL[b.el].n), (b.myth || isMythicBeast(b.n)) ? h('span', { class: 'pill', style: { background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', fontSize: '10px' }, title: 'Có cơ sở truyền thuyết thượng cổ (Uy áp +25%)' }, '👑 Thần Thoại') : null, known || b.codexOnly ? null : h('span', { class: 'muted small' }, ' · chưa gặp'),
-          h('small', {}, `Quần thể: ${b.population.toLocaleString('vi-VN')} cá thể.`),
+          h('small', {}, `Chủng loài: ${b.n} · Quần thể: ${b.population.toLocaleString('vi-VN')} cá thể.`),
+          ...petEntries.filter(p => p.species === b.n).map(p => h('small', {}, `Tên riêng: ${p.name} · Chủng loài: ${p.species} · Chủ nhân: ${p.owner}${p.gameName ? ' · tên cá thể do game đặt' : ''}`)),
           h('small', {}, `${strength} ${origin}${b.anc ? ` · dòng ${beastRoot(b)}` : ''}`), b.shj ? h('small', {}, b.shj) : null,
           ...hits.map((x) => h('small', { class: 'mine-tag' }, x))));
     };
@@ -1254,7 +1263,7 @@ function multiPanel(): HTMLElement[] {
         h('span', { class: 'badge gold', style: { fontSize: '16px' } }, '仙'),
         h('div', {},
           h('div', { style: { fontWeight: 'bold' } }, user.displayName || user.username),
-          h('div', { class: 'small muted' }, `@${user.username} · ${user.authProvider === 'google' ? 'Google · Gemini AI' : 'Tài khoản thường'}`)
+          h('div', { class: 'small muted' }, `@${user.username} · Tài khoản thường`)
         )
       ),
       h('div', { style: { display: 'flex', gap: '6px' } },
@@ -1624,7 +1633,7 @@ function setPanel(): HTMLElement[] {
     userBox.append(
       h('div', {},
         h('div', { style: { fontWeight: 'bold' } }, user.displayName || user.username),
-        h('div', { class: 'small muted' }, `${user.authProvider === 'google' ? 'Đã liên kết Google' : 'Tài khoản thường'} · @${user.username}`)
+        h('div', { class: 'small muted' }, `Tài khoản thường · @${user.username}`)
       ),
       h('div', { style: { display: 'flex', gap: '6px' } },
         btn('☁️ Lưu Cloud', async () => {
@@ -1696,7 +1705,7 @@ function setPanel(): HTMLElement[] {
       }
     }),
     ' 💻 ', h('strong', {}, 'Ollama AI (Local - Chạy trên máy)'),
-    h('div', { class: 'small muted', style: { marginLeft: '24px' } }, 'Yêu cầu mở phần mềm Ollama trên máy tính.')
+    h('div', { class: 'small muted', style: { marginLeft: '24px' } }, 'Tự khởi động Ollama nếu chưa chạy. Cần cài sẵn Ollama trên máy.')
   );
 
   providerRow.append(radioGemini, radioOllama);
@@ -1721,10 +1730,17 @@ function setPanel(): HTMLElement[] {
     const keyRow = h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px' } });
     const saveKeyBtn = btn('Lưu Key', async () => {
       const val = keyInput.value.trim();
-      setAi({ geminiKey: val, aiProvider: 'gemini' });
-      const { updateAccountGeminiKey } = await import('../engine/auth');
-      await updateAccountGeminiKey(val);
-      notice('Đã lưu Gemini API Key vào tài khoản!');
+      if (getCurrentUser()) {
+        saveKeyBtn.disabled = true;
+        const { updateAccountGeminiKey } = await import('../engine/auth');
+        const ok = await updateAccountGeminiKey(val);
+        saveKeyBtn.disabled = false;
+        if (!ok) { notice('Không lưu được API Key lên tài khoản. Kiểm tra kết nối hoặc đăng nhập lại.'); return; }
+        notice('Đã lưu Gemini API Key vào tài khoản!');
+      } else {
+        setAi({ geminiKey: val, aiProvider: 'gemini' });
+        notice('Đã lưu API Key trên máy này. Đăng nhập để gắn Key vào tài khoản.');
+      }
       renderPanels();
     }, 'sm prime');
 
@@ -1763,23 +1779,28 @@ function setPanel(): HTMLElement[] {
     // Cấu hình Ollama
     const status = h('div', { class: 'small muted', style: { margin: '4px 0' } });
     const modelSel = h('select', { onchange: (e: Event) => setAi({ model: (e.target as HTMLSelectElement).value }) }, h('option', { value: st.model }, st.model));
-    const checkBtn = btn('Kiểm tra Ollama', async () => {
-      status.textContent = 'Đang kiểm tra Ollama...';
+    const checkOllama = async () => {
+      checkBtn.disabled = true;
+      status.textContent = 'Đang kiểm tra và khởi động Ollama nếu cần...';
       try {
         const ms = await listModels();
         modelSel.innerHTML = '';
         for (const m of ms) modelSel.append(h('option', { value: m, selected: m === st.model }, m));
-        status.textContent = `Kết nối thành công, có ${ms.length} model.`;
-      } catch {
-        status.textContent = 'Không kết nối được Ollama tại ' + st.url;
+        status.textContent = ms.length ? `Ollama đã sẵn sàng, có ${ms.length} model.` : 'Ollama đã chạy nhưng chưa có model. Hãy tải model để tạo nội dung.';
+      } catch (err) {
+        status.textContent = err instanceof Error ? err.message : 'Không kết nối được Ollama tại ' + st.url;
+      } finally {
+        checkBtn.disabled = false;
       }
-    }, 'sm');
+    };
+    const checkBtn = btn('Kiểm tra Ollama', checkOllama, 'sm');
 
     root.append(
       h('div', { style: { margin: '8px 0' } }, 'Địa chỉ Ollama: ', h('input', { type: 'text', value: st.url, style: { width: '220px' }, onchange: (e: Event) => setAi({ url: (e.target as HTMLInputElement).value.trim() }) })),
       h('div', { style: { margin: '8px 0' } }, 'Model: ', modelSel, ' ', checkBtn),
       status
     );
+    void checkOllama();
   }
 
   // 3. Chế độ tự do
