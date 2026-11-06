@@ -98,15 +98,19 @@ export function songTuPanel(context: SongTuContext): HTMLElement {
             context,
             index,
             segmentStates[index - 1]?.value ?? '',
-            (phase, total, _partial, done, latest) => {
-              if (phase === 1 && !done) segment.text.replaceChildren();
+            (phase, total, _partial, done, latest, item, itemTotal) => {
+              if (phase === 1 && item === 1 && !done) segment.text.replaceChildren();
               if (done && latest) {
                 const piece = h('div', { style: { whiteSpace: 'pre-wrap', marginTop: '8px' } }, latest);
                 segment.text.append(piece);
               }
-              segment.status.textContent = done
-                ? `Đã xong chặng ${phase}/${total} · ${segment.name}; đang tiếp tục cùng người này…`
-                : `Ollama đang viết trọn cảnh ${index + 1}/${segmentStates.length} · ${segment.name} · chặng ${phase}/${total}…`;
+              segment.status.textContent = itemTotal
+                ? done
+                  ? `Đã xong chặng 3 · mục ${item}/${itemTotal} · ${segment.name}; đang viết mục tiếp theo…`
+                  : `Ollama đang viết chặng 3 · mục ${item}/${itemTotal} · ${segment.name}…`
+                : done
+                  ? `Đã xong chặng ${phase}/${total} · ${segment.name}; đang tiếp tục cùng người này…`
+                  : `Ollama đang viết trọn cảnh ${index + 1}/${segmentStates.length} · ${segment.name} · chặng ${phase}/${total}…`;
             },
           );
           if (!text.trim()) throw new Error('AI chưa trả về nội dung.');

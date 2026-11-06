@@ -71,10 +71,10 @@ function clean(t: string): string {
 }
 const hasCJK = (t: string) => /[\u3400-\u9fff]/.test(t);
 
-async function chat(user: string, maxTok: number, temp = 0.6, numCtx = NUM_CTX, timeoutMs = 90000, forceLocal = false): Promise<string> {
+async function chat(user: string, maxTok: number, temp = 0.6, numCtx = NUM_CTX, timeoutMs = 90000, forceLocal = false, systemPrompt = SYSTEM): Promise<string> {
   if (!forceLocal && isGeminiActive()) {
     try {
-      const out = clean(await callGemini(SYSTEM, user, maxTok, temp));
+      const out = clean(await callGemini(systemPrompt, user, maxTok, temp));
       if (hasCJK(out)) throw new Error('AI trả về chữ Hán.');
       return out;
     } catch (e: any) {
@@ -97,7 +97,7 @@ async function chat(user: string, maxTok: number, temp = 0.6, numCtx = NUM_CTX, 
         stream: false,
         keep_alive: '15m',
         messages: [
-          { role: 'system', content: SYSTEM },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: user },
         ],
         options: { num_ctx: numCtx, temperature: temp, top_p: 0.9, repeat_penalty: 1.08, num_predict: maxTok },
@@ -202,21 +202,21 @@ export function setAi(patch: Partial<typeof meta.settings>) {
 }
 
 /** Prompt riêng cho một tính năng chủ động gọi AI, dùng model đã chọn trong Cài đặt. */
-export async function writeCustomNarration(prompt: string, maxTok = 1100, numCtx = NUM_CTX, forceLocal = false): Promise<string> {
+export async function writeCustomNarration(prompt: string, maxTok = 1100, numCtx = NUM_CTX, forceLocal = false, systemPrompt = SYSTEM): Promise<string> {
   const timeoutMs = forceLocal ? 1800000 : 300000;
   try {
-    return await chat(prompt, maxTok, 0.7, numCtx, timeoutMs, forceLocal);
+    return await chat(prompt, maxTok, 0.7, numCtx, timeoutMs, forceLocal, systemPrompt);
   } catch (error) {
     if (!(error instanceof Error)) throw error;
     if (/chữ Hán/i.test(error.message)) {
       const correction = `${prompt}\n\nYÊU CẦU SỬA LỖI: Bản trước có chữ Hán. Viết lại toàn bộ bằng tiếng Việt có dấu; tuyệt đối không dùng chữ Hán, chữ Trung Quốc, ký tự Nhật hoặc ký tự ngoại ngữ. Giữ đầy đủ từng phần và mọi nhân vật, không rút gọn phần sau.`;
-      return chat(correction, maxTok, 0.55, numCtx, timeoutMs, forceLocal);
+      return chat(correction, maxTok, 0.55, numCtx, timeoutMs, forceLocal, systemPrompt);
     }
     if (/giới hạn độ dài/i.test(error.message)) {
       if (maxTok < 0) throw new Error('Cảnh đã chạm cửa sổ ngữ cảnh tối đa 40.960 token của model Ollama.');
       const expandedTokens = maxTok + Math.max(2500, Math.ceil(maxTok * 0.5));
       const expandedContext = Math.min(40960, Math.max(numCtx, expandedTokens + 7000));
-      return chat(`${prompt}\n\nViết trọn vẹn cảnh từ đầu đến cuối. Không kết thúc giữa câu, không rút gọn các nhân vật xuất hiện sau.`, expandedTokens, 0.65, expandedContext, timeoutMs, forceLocal);
+      return chat(`${prompt}\n\nViết trọn vẹn cảnh từ đầu đến cuối. Không kết thúc giữa câu, không rút gọn các nhân vật xuất hiện sau.`, expandedTokens, 0.65, expandedContext, timeoutMs, forceLocal, systemPrompt);
     }
     throw error;
   }
