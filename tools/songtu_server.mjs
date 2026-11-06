@@ -46,8 +46,8 @@ export function imageWorkflow(prompt, negative, seed) {
 }
 
 export function createSongTuServer({
-  promptFile = path.join(root, 'public/prompts/song-tu.txt'),
-  defaultFile = path.join(root, 'public/prompts/song-tu-default.txt'),
+  promptFile = path.join(root, 'public/prompts/song-tu-default-edited.txt'),
+  defaultFile = path.join(root, 'public/prompts/song-tu-default-edited.txt'),
   outcomeFile = path.join(root, 'public/prompts/song-tu-ket-qua.txt'),
   mediaConfigFile = path.join(root, 'tools/songtu-media.json'),
   outputDir = path.join(root, 'public/generated/song-tu'),

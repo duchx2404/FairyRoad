@@ -38,11 +38,11 @@ export async function loadDefaultSongTu(context: SongTuContext, signal?: AbortSi
     if (!response.ok) throw new Error('Không đọc được lời kể mặc định từ server.');
   } catch (e) {
     if (signal?.aborted) throw e;
-    response = await fetch(new URL('prompts/song-tu-default.txt', document.baseURI), { cache: 'no-store', signal });
+    response = await fetch(new URL('prompts/song-tu-default-edited.txt', document.baseURI), { cache: 'no-store', signal });
   }
-  if (!response.ok) throw new Error(`Không đọc được song-tu-default.txt (HTTP ${response.status}).`);
+  if (!response.ok) throw new Error(`Không đọc được song-tu-default-edited.txt (HTTP ${response.status}).`);
   const template = await response.text();
-  if (!template.trim()) throw new Error('File song-tu-default.txt đang trống.');
+  if (!template.trim()) throw new Error('File song-tu-default-edited.txt đang trống.');
   return fillSongTuTemplate(template, context);
 }
 export async function loadSongTuPrompt(signal?: AbortSignal): Promise<SongTuPrompt> {
@@ -59,7 +59,7 @@ export async function loadSongTuPrompt(signal?: AbortSignal): Promise<SongTuProm
       if (!response.ok) throw new Error(`Không đọc được ${file} (HTTP ${response.status}).`);
       return response.text();
     };
-    const [narrative, outcome] = await Promise.all([read('song-tu.txt'), read('song-tu-ket-qua.txt')]);
+    const [narrative, outcome] = await Promise.all([read('song-tu-default-edited.txt'), read('song-tu-ket-qua.txt')]);
     r = new Response(JSON.stringify({ narrative, outcome }));
   }
   if (!r.ok) throw new Error(`Không đọc được prompts/song-tu.txt (HTTP ${r.status}).`);

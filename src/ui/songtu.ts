@@ -57,7 +57,7 @@ export function songTuPanel(context: SongTuContext): HTMLElement {
     media.append(section);
     return { refresh };
   });
-  const retry = btn('Làm lại lời kể', () => { void write(); }, 'ghost');
+  const retry = btn('Thử lại', () => { void write(); }, 'ghost');
   const write = async () => {
     if (writing) return;
     writing = true; retry.disabled = true; parts.forEach(p => p.refresh());
@@ -74,12 +74,13 @@ export function songTuPanel(context: SongTuContext): HTMLElement {
       storyStatus.textContent = '';
     } catch (e) {
       if (!live()) return;
+      const reason = e instanceof Error ? e.message : String(e);
       try {
         const text = await loadDefaultSongTu(context, controller.signal);
         if (!live()) return;
         narrative = text; revision++;
         story.textContent = text;
-        storyStatus.textContent = 'Đang dùng lời kể mặc định vì AI chưa khả dụng.';
+        storyStatus.textContent = `AI gặp lỗi: ${reason}. Đang dùng lời kể dự phòng; bấm “Thử lại” để gọi AI lần nữa.`;
       } catch (fallbackError) {
         if (live()) storyStatus.textContent = `Chưa tải được lời kể mặc định: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`;
       }
