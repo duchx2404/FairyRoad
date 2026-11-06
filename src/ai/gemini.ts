@@ -109,12 +109,8 @@ export function formatGeminiError(rawMsg: string): string {
 /** Kiểm tra xem Gemini AI có đang được kích hoạt và khả dụng hay không */
 export function isGeminiActive(): boolean {
   if (!meta.settings.ai) return false;
-  // Ưu tiên Gemini nếu được chọn trong cài đặt HOẶC người chơi đã đăng nhập bằng Google
-  const user = getCurrentUser();
-  if (meta.settings.aiProvider === 'gemini') return true;
-  if (user?.authProvider === 'google') return true;
-  if (meta.settings.geminiKey || user?.geminiKey) return true;
-  return false;
+  // Provider được chọn phải có quyền ưu tiên; đăng nhập Google không được khóa Ollama.
+  return meta.settings.aiProvider === 'gemini';
 }
 
 export function getActiveGeminiAuth(): { apiKey?: string; accessToken?: string } {

@@ -32,7 +32,7 @@ Tạo file trong `src/events/`, import từ `../engine/api`, gọi `register([..
 
 ## Prompt Song Tu
 
-File public/prompts/song-tu-default-edited.txt chứa chỉ dẫn kể cảnh Song Tu cho AI và lời kể dự phòng. Phần kết quả nằm riêng trong public/prompts/song-tu-ket-qua.txt, dùng {{outcome}} để nhận kết quả thực tế. Game tự ghép thông tin nhân vật và bối cảnh khi gọi AI.
+File public/prompts/song-tu-default-edited.txt chứa chỉ dẫn kể cảnh Song Tu cho AI local. Phần kết quả nằm riêng trong public/prompts/song-tu-ket-qua.txt, dùng {{outcome}} để nhận kết quả thực tế. Game tự ghép thông tin nhân vật và bối cảnh khi gọi AI.
 
 Bấm Song Tu → AI viết xong lời kể → hiện hai nút **Tạo ảnh** và **Tạo video**. Chỉ khi bấm nút tương ứng mới gửi yêu cầu tạo media, dùng nguyên đoạn AI vừa kể làm nội dung. Không tự tạo ảnh/video. Có các nút Làm lại lời kể, Làm lại ảnh, Làm lại video độc lập. Giữ kết quả cũ tới khi có kết quả thay thế thành công; đổi lời kể sẽ đánh dấu media cũ để người chơi chủ động tạo lại. Không thực hiện lại hành động hoặc cộng lại phần thưởng.
 
@@ -44,7 +44,7 @@ Prompt kể được đọc lại mỗi lần viết. Khi server Song Tu chạy,
 
 Kết quả và metadata gồm lời kể thực tế, prompt media, seed được lưu tại public/generated/song-tu/. Hàng đợi xử lý lần lượt, tối đa 8 yêu cầu chờ. Đóng cảnh ngừng theo dõi kết quả; tác vụ đã gửi sang ComfyUI có thể vẫn chạy và lưu kết quả.
 
-Lời kể dự phòng: public/prompts/song-tu-default-edited.txt. Khi AI tắt, lỗi kết nối hoặc trả về rỗng, game đọc văn bản này (hỗ trợ các biến như {{place}}). Nút “Thử lại” gọi AI viết lại cảnh. File được đọc lại mỗi lần; ảnh/video vẫn dùng đúng lời kể đang hiển thị và cần dịch vụ tạo media riêng.
+Lời kể dự phòng dạng mẫu: public/prompts/song-tu-default.txt. Nếu Ollama lỗi, khung cảnh hiện lỗi và nút “Thử lại”; game không đưa nội dung chỉ dẫn prompt lên như lời kể. File prompt được đọc lại mỗi lần; ảnh/video vẫn dùng đúng lời kể đang hiển thị và cần dịch vụ tạo media riêng.
 
 Biến {{partnerNames}} gọi đúng tên đạo lữ được chọn: một người là tên người đó; nhiều người là “A, B và C”. Dùng được trong prompt kể và lời kể mặc định.
 

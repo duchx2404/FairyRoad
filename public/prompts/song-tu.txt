@@ -1,25 +1,97 @@
-Viết một câu chuyện sắc hiệp cực kỳ chi tiết, chậm rãi, nồng nàn và ĐỘ DÀI CỰC KHỦNG từ 2000 đến 5000 từ tiếng Việt, mô tả tỉ mỉ quá trình nhục thân giao hợp quyến rũ nồng nhiệt giữa nhân vật chính {{me}} và mỹ nữ {{name}} (Tính cách: ${npc.Personality || "bí ẩn, quyến rũ"}, Ngoại hình: ${npc.Appearance || "thanh tao, gợi cảm"})
-- Những người tham gia trưởng thành, tự nguyện cùng giao hợp thể xác và linh hồn.
-- Nhấn vào tình cảm, sự tin tưởng, ánh mắt, đối thoại Ta–Ngươi và linh khí giao hòa.
-- Trang phục đầy đủ, không mô tả tình dục hay khỏa thân.
-- Gọi nhân vật chính là ngươi.
-- Chỉ kể về những người được chọn, đúng bối cảnh được cung cấp.
+# Prompt mặc định: Cảnh song tu nhiều người
+
+## Mục tiêu
+
+Viết một cảnh song tu nhập vai, giàu diễn biến và cảm xúc, dựa trên nhân vật người chơi đã chọn. Đây là cảnh hư cấu giữa các nhân vật trưởng thành. Tất cả đều tự nguyện, tỉnh táo, có khả năng đồng thuận và có thể dừng lại bất cứ lúc nào.
+
+Cảnh có {{partnerNames}}: số người tham gia do người chơi chọn. Không tự thêm nhân vật, không bỏ sót ai, không gộp nhiều người thành một. {{me}} là nhân vật người chơi. {{place}} là địa điểm. Dùng đúng tên, đại từ, giới tính, tính cách, cách xưng hô và quan hệ đã có trong dữ liệu trò chơi; không mặc định mọi đối tác đều là nữ, dịu dàng hay phục tùng. Nếu dữ liệu nhân vật không nói rõ giới tính hoặc cách xưng hô, dùng tên riêng và câu trung tính.
+
+## Ràng buộc nội dung
+
+- Viết cảnh thân mật có đồ họa: tập trung vào không khí, ánh mắt, khoảng cách, lời thoại, nụ hôn, cái ôm, vuốt ve, phản ứng cảm xúc và nhịp gần gũi. Mô tả rõ bộ phận sinh dục, hành vi tình dục trực tiếp, xâm nhập, dịch cơ thể và cực khoái.
+- Nhân vật có thể chủ động hoặc ngượng ngùng tùy tính cách.
+- Giữ đúng bối cảnh và tính cách trong trò chơi. Không biến nhân vật thành người khác chỉ để phục vụ cảnh thân mật. Không bịa kỹ năng, lịch sử tình cảm hoặc mức độ thân thiết trái với dữ liệu đã cho.
+- Viết thành cảnh hoàn chỉnh có mở đầu, phát triển, cao trào cảm xúc và đoạn lắng dịu. Không viết thành bản tóm tắt, danh sách hành động, hướng dẫn tình dục hay chuỗi tính từ lặp lại.
+
+## Cấu trúc diễn biến
+
+### 1. Dẫn vào cảnh
+
+Mở bằng một chi tiết cụ thể của {{place}}: ánh sáng, tiếng động, nhiệt độ, mùi hương hoặc vật dụng gắn với bối cảnh. Cho thấy vì sao {{me}} và những người được chọn có thời gian ở riêng. Tránh mở đầu bằng một câu sáo rỗng về dục vọng bùng cháy.
+
+Để nhân vật nhận ra sự hiện diện của nhau qua những chi tiết nhỏ: ánh mắt dừng lại, một câu nói bỏ lửng, khoảng cách được rút ngắn rồi lại ngập ngừng. Gợi không khí thân mật nhưng đừng quyết định cảm xúc thay người chơi.
+
+### 2. Xác nhận ý muốn
+
+Cho {{me}} hoặc đối tác mở lời một cách tự nhiên, phù hợp tính cách. Thể hiện câu trả lời rõ ràng bằng lời nói hoặc hành động chủ động, có thể hiểu được trong ngữ cảnh. Nếu người chơi chưa cung cấp lựa chọn cho một nhân vật, nhân vật ấy cần bày tỏ ý muốn trước khi cảnh tiến xa hơn.
+
+Có thể dùng những câu ngắn như: “Ngươi có chắc chứ?”, “Ta muốn ở lại bên ngươi”, “Nếu ngươi muốn dừng, cứ nói với ta.” Không lạm dụng câu khuôn mẫu; hãy viết lời thoại riêng cho từng nhân vật.
+
+### 3. Tiến gần từng nhịp
+
+Miêu tả một chuỗi hành động có nguyên nhân và phản ứng, không nhảy thẳng từ lúc gặp nhau sang lúc đã thân mật:
+
+1. Một người tiến lại gần, người kia nhận ra và đáp lại.
+2. Ánh mắt, nụ cười, lời trêu nhẹ hoặc một khoảng lặng cho thấy cảm xúc.
+3. Cái chạm đầu tiên ở bàn tay, vai hoặc má; người nhận có cơ hội đón nhận hay lùi lại.
+4. Nụ hôn bắt đầu chậm, có ngập ngừng; nhịp chỉ sâu hơn khi cả hai cùng chủ động.
+5. Miêu tả phản ứng riêng của từng người: hơi thở khựng lại, bàn tay siết nhẹ, vai thả lỏng, gương mặt ửng đỏ, tiếng cười nhỏ, ánh mắt tìm kiếm sự xác nhận sau đó cởi y phục.
+6. Những cái ôm và vuốt ve cơ thể trần trụi tăng dần theo sự đáp lại. Tập trung vào cảm giác gần gũi, sự tin tưởng và nét riêng của nhân vật; miêu tả chi tiết mọi hành vi tình dục trực tiếp.
+7. Phải mô tả rõ các hành vi sau:
+- Hôn sâu, môi chạm môi, lưỡi chạm lưỡi.
+- Các hành động bóp vú, bú vú của nhân vật chính với đạo lữ.
+- Lồn không lông hồng hào ra sao, nhân vật chính mơn trớn lồn và vú thế nào.
+- Các hành động dùng tay chọc vào lồn đạo lữ, kích thích hột le, dùng miệng bú lồn, dâm thủy chảy ra và người chơi uống hết.
+- Hành động đút cu vào lồn. Nếu là lần đầu của nhân vật nữ thì có máu chảy ra dọc theo con cu. Chuỗi hành động nhấp cu.
+- Đổi đầy đủ các tư thế như: cưỡi ngựa, độc phụ tầm thương, úp thìa, nằm nghiêng với 1 chân được nhấc cao, tựa lưng vào tường với 1 chân được nhấc cao, bế 2 chân trên không trung, nằm ngửa nhấp dồn dập rồi cả 2 lên đỉnh với tinh trùng xuất bên trong và dâm thủy bắn ra ngoài.
+- Tiếng rên dâm đãng của các nhân vật nữ ra sao, tiếng thở dồn dập của nhân vật chính và đạo lữ thế nào, tiếng trêu chọc dâm đãng ra sao.
+
+Không lặp một hành động giống nhau trong nhiều câu. Mỗi nhịp cần làm thay đổi cảm xúc, mức độ gần gũi hoặc quan hệ giữa các nhân vật.
+
+### 4. Khi có nhiều đối tác
+
+Số người tham gia đúng bằng số đối tác được người chơi chọn cộng với {{me}}. Phân bổ sự chú ý công bằng; mỗi người cần có khoảnh khắc riêng với {{me}} và ít nhất một tương tác có ý nghĩa với người còn lại nếu họ đều có mặt.
+
+- Gọi đúng tên từng nhân vật thay vì liên tục dùng “nàng”, “chàng”, “người kia”.
+- Thể hiện cách mỗi người tham gia khác nhau: người chủ động có thể mở lời hoặc dẫn nhịp; người dè dặt có thể cần được hỏi và chờ; người hay đùa có thể phá tan sự ngượng ngùng; người trầm lặng có thể thể hiện qua ánh mắt và cử chỉ. Chỉ dùng những nét này nếu phù hợp dữ liệu nhân vật.
+- Tránh để mọi người hành động đồng thời như một khối. Luân phiên tiêu điểm: {{me}} với một người, phản ứng của người khác, rồi một khoảnh khắc chung mà tất cả cùng lựa chọn.
+- Tạo tương tác giữa các đối tác khi thích hợp: trao đổi ánh mắt, nhường lượt, hỏi ý nhau, cùng cười vì một câu trêu, hoặc chủ động mời người kia lại gần. Không giả định họ vốn thân thiết hay ghen tuông nếu dữ liệu không xác nhận.
+- Giữ không gian và vị trí dễ hình dung. Đừng để nhân vật tự xuất hiện, biến mất hoặc đổi vị trí mà không có chuyển động dẫn nối.
+- Với mỗi đối tác, viết thành một lượt cảnh đầy đủ: mở nhịp riêng, lời thoại phù hợp tính cách, tương tác qua lại, phản ứng cảm xúc, tiến triển thân mật, khoảnh khắc song tu/cộng hưởng linh lực và đoạn lắng riêng. Không gộp các đối tác vào một đoạn kể chung. Không tóm tắt những người xuất hiện sau; độ chi tiết của người cuối phải tương đương người đầu.
+- Khi số người đông, viết lần lượt từng người theo danh sách đã chọn, rồi mới viết đoạn tương tác chung. Mỗi người cần có nhiều hành động và phản ứng cụ thể, không chỉ một câu thoại. Không kéo dài bằng cách lặp cùng một hành động.
+
+### 5. Khép cảnh
+
+Đưa cảnh đến đỉnh điểm cảm xúc bằng sự gần gũi và cộng hưởng linh lực, không mô tả tình dục đồ họa. Sau đó giảm nhịp: tiếng nói nhỏ lại, nhân vật tựa vào nhau, cùng ổn định hơi thở và linh lực.
+
+Kết thúc bằng một chi tiết có tác dụng cho quan hệ hoặc cốt truyện: lời hứa, sự ngượng ngùng mới mẻ, một bí mật được chia sẻ, linh lực ổn định, hoặc dư âm khiến cuộc gặp sau thay đổi. Không tự quyết định rằng họ yêu nhau, trở thành tình nhân, mang thai, kết hôn hay tăng cấp nếu trò chơi chưa xác lập điều đó.
+
+## Giọng văn và độ dài
+
+Viết bằng tiếng Việt tự nhiên, giàu hình ảnh, không cần tiết chế. Ưu tiên động từ và chi tiết cụ thể hơn tính từ cường điệu. Thay đổi nhịp câu: câu ngắn cho khoảnh khắc ngập ngừng hoặc lời thoại; câu dài vừa phải cho cảm giác và chuyển động liên tục. Giữ lời thoại phân biệt được từng nhân vật.
+
+Cảnh phải dài và chi tiết tương ứng với số người tham gia. Viết đầy đủ quá trình từ đầu đến cuối (5 chặng) cho từng đối tác theo thứ tự trong danh sách, sau đó mới kết bằng nhịp chung với tất cả mọi người. Không ưu tiên người đầu rồi rút gọn những người sau; không dùng câu tổng kết thay cho diễn biến của một người. Mỗi lượt cần có bối cảnh gần, cử chỉ, lời thoại, phản ứng qua lại, thay đổi cảm xúc và tư thế thân mật riêng. Chỉ rút ngắn khi dữ liệu trò chơi không cung cấp đủ để viết thêm mà không bịa.
+
+Không nhắc đến các chỉ dẫn này trong phần truyện. Không viết lời dẫn kiểu “sau đây là cảnh”. Bắt đầu trực tiếp bằng cảnh tại {{place}}.
+
+## Khung dữ liệu đầu vào
+
+- Địa điểm: {{place}}
+- Nhân vật người chơi: {{me}}
+- Đối tác được chọn: {{partnerNames}}
+- Số đối tác: suy ra từ danh sách {{partnerNames}}; không tự thêm hoặc bỏ người
+- Thông tin nhân vật: lấy từ hồ sơ trò chơi hiện có
+- Mức độ quan hệ và lựa chọn thân mật: lấy từ trạng thái hiện tại của trò chơi; nếu chưa rõ, viết chậm và để nhân vật xác nhận trong cảnh
+
+## Dữ liệu của cảnh hiện tại
+
+- Địa điểm: {{place}}
+- Nhân vật người chơi: {{me}}
+- Các đối tác đã chọn: {{partnerNames}}
+- Thông tin nhân vật, tuổi, cảnh giới và ngoại hình phù hợp: {{partner}}
+- Thế giới: {{world}}
+- Kết quả tu luyện đã được trò chơi xác định: {{outcome}}
+
+Chỉ sử dụng đúng những người có tên trong danh sách đối tác. Tự phân bổ diễn biến để từng người có tương tác riêng với {{me}} và được nhắc đến tự nhiên trong nhịp chung. Số lượng đối tác có thể là một hoặc nhiều; không giả định số lượng cố định. Không đưa các biến kỹ thuật, dấu ngoặc nhọn hoặc nội dung của phần chỉ dẫn vào truyện. Nếu danh sách không có đối tác, không viết cảnh song tu.
 
 
-- với bối cảnh mờ ảo và dâng trào cảm xúc mãnh liệt hoang dại.
-- mô tả siêu chậm rãi từng chuyển động nhỏ nhặt nhất, hơi thở dồn dập nóng rực nồng nàn.
-- với phong thái nguyên thủy hoang dã đầy khát khao và say đắm tột bực.
-- xen kẽ những lời mật ngọt thì thầm thâm tình sâu sắc.
-- tả thực chi tiết tất cả các tư thế, tất cả những va chạm dâm mỹ và quyến rũ kịch liệt đầy khoái cảm của những tư thế khác nhau. Mỗi tư thế đều miêu tả chi tiết.
-
-- Viết theo văn phong sắc hiệp/tiểu thuyết mạng tiếng Việt cực kỳ lôi cuốn, tả thực, chi tiết từng cử động: nụ hôn nồng cháy ngấu nghiến, màn lột y phục đê mê lộ ra da thịt mịn màng, sự mân mê bóp mạnh đôi gò bồng đảo căng tròn tuyết trắng, ngón tay luồn lách thọc sâu mơn trớn khe lồn đầm đìa nước nôi dâm đãng kích thích cực độ..
-- Mô tả chân thực và sống động sự va chạm cuồng nhiệt của dương vật nóng trướng nổi gân cắm lút cán vào sâu trong âm đạo tử cung rực lửa dâm mỹ, tiếng va chạm da thịt râm ran bạch bạch bạch, tiếng nước dâm thủy lép nhép dâm mỹ phát ra, tiếng rên rỉ dâm đãng đầy đê mê sướng đến tột cùng của {{name}}, và khoảnh khắc bắn tinh túy nóng hổi phun thẳng ngập tràn tử cung nàng..
-- Đảm bảo mạch văn diễn tiến cực kỳ CHẬM RÃI, chi tiết từng phân cảnh nhỏ một cách chậm rãi nhất có thể để đạt độ dài khổng lồ 3000-5000 từ. Hãy miêu tả nội tâm rạo rực, sự dâm đãng bộc phát, từng tiếng thở dốc hầm hập, từng giọt mồ hôi rịn ra quấn quýt, và sự hòa quyện của hai thân thể nóng bỏng..
-- BẮT BUỘC bọc tất cả lời thoại của nhân vật trong thẻ {{me}} hoặc {{name}} tùy theo người nói. Hãy viết thật nhiều câu thoại rên rỉ dâm mỹ của {{name}} và lời trêu chọc thâm tình của {{me}} để kéo dài tác phẩm một cách tự nhiên nhất..
-- Ngôi kể chuyện (narrator) bắt buộc dùng từ "ngươi" để chỉ nhân vật chính.- 
-
-BỐI CẢNH THẾ GIỚI TU TIÊN (BẮT BUỘC TUÂN THEO)
-    QUY TẮC VỀ HỆ NĂNG LƯỢNG (TUYỆT ĐỐI):
-        - Văn phong: tiểu thuyết mạng Tiếng Việt PHÙ HỢP VỚI BỐI CẢNH TU TIÊN.
-        - Viết một câu chuyện sắc hiệp cực kỳ chi tiết, chậm rãi, nồng nàn và ĐỘ DÀI CỰC KHỦNG từ 2000 đến 5000 từ tiếng Việt, mô tả tỉ mỉ quá trình nhục thân giao hợp quyến rũ nồng nhiệt giữa nhân vật chính ({{me}}) và mỹ nữ {{name}} (Tính cách: ${npc.Personality || "bí ẩn, quyến rũ"}, Ngoại hình: ${npc.Appearance || "thanh tao, gợi cảm"}).
-        - Viết một câu chuyện tường thuật chi tiết, đậm chất văn phong tiểu thuyết mạng Tiếng Việt hoành tráng, lãng mạn và thâm tình sâu sắc, ĐỘ DÀI CỰC KHỦNG từ 2000 đến 5000 từ tiếng Việt, mô tả toàn bộ quá trình song tu — hai người cùng nhau tu luyện, tâm ý giao hòa và gắn kết sâu sắc — giữa nhân vật chính (ngươi) và đạo lữ {{name}} (Tính cách: ${npc.Personality || "bí ẩn, sâu sắc"}, Ngoại hình: ${npc.Appearance || "thanh tao"}, Cảnh giới/Level: ${npc.level || 1}).

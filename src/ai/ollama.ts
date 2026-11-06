@@ -4,7 +4,6 @@ import { isGeminiActive, callGemini } from './gemini';
 import { meta, saveMeta, s } from '../engine/state';
 import type { LifeRec } from '../engine/state';
 
-// Giữ num_ctx cố định: Ollama nạp lại model mỗi khi num_ctx đổi giữa các lần gọi.
 const NUM_CTX = 8192;
 
 export const aiOn = () => meta.settings.ai && (isGeminiActive() || serviceAvailable(meta.settings.url));
@@ -72,10 +71,12 @@ function clean(t: string): string {
 }
 const hasCJK = (t: string) => /[\u3400-\u9fff]/.test(t);
 
-async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
-  if (isGeminiActive()) {
+async function chat(user: string, maxTok: number, temp = 0.6, numCtx = NUM_CTX, timeoutMs = 90000, forceLocal = false): Promise<string> {
+  if (!forceLocal && isGeminiActive()) {
     try {
-      return await callGemini(SYSTEM, user, maxTok, temp);
+      const out = clean(await callGemini(SYSTEM, user, maxTok, temp));
+      if (hasCJK(out)) throw new Error('AI trả về chữ Hán.');
+      return out;
     } catch (e: any) {
       // Nếu người chơi đang chọn Gemini AI, hiển thị rõ ràng lỗi của Gemini chứ không fallback sang Ollama
       if (meta.settings.aiProvider === 'gemini') {
@@ -89,7 +90,7 @@ async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
     r = await fetch(`${meta.settings.url}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      signal: AbortSignal.timeout(90000),
+      signal: AbortSignal.timeout(timeoutMs),
       body: JSON.stringify({
         model: meta.settings.model,
         think: false,
@@ -99,7 +100,7 @@ async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
           { role: 'system', content: SYSTEM },
           { role: 'user', content: user },
         ],
-        options: { num_ctx: NUM_CTX, temperature: temp, top_p: 0.9, repeat_penalty: 1.08, num_predict: maxTok },
+        options: { num_ctx: numCtx, temperature: temp, top_p: 0.9, repeat_penalty: 1.08, num_predict: maxTok },
       }),
     });
   } catch (e) {
@@ -113,6 +114,7 @@ async function chat(user: string, maxTok: number, temp = 0.6): Promise<string> {
   const j = await r.json();
   const out = clean(j.message?.content || '');
   if (!out) throw new Error('Ollama không trả về nội dung. Hãy kiểm tra model đang hoạt động.');
+  if (j.done_reason === 'length') throw new Error('AI đã chạm giới hạn độ dài đầu ra trước khi viết xong.');
   if (hasCJK(out)) throw new Error('Ollama trả về chữ Hán; hãy thử model khác hoặc gửi lại.');
   if (out.length < 20) throw new Error('Ollama trả lời quá ngắn; không thể dùng làm lời kể.');
   return out;
@@ -200,5 +202,23 @@ export function setAi(patch: Partial<typeof meta.settings>) {
 }
 
 /** Prompt riêng cho một tính năng chủ động gọi AI, dùng model đã chọn trong Cài đặt. */
-export const writeCustomNarration = (prompt: string) => chat(prompt, 1100, 0.7);
+export async function writeCustomNarration(prompt: string, maxTok = 1100, numCtx = NUM_CTX, forceLocal = false): Promise<string> {
+  const timeoutMs = forceLocal ? 1800000 : 300000;
+  try {
+    return await chat(prompt, maxTok, 0.7, numCtx, timeoutMs, forceLocal);
+  } catch (error) {
+    if (!(error instanceof Error)) throw error;
+    if (/chữ Hán/i.test(error.message)) {
+      const correction = `${prompt}\n\nYÊU CẦU SỬA LỖI: Bản trước có chữ Hán. Viết lại toàn bộ bằng tiếng Việt có dấu; tuyệt đối không dùng chữ Hán, chữ Trung Quốc, ký tự Nhật hoặc ký tự ngoại ngữ. Giữ đầy đủ từng phần và mọi nhân vật, không rút gọn phần sau.`;
+      return chat(correction, maxTok, 0.55, numCtx, timeoutMs, forceLocal);
+    }
+    if (/giới hạn độ dài/i.test(error.message)) {
+      if (maxTok < 0) throw new Error('Cảnh đã chạm cửa sổ ngữ cảnh tối đa 40.960 token của model Ollama.');
+      const expandedTokens = maxTok + Math.max(2500, Math.ceil(maxTok * 0.5));
+      const expandedContext = Math.min(40960, Math.max(numCtx, expandedTokens + 7000));
+      return chat(`${prompt}\n\nViết trọn vẹn cảnh từ đầu đến cuối. Không kết thúc giữa câu, không rút gọn các nhân vật xuất hiện sau.`, expandedTokens, 0.65, expandedContext, timeoutMs, forceLocal);
+    }
+    throw error;
+  }
+}
 export const chatAi = (prompt: string) => chat(prompt, 600, 0.75);
